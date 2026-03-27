@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueenLib | Verify Email</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+  <main class="auth-page">
+    <section class="auth-visual">
+      <div class="visual-overlay"></div>
+      <div class="visual-content">
+        <a class="visual-brand" href="index.html">QueenLib</a>
+        <p class="visual-quote">"Not all those who wander are lost, but books help you find your way."</p>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <h1>Verify your email</h1>
+        <p class="subtitle">Enter the 6-digit code we sent to <strong>mike.sordilla@nmsc.edu.ph.</strong></p>
+
+        <form class="auth-form" action="login.html" method="get">
+          <label for="verify-email-address">Email Address</label>
+          <input id="verify-email-address" name="email" type="email" value="mike.sordilla@nmsc.edu.ph">
+
+          <div class="otp-row">
+            <label for="otp-1">Verification Code</label>
+            <div class="otp-group" role="group" aria-label="Verification code">
+              <input class="otp-box" id="otp-1" type="text" inputmode="numeric" maxlength="1" value="1">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" value="2">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" value="3">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" value="4">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" value="5">
+              <input class="otp-box" type="text" inputmode="numeric" maxlength="1" value="6">
+            </div>
+          </div>
+
+          <button class="submit-button" type="submit">Verify My Email</button>
+        </form>
+
+        <div class="auth-links">
+          <p>Didn't receive a code? <a class="text-link" href="check-email.html">Resend</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+
+</html>

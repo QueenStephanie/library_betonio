@@ -1,0 +1,39 @@
+# Project Files & Cache
+node_modules/
+npm-debug.log
+.DS_Store
+Thumbs.db
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS files
+.DS_Store
+*.exe
+*.dll
+*.pyd
+
+# Testing
+.coverage
+htmlcov/
+
+# Old/unused files (leave commented out as needed)
+# old/
+# backup/
+# temp/

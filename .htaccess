@@ -1,0 +1,33 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Remove index.php from URLs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?$1 [L,QSA]
+
+# Disable directory listing
+Options -Indexes
+
+# Set proper cache headers for assets
+<FilesMatch "\.(jpg|jpeg|png|gif|css|js|svg|woff|woff2)$">
+    Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+# Prevent direct access to sensitive files
+<FilesMatch "\.env|\.git|\.htaccess|config\.php|functions\.php|auth\.php">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+</IfModule>
+
+# Enable gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Set proper MIME types
+<IfModule mod_mime.c>
+    AddType application/javascript js
+    AddEncoding gzip svg
+</IfModule>

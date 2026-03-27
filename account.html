@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueenLib | My Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <a class="sidebar-brand" href="index.html">QueenLib</a>
+
+      <div class="sidebar-user">
+        <div class="avatar">M</div>
+        <p class="user-greeting">Hi, Mike.sordilla</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item is-active" href="account.html"><span class="nav-icon">⌂</span><span>My Account</span></a>
+        <a class="nav-item" href="#"><span class="nav-icon">◫</span><span>Browse Catalog</span></a>
+        <a class="nav-item" href="login.html"><span class="nav-icon">↪</span><span>Log Out</span></a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <h1>My Account</h1>
+        <p>Good to see you, Mike.sordilla.</p>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon coral">📖</div><strong>3</strong><span>Currently Borrowed</span>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon green">✓</div><strong>8</strong><span>Total Books Read</span>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon gold">⏰</div><strong>1</strong><span>Due Soon</span>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon gray">◷</div><strong>3</strong><span>Pending Reservations</span>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Active Loans</h2>
+          <a href="#">Browse Catalog →</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Book Title</th>
+                <th>Checkout Date</th>
+                <th>Due Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>The Name of the Wind</td>
+                <td>2026-02-18</td>
+                <td>2026-03-18</td>
+                <td><span class="badge success">Active</span></td>
+              </tr>
+              <tr class="highlight-row">
+                <td>Project Hail Mary</td>
+                <td>2026-02-25</td>
+                <td>2026-03-10</td>
+                <td><span class="badge warning">Overdue</span></td>
+              </tr>
+              <tr>
+                <td>The Brothers Karamazov</td>
+                <td>2026-03-01</td>
+                <td>2026-04-01</td>
+                <td><span class="badge success">Active</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel collapsible" data-collapsible>
+        <button class="panel-toggle" type="button" aria-expanded="false">
+          <span>
+            <h2>Loan History</h2><span class="history-link">Show all history →</span>
+          </span>
+          <span class="toggle-arrow">⌄</span>
+        </button>
+        <div class="collapsible-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Book Title</th>
+                  <th>Borrowed</th>
+                  <th>Returned</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Dune</td>
+                  <td>2025-12-20</td>
+                  <td>2026-01-15</td>
+                  <td><span class="badge neutral">Returned</span></td>
+                </tr>
+                <tr>
+                  <td>1984</td>
+                  <td>2025-11-10</td>
+                  <td>2025-12-20</td>
+                  <td><span class="badge neutral">Returned</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Pending Reservations</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Book Title</th>
+                <th>Reserved Date</th>
+                <th>Expires</th>
+                <th>Queue #</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>The Midnight Library</td>
+                <td>2026-03-08</td>
+                <td>2026-03-22</td>
+                <td><span class="badge outline">#1</span></td>
+                <td><button class="ghost-button" type="button">× Cancel</button></td>
+              </tr>
+              <tr>
+                <td>Educated</td>
+                <td>2026-03-09</td>
+                <td>2026-03-23</td>
+                <td><span class="badge outline">#3</span></td>
+                <td><button class="ghost-button" type="button">× Cancel</button></td>
+              </tr>
+              <tr>
+                <td>Becoming</td>
+                <td>2026-03-10</td>
+                <td>2026-03-24</td>
+                <td><span class="badge outline">#2</span></td>
+                <td><button class="ghost-button" type="button">× Cancel</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="chart-grid">
+        <article class="panel">
+          <h2>Monthly Checkout Activity</h2>
+          <div class="bar-chart" aria-label="Monthly checkout activity chart">
+            <div class="bar-item"><span style="height:25%"></span><label>Apr</label></div>
+            <div class="bar-item"><span style="height:38%"></span><label>May</label></div>
+            <div class="bar-item"><span style="height:12%"></span><label>Jun</label></div>
+            <div class="bar-item"><span style="height:50%"></span><label>Jul</label></div>
+            <div class="bar-item"><span style="height:25%"></span><label>Aug</label></div>
+            <div class="bar-item"><span style="height:62%"></span><label>Sep</label></div>
+            <div class="bar-item"><span style="height:38%"></span><label>Oct</label></div>
+            <div class="bar-item"><span style="height:50%"></span><label>Nov</label></div>
+            <div class="bar-item"><span style="height:25%"></span><label>Dec</label></div>
+            <div class="bar-item"><span style="height:75%"></span><label>Jan</label></div>
+            <div class="bar-item"><span style="height:38%"></span><label>Feb</label></div>
+            <div class="bar-item"><span style="height:50%"></span><label>Mar</label></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Category Breakdown</h2>
+          <div class="donut-wrap">
+            <div class="donut-chart"></div>
+            <div class="legend">
+              <span><i class="dot fiction"></i>Fiction</span>
+              <span><i class="dot nonfiction"></i>Non-Fiction</span>
+              <span><i class="dot science"></i>Science</span>
+              <span><i class="dot history"></i>History</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Reading Timeline</h2>
+        <div class="timeline">
+          <article class="timeline-card">
+            <h3>The Name of the Wind</h3>
+            <p>Feb 18 → Mar 18</p><span class="badge success">Active</span>
+          </article>
+          <article class="timeline-card">
+            <h3>Project Hail Mary</h3>
+            <p>Feb 25 → Mar 10</p><span class="badge warning">Overdue</span>
+          </article>
+          <article class="timeline-card">
+            <h3>Dune</h3>
+            <p>Dec 20 → Jan 15</p><span class="badge neutral">Returned</span>
+          </article>
+          <article class="timeline-card">
+            <h3>1984</h3>
+            <p>Nov 10 → Dec 20</p><span class="badge neutral">Returned</span>
+          </article>
+          <article class="timeline-card">
+            <h3>Sapiens</h3>
+            <p>Oct 5 → Nov 30</p><span class="badge neutral">Returned</span>
+          </article>
+          <article class="timeline-card">
+            <h3>The Alchemist</h3>
+            <p>Sep 1 → Oct 10</p><span class="badge neutral">Returned</span>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+
+</html>

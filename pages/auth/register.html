@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueenLib | Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../../public/css/auth.css">
+</head>
+
+<body>
+  <main class="auth-page">
+    <!-- Visual Section -->
+    <section class="auth-visual" aria-label="App branding">
+      <div class="visual-overlay"></div>
+      <div class="visual-content">
+        <a class="visual-brand" href="../../index.html">QueenLib</a>
+        <p class="visual-quote">"Reading is to the mind what exercise is to the body."</p>
+      </div>
+    </section>
+
+    <!-- Form Section -->
+    <section class="auth-panel">
+      <div class="auth-card">
+        <h1>Create your account</h1>
+        <p class="subtitle">Join QueenLib and start exploring your library.</p>
+
+        <!-- Backend: Form for user registration -->
+        <form class="auth-form" id="registerForm" data-form-type="register" data-api-endpoint="/api/auth/register"
+          action="check-email.html" method="post">
+
+          <!-- Full Name Field -->
+          <label for="full-name">Full Name</label>
+          <input id="full-name" name="full_name" type="text" placeholder="Jane Austen" autocomplete="name" required
+            data-validation="name">
+
+          <!-- Email Field -->
+          <label for="register-email">Email Address</label>
+          <input id="register-email" name="email" type="email" placeholder="jane@example.com" autocomplete="email"
+            required data-validation="email">
+
+          <!-- Password Field -->
+          <label for="register-password">Password</label>
+          <div class="password-field">
+            <input id="register-password" name="password" type="password" placeholder="At least 8 characters"
+              autocomplete="new-password" required minlength="8" data-validation="password">
+            <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <label for="confirm-password">Confirm Password</label>
+          <div class="password-field">
+            <input id="confirm-password" name="confirm_password" type="password" placeholder="Repeat your password"
+              autocomplete="new-password" required data-validation="password-match"
+              data-match-field="register-password">
+            <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Submit Button -->
+          <button class="submit-button" type="submit">Create Account</button>
+        </form>
+
+        <!-- Additional Links -->
+        <div class="auth-links">
+          <p>Already have an account? <a class="register-link" href="login.html">Log in →</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Config & Scripts -->
+  <script src="../../config/api.config.js"></script>
+  <script src="../../public/js/auth.js"></script>
+</body>
+
+</html>
