@@ -65,8 +65,8 @@ class MailHandler
       $this->mail->isHTML(true);
       $this->mail->Subject = 'Email Verification - OTP Code';
 
-      // Generate verification link (user can click through)
-      $verification_link = "http://localhost/library_betonio/pages/auth/verify-email.html?email=" . urlencode($email);
+      // Generate verification page link
+      $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
 
       // HTML Email Body
       $body = $this->getOTPEmailTemplate($user_name, $otp_code, $verification_link);
@@ -145,7 +145,7 @@ class MailHandler
                 </div>
                 <div class="content">
                     <h2>Hello $name,</h2>
-                    <p>Thank you for signing up! To complete your email verification, please use the following OTP code:</p>
+                    <p>Thank you for signing up! Open the verification page below, then enter the following OTP code to complete your email verification:</p>
                     
                     <div class="otp-box">
                         <p>Your OTP Code:</p>
@@ -153,9 +153,9 @@ class MailHandler
                         <p style="color: #e74c3c; font-weight: bold;">This code expires in 10 minutes</p>
                     </div>
                     
-                    <p>Or you can click the button below to verify your email:</p>
+                    <p>Open the verification page here:</p>
                     <center>
-                        <a href="$verification_link" class="button">Verify Email</a>
+                        <a href="$verification_link" class="button">Open Verification Page</a>
                     </center>
                     
                     <p style="color: #7f8c8d; font-size: 14px;">

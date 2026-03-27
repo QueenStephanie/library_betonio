@@ -59,6 +59,12 @@ try {
 
   if (!$login_result['success']) {
     http_response_code(401);
+    
+    // Check if it's specifically a verification issue
+    if (isset($login_result['requires_verification']) && $login_result['requires_verification']) {
+      http_response_code(403);
+      $login_result['requires_verification'] = true;
+    }
   } else {
     http_response_code(200);
   }

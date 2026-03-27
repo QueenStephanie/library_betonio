@@ -85,6 +85,7 @@ class AuthManager
         'message' => 'Registration successful. Check your email for verification code.',
         'user_id' => $user_id,
         'email' => $email,
+        'verification_token' => $verification_token,
         'otp_sent' => true
       ];
     } catch (Exception $e) {
@@ -229,7 +230,11 @@ class AuthManager
       $stmt->execute([':id' => $otp_record['id']]);
 
       // Update user as verified
-      $query = "UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = :id";
+      $query = "UPDATE users
+                SET is_verified = 1,
+                    verification_token = NULL,
+                    verification_token_expires = NULL
+                WHERE id = :id";
       $stmt = $this->db->prepare($query);
       $stmt->execute([':id' => $user_id]);
 
@@ -242,6 +247,62 @@ class AuthManager
       if (!$verify_check['is_verified']) {
         return ['success' => false, 'error' => 'Verification update failed. Please try again.'];
       }
+
+      return ['success' => true, 'message' => 'Email verified successfully! You can now log in.'];
+    } catch (Exception $e) {
+      return ['success' => false, 'error' => 'Verification failed: ' . $e->getMessage()];
+    }
+  }
+
+  /**
+   * Verify email directly from the emailed verification link
+   */
+  public function verifyEmailByToken($email, $token)
+  {
+    if (empty($email) || empty($token)) {
+      return ['success' => false, 'error' => 'Verification link is incomplete'];
+    }
+
+    try {
+      $query = "SELECT id, is_verified, verification_token_expires
+                FROM users
+                WHERE email = :email AND verification_token = :token
+                LIMIT 1";
+      $stmt = $this->db->prepare($query);
+      $stmt->execute([
+        ':email' => $email,
+        ':token' => $token
+      ]);
+
+      if ($stmt->rowCount() === 0) {
+        return ['success' => false, 'error' => 'Invalid or expired verification link'];
+      }
+
+      $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if ($user['is_verified']) {
+        return ['success' => true, 'message' => 'Email already verified'];
+      }
+
+      if (!empty($user['verification_token_expires']) && strtotime($user['verification_token_expires']) < time()) {
+        return ['success' => false, 'error' => 'Verification link has expired'];
+      }
+
+      $update_query = "UPDATE users
+                       SET is_verified = 1,
+                           verification_token = NULL,
+                           verification_token_expires = NULL
+                       WHERE id = :id";
+      $update_stmt = $this->db->prepare($update_query);
+      $update_stmt->execute([':id' => $user['id']]);
+
+      $otp_query = "UPDATE otp_codes
+                    SET is_used = 1, used_at = NOW()
+                    WHERE user_id = :user_id
+                      AND purpose = 'email_verification'
+                      AND is_used = 0";
+      $otp_stmt = $this->db->prepare($otp_query);
+      $otp_stmt->execute([':user_id' => $user['id']]);
 
       return ['success' => true, 'message' => 'Email verified successfully! You can now log in.'];
     } catch (Exception $e) {

@@ -12,15 +12,41 @@ require_once 'includes/functions.php';
 $error = '';
 $success = '';
 $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
+$token = isset($_GET['token']) ? trim($_GET['token']) : '';
 
 if (empty($email)) {
   redirect('/library_betonio/register.php');
 }
 
+$auth = new AuthManager($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($token)) {
+  $token_result = $auth->verifyEmailByToken($email, $token);
+
+  if ($token_result['success']) {
+    setFlash('success', 'Email verified! You can now log in.');
+    redirect('/library_betonio/login.php');
+  }
+
+  $error = $token_result['error'] ?? 'Verification failed. Please enter your OTP code instead.';
+}
+
 // Handle OTP verification
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = sanitize(getPost('email'));
-  $otp = sanitize(getPost('otp'));
+  $otp = '';
+
+  if (isset($_POST['otp_1'])) {
+    $combined_otp = '';
+    for ($i = 1; $i <= 6; $i++) {
+      if (isset($_POST["otp_$i"])) {
+        $combined_otp .= preg_replace('/\D/', '', (string) $_POST["otp_$i"]);
+      }
+    }
+    $otp = $combined_otp;
+  } else {
+    $otp = preg_replace('/\D/', '', getPost('otp'));
+  }
 
   // Validate input
   if (empty($email)) {
@@ -30,20 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif (strlen($otp) !== 6 || !ctype_digit($otp)) {
     $error = 'Verification code must be 6 digits';
   } else {
-    // Combine OTP boxes if they were submitted individually
-    if (isset($_POST['otp_1'])) {
-      $combined_otp = '';
-      for ($i = 1; $i <= 6; $i++) {
-        if (isset($_POST["otp_$i"])) {
-          $combined_otp .= sanitize($_POST["otp_$i"]);
-        }
-      }
-      if (!empty($combined_otp)) {
-        $otp = $combined_otp;
-      }
-    }
-
-    $auth = new AuthManager($db);
     $result = $auth->verifyOTP($email, $otp);
 
     if ($result['success']) {

@@ -98,7 +98,7 @@ function getPost($key, $default = '')
 /**
  * Send OTP email using PHPMailer
  */
-function sendOTPEmail($email, $otp, $name = '')
+function sendOTPEmail($email, $otp, $name = '', $verification_token = '')
 {
   try {
     // Load PHPMailer
@@ -135,8 +135,11 @@ function sendOTPEmail($email, $otp, $name = '')
     $mail->isHTML(true);
     $mail->Subject = 'QueenLib - Email Verification Code';
 
-    // Create verification link
+    // Create verification page link
     $verification_link = 'http://localhost/library_betonio/verify-otp.php?email=' . urlencode($email);
+    if (!empty($verification_token)) {
+      $verification_link .= '&token=' . urlencode($verification_token);
+    }
 
     $body = "
         <!DOCTYPE html>
@@ -164,10 +167,10 @@ function sendOTPEmail($email, $otp, $name = '')
                 </div>
                 <div class='content'>
                     <h2>Hello $name,</h2>
-                    <p>Thank you for registering! To complete your email verification, click the button below or enter the code:</p>
+                    <p>Thank you for registering! Open the verification page below, then enter the 6-digit code to complete your email verification:</p>
                     
                     <center>
-                        <a href='$verification_link' class='button'>Verify Email Now</a>
+                        <a href='$verification_link' class='button'>Open Verification Page</a>
                     </center>
                     
                     <div class='otp-box'>
@@ -176,7 +179,7 @@ function sendOTPEmail($email, $otp, $name = '')
                         <p style='color: #e74c3c; font-weight: bold;'>This code expires in 10 minutes</p>
                     </div>
                     
-                    <p style='color: #7f8c8d; font-size: 13px;'>If the button above doesn't work, copy and paste this link in your browser:</p>
+                    <p style='color: #7f8c8d; font-size: 13px;'>If the button above doesn't work, copy and paste this verification page link in your browser:</p>
                     <p class='alt-text'><strong>$verification_link</strong></p>
                     
                     <p>If you didn't create this account, please ignore this email.</p>

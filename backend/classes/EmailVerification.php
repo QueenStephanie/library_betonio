@@ -133,9 +133,9 @@ class EmailVerification
 
       $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
-      // Check if already verified
+      // Check if already verified - return success since email is already verified
       if ($user['is_verified']) {
-        return ['success' => false, 'error' => 'Email already verified'];
+        return ['success' => true, 'message' => 'Email already verified', 'already_verified' => true, 'user_id' => $user['id']];
       }
 
       // Check rate limiting
@@ -205,6 +205,67 @@ class EmailVerification
       ];
     } catch (PDOException $e) {
       error_log("OTP verification error: " . $e->getMessage());
+      return ['success' => false, 'error' => 'Verification failed'];
+    }
+  }
+
+  /**
+   * Verify email using a stored verification token
+   */
+  public function verifyByToken($email, $token)
+  {
+    if (empty($email) || empty($token)) {
+      return ['success' => false, 'error' => 'Email and verification token are required'];
+    }
+
+    try {
+      $user_query = "SELECT id, email, is_verified, verification_token_expires
+                          FROM " . $this->table . "
+                          WHERE email = :email AND verification_token = :token
+                          LIMIT 1";
+      $user_stmt = $this->db->prepare($user_query);
+      $user_stmt->bindParam(':email', $email);
+      $user_stmt->bindParam(':token', $token);
+      $user_stmt->execute();
+
+      if ($user_stmt->rowCount() === 0) {
+        return ['success' => false, 'error' => 'Invalid or expired verification link'];
+      }
+
+      $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+      if ($user['is_verified']) {
+        return ['success' => true, 'message' => 'Email already verified', 'already_verified' => true, 'user_id' => $user['id']];
+      }
+
+      if (!empty($user['verification_token_expires']) && strtotime($user['verification_token_expires']) < time()) {
+        return ['success' => false, 'error' => 'Verification link has expired'];
+      }
+
+      $verify_query = "UPDATE " . $this->table . "
+                            SET is_verified = 1, verification_token = NULL, verification_token_expires = NULL
+                            WHERE id = :user_id";
+      $verify_stmt = $this->db->prepare($verify_query);
+      $verify_stmt->bindParam(':user_id', $user['id']);
+      $verify_stmt->execute();
+
+      $otp_query = "UPDATE " . $this->otp_table . "
+                         SET is_used = 1, used_at = NOW()
+                         WHERE user_id = :user_id
+                           AND purpose = 'email_verification'
+                           AND is_used = 0";
+      $otp_stmt = $this->db->prepare($otp_query);
+      $otp_stmt->bindParam(':user_id', $user['id']);
+      $otp_stmt->execute();
+
+      return [
+        'success' => true,
+        'message' => 'Email verified successfully',
+        'user_id' => $user['id'],
+        'email' => $user['email']
+      ];
+    } catch (PDOException $e) {
+      error_log("Token verification error: " . $e->getMessage());
       return ['success' => false, 'error' => 'Verification failed'];
     }
   }

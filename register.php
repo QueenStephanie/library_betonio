@@ -41,7 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($otp_record) {
       // Send actual OTP via email
-      sendOTPEmail($email, $otp_record['otp_code'], $first_name);
+      sendOTPEmail(
+        $email,
+        $otp_record['otp_code'],
+        $first_name,
+        $result['verification_token'] ?? ''
+      );
     }
 
     setFlash('success', $result['message']);
