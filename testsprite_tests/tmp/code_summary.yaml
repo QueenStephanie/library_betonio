@@ -1,0 +1,188 @@
+version: "2"
+type: frontend
+tech_stack:
+  - language: PHP 8.0+
+  - framework: Custom MVC
+  - ui_library: HTML5, CSS3, JavaScript
+  - other: MySQ/ 5.7+, PHPMailer, Session-based Auth, Bcrypt
+
+routes:
+  - path: /library_betonio/
+    file: index.php
+    auth_required: false
+    description: Landing page / Dashboard (conditional based on login status)
+  - path: /library_betonio/login.php
+    file: login.php
+    auth_required: false
+    description: User login page
+  - path: /library_betonio/register.php
+    file: register.php
+    auth_required: false
+    description: User registration page
+  - path: /library_betonio/verify-otp.php
+    file: verify-otp.php
+    auth_required: false
+    description: Email verification page
+  - path: /library_betonio/forgot-password.php
+    file: forgot-password.php
+    auth_required: false
+    description: Password reset request page
+  - path: /library_betonio/reset-password.php
+    file: reset-password.php
+    auth_required: false
+    description: Password reset form page
+  - path: /library_betonio/account.php
+    file: account.php
+    auth_required: true
+    description: User account settings page
+  - path: /library_betonio/logout.php
+    file: logout.php
+    auth_required: true
+    description: Logout handler
+
+features:
+  - name: User Registration
+    description: Create new library account with email verification
+    files:
+      - register.php
+      - includes/auth.php
+      - backend/classes/Auth.php
+    entry_route: /library_betonio/register.php
+    user_interactions:
+      - Fill first name field
+      - Fill last name field
+      - Fill email address field
+      - Fill password field
+      - Fill confirm password field
+      - Click Create Account button
+      - Receive verification email
+    api_calls:
+      - method: POST
+        endpoint: /library_betonio/register.php
+    auth_required: false
+
+  - name: Email Verification
+    description: Verify user email with token-based link
+    files:
+      - verify-otp.php
+      - includes/auth.php
+      - backend/classes/Auth.php
+    entry_route: /library_betonio/verify-otp.php
+    user_interactions:
+      - Click verification link in email
+      - Auto-verify via token
+      - Redirect to login on success
+    api_calls:
+      - method: GET
+        endpoint: /library_betonio/verify-otp.php?email=USER_EMAIL&token=VERIFICATION_TOKEN
+    auth_required: false
+
+  - name: User Login
+    description: Authenticate user with email and password
+    files:
+      - login.php
+      - includes/auth.php
+      - backend/classes/Auth.php
+    entry_route: /library_betonio/login.php
+    user_interactions:
+      - Fill email address field
+      - Fill password field
+      - Click Log In button
+      - View error on invalid credentials
+      - Redirect to dashboard on success
+    api_calls:
+      - method: POST
+        endpoint: /library_betonio/login.php
+    auth_required: false
+
+  - name: Password Reset Request
+    description: Initiate password recovery process
+    files:
+      - forgot-password.php
+      - includes/auth.php
+      - backend/classes/PasswordRecovery.php
+    entry_route: /library_betonio/forgot-password.php
+    user_interactions:
+      - Fill email address field
+      - Click Send Reset Instructions button
+      - Receive password reset email
+      - Redirect to login with success message
+    api_calls:
+      - method: POST
+        endpoint: /library_betonio/forgot-password.php
+    auth_required: false
+
+  - name: Password Reset
+    description: Complete password recovery with reset token
+    files:
+      - reset-password.php
+      - includes/auth.php
+      - backend/classes/PasswordRecovery.php
+    entry_route: /library_betonio/reset-password.php
+    user_interactions:
+      - Click password reset link in email
+      - Fill new password field
+      - Fill confirm password field
+      - Click Reset Password button
+      - Redirect to login on success
+    api_calls:
+      - method: POST
+        endpoint: /library_betonio/reset-password.php?email=USER_EMAIL&token=RESET_TOKEN
+    auth_required: false
+
+  - name: User Dashboard
+    description: View personalized user account and library statistics
+    files:
+      - index.php
+      - includes/auth.php
+    entry_route: /library_betonio/
+    user_interactions:
+      - View user profile information
+      - View account statistics
+      - Navigate to account settings
+      - Navigate to logout
+    api_calls: []
+    auth_required: true
+
+  - name: Account Settings
+    description: Update user profile and change password
+    files:
+      - account.php
+      - includes/auth.php
+    entry_route: /library_betonio/account.php
+    user_interactions:
+      - Update first name
+      - Update last name
+      - Fill current password
+      - Fill new password
+      - Fill confirm password
+      - Click update buttons
+      - View success/error messages
+    api_calls:
+      - method: POST
+        endpoint: /library_betonio/account.php
+    auth_required: true
+
+  - name: User Logout
+    description: Terminate user session and clear authentication
+    files:
+      - logout.php
+      - includes/auth.php
+    entry_route: /library_betonio/logout.php
+    user_interactions:
+      - Click Logout button/link
+      - Session cleared
+      - Redirect to login page
+    api_calls: []
+    auth_required: true
+
+known_limitations:
+  - issue: Token-based email verification is auto-verified via URL parameters
+    location: verify-otp.php
+    impact: No manual token entry required, tokens expire after 24 hours
+  - issue: Session timeout is set to 1 hour
+    location: includes/auth.php
+    impact: Users will be logged out after 1 hour of inactivity
+  - issue: Password reset tokens expire after 1 hour
+    location: backend/classes/PasswordRecovery.php
+    impact: Users must complete password reset within 1 hour window

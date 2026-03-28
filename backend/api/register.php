@@ -62,18 +62,19 @@ try {
     exit();
   }
 
-  // Request OTP for email verification
+  // Send verification email with token
   $mail_handler = new MailHandler($db);
-  $email_verification = new EmailVerification($db, $mail_handler);
-  $otp_result = $email_verification->requestOTP($email);
+  $verification_token = $register_result['verification_token'] ?? '';
+  $user_name = $first_name ?? 'User';
 
-  if (!$otp_result['success']) {
-    error_log("Failed to send OTP to $email: " . $otp_result['error']);
-    // Don't fail the registration, just notify user
-    $register_result['otp_message'] = 'Registration successful but OTP email could not be sent. Please try requesting OTP manually.';
+  $send_result = $mail_handler->sendVerificationEmail($email, $user_name, $verification_token);
+
+  if (!$send_result['success']) {
+    error_log("Failed to send verification email to $email: " . $send_result['error']);
+    // Don't fail registration, just notify user
+    $register_result['email_message'] = 'Registration successful but verification email could not be sent. Please check your email or contact support.';
   } else {
-    $register_result['otp_message'] = 'OTP sent to your email';
-    $register_result['otp_validity_seconds'] = $otp_result['otp_validity_seconds'];
+    $register_result['email_message'] = 'Verification email sent to your email address';
   }
 
   http_response_code(201);

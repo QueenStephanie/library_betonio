@@ -40,8 +40,8 @@ class EmailVerification
     }
 
     try {
-      // Check if email exists and not verified
-      $query = "SELECT id, first_name, is_verified FROM " . $this->table . " WHERE email = :email";
+      // Check if email exists and not verified - ALSO fetch verification_token
+      $query = "SELECT id, first_name, is_verified, verification_token FROM " . $this->table . " WHERE email = :email";
       $stmt = $this->db->prepare($query);
       $stmt->bindParam(':email', $email);
       $stmt->execute();
@@ -87,9 +87,9 @@ class EmailVerification
       $insert_stmt->bindParam(':expires_at', $expires_at);
       $insert_stmt->execute();
 
-      // Send OTP email if mail handler is available
+      // Send OTP email if mail handler is available - PASS verification_token
       if ($this->mail_handler) {
-        $mail_result = $this->mail_handler->sendOTPEmail($email, $otp_code, $user['first_name']);
+        $mail_result = $this->mail_handler->sendOTPEmail($email, $otp_code, $user['first_name'], $user['verification_token']);
 
         if (!$mail_result['success']) {
           return ['success' => false, 'error' => 'Failed to send OTP email'];

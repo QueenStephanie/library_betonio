@@ -1,8 +1,8 @@
 <?php
 
 /**
- * OTP Verification Page & Handler
- * Verifies the OTP sent to user's email
+ * Email Verification Page
+ * Handles email verification via token link
  */
 
 require_once 'includes/config.php';
@@ -20,61 +20,22 @@ if (empty($email)) {
 
 $auth = new AuthManager($db);
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($token)) {
+// If token is provided in URL, verify it automatically
+if (!empty($token)) {
   $token_result = $auth->verifyEmailByToken($email, $token);
 
   if ($token_result['success']) {
-    setFlash('success', 'Email verified! You can now log in.');
-    redirect('/library_betonio/login.php');
+    $_SESSION['show_verification_success'] = true;
+    redirect('/library_betonio/verify-otp.php?email=' . urlencode($email) . '&success=1');
   }
 
-  $error = $token_result['error'] ?? 'Verification failed. Please enter your OTP code instead.';
+  $error = $token_result['error'] ?? 'Verification failed. Please try again.';
 }
 
-// Handle OTP verification
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = sanitize(getPost('email'));
-  $otp = '';
-
-  if (isset($_POST['otp_1'])) {
-    $combined_otp = '';
-    for ($i = 1; $i <= 6; $i++) {
-      if (isset($_POST["otp_$i"])) {
-        $combined_otp .= preg_replace('/\D/', '', (string) $_POST["otp_$i"]);
-      }
-    }
-    $otp = $combined_otp;
-  } else {
-    $otp = preg_replace('/\D/', '', getPost('otp'));
-  }
-
-  // Validate input
-  if (empty($email)) {
-    $error = 'Email is required';
-  } elseif (empty($otp)) {
-    $error = 'Verification code is required';
-  } elseif (strlen($otp) !== 6 || !ctype_digit($otp)) {
-    $error = 'Verification code must be 6 digits';
-  } else {
-    $result = $auth->verifyOTP($email, $otp);
-
-    if ($result['success']) {
-      // Double-check that user is now verified
-      $check_query = "SELECT is_verified FROM users WHERE email = :email";
-      $check_stmt = $db->prepare($check_query);
-      $check_stmt->execute([':email' => $email]);
-      $check_user = $check_stmt->fetch(PDO::FETCH_ASSOC);
-
-      if ($check_user && $check_user['is_verified']) {
-        setFlash('success', 'Email verified! You can now log in.');
-        redirect('/library_betonio/login.php');
-      } else {
-        $error = 'Verification process failed. Please try again.';
-      }
-    } else {
-      $error = $result['error'];
-    }
-  }
+// Check if verification was successful
+$show_success = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_verification_success']);
+if ($show_success) {
+  unset($_SESSION['show_verification_success']);
 }
 ?>
 <!DOCTYPE html>
@@ -87,31 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
-  <style>
-    .otp-input-group {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin: 20px 0;
-    }
-
-    .otp-box {
-      width: 50px;
-      height: 50px;
-      font-size: 24px;
-      text-align: center;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    .otp-box:focus {
-      outline: none;
-      border-color: #333;
-      background-color: #f9f9f9;
-    }
-  </style>
 </head>
 
 <body>
@@ -126,48 +65,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <section class="auth-panel">
       <div class="auth-card">
-        <h1>Verify Your Email</h1>
-        <p class="subtitle">We sent a verification code to <strong><?php echo htmlspecialchars($email); ?></strong></p>
+        <h1>Email Verification</h1>
 
         <?php if ($error): ?>
-          <div class="alert alert-error" role="alert" style="background-color: #fee; border-left: 4px solid #f44; padding: 12px;  border-radius: 4px; margin-bottom: 16px;">
+          <div class="alert alert-error" role="alert" style="background-color: #fee; border-left: 4px solid #f44; padding: 12px; border-radius: 4px; margin: 20px 0;">
             <strong>✗ Error:</strong> <?php echo htmlspecialchars($error); ?>
           </div>
-        <?php endif; ?>
-
-        <?php
-        $flash = getFlash();
-        if ($flash):
-        ?>
-          <div class="alert alert-<?php echo $flash['type']; ?>" role="alert" style="background-color: #efe; border-left: 4px solid #484; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-            ✓ <?php echo htmlspecialchars($flash['message']); ?>
+          <p style="color: #666; text-align: center; margin: 20px 0;">
+            The verification link may have expired or is invalid.
+          </p>
+          <p style="text-align: center;">
+            <a href="/library_betonio/register.php" class="submit-button" style="display: inline-block; margin-top: 10px;">← Back to Registration</a>
+          </p>
+        <?php else: ?>
+          <div style="text-align: center; padding: 40px 0;">
+            <p style="font-size: 16px; color: #666;">
+              Processing your verification...
+            </p>
+            <p style="color: #999; margin-top: 20px;">
+              <a href="/library_betonio/login.php">Go to Login</a> | <a href="/library_betonio/register.php">Back to Registration</a>
+            </p>
           </div>
         <?php endif; ?>
-
-        <form class="auth-form" method="POST" action="verify-otp.php">
-          <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
-
-          <label for="otp">Verification Code</label>
-          <p style="color: #666; font-size: 13px; margin: 6px 0 12px;">
-            de Find the 6-digit code in your email and enter it below
-          </p>
-          <input id="otp" name="otp" type="text" placeholder="000000" maxlength="6"
-            pattern="[0-9]{6}" required inputmode="numeric">
-
-          <button class="submit-button" type="submit">Verify Email</button>
-        </form>
-
-        <div class="auth-links" style="text-align: center;">
-          <p style="color: #999; font-size: 13px; margin-bottom: 12px;">
-            Didn't get the email? Check your spam folder or <a href="register.php" style="color: #3498db;">register again</a>
-          </p>
-          <p><a href="register.php">← Back to Registration</a></p>
-        </div>
       </div>
     </section>
   </main>
 
   <script src="public/js/auth.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert Configuration -->
+  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
+
+  <script>
+    // Show verification success alert
+    <?php if ($show_success): ?>
+      SweetAlerts.verificationSuccess(function() {
+        window.location.href = '/library_betonio/login.php';
+      });
+    <?php endif; ?>
+
+    // Show error alert if there's an error
+    <?php if ($error): ?>
+      SweetAlerts.error('Verification Failed', '<?php echo addslashes($error); ?>', function() {
+        window.location.href = '/library_betonio/register.php';
+      });
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>

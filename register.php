@@ -29,31 +29,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
 
   if ($result['success']) {
-    // Store email and user_id in session for OTP verification
+    // Store email in session for verification page
     $_SESSION['verify_email'] = $email;
     $_SESSION['verify_user_id'] = $result['user_id'];
 
-    // Get the actual OTP from database that was generated during registration
-    $query = "SELECT otp_code FROM otp_codes WHERE user_id = :user_id AND is_used = 0 ORDER BY created_at DESC LIMIT 1";
-    $stmt = $db->prepare($query);
-    $stmt->execute([':user_id' => $result['user_id']]);
-    $otp_record = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Send verification link email
+    sendVerificationEmail(
+      $email,
+      $first_name,
+      $result['verification_token']
+    );
 
-    if ($otp_record) {
-      // Send actual OTP via email
-      sendOTPEmail(
-        $email,
-        $otp_record['otp_code'],
-        $first_name,
-        $result['verification_token'] ?? ''
-      );
-    }
-
-    setFlash('success', $result['message']);
-    redirect('/library_betonio/verify-otp.php?email=' . urlencode($email));
+    // Set flag to show SweetAlert on page load
+    $_SESSION['show_registration_alert'] = true;
+    redirect('/library_betonio/register.php?success=1');
   } else {
     $error = $result['error'];
   }
+}
+
+// Check if registration was successful
+$show_success_alert = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_registration_alert']);
+if ($show_success_alert) {
+  unset($_SESSION['show_registration_alert']);
 }
 ?>
 <!DOCTYPE html>
@@ -66,6 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
 </head>
 
@@ -134,6 +134,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </main>
 
   <script src="public/js/auth.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert Configuration -->
+  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
+
+  <script>
+    // Show success alert if registration was successful
+    <?php if ($show_success_alert): ?>
+      SweetAlerts.registrationSuccess(function() {
+        window.location.href = '/library_betonio/verify-otp.php?email=<?php echo urlencode($_SESSION['verify_email']); ?>';
+      });
+    <?php endif; ?>
+
+    // Show error alert if there's an error
+    <?php if ($error): ?>
+      SweetAlerts.error('Registration Failed', '<?php echo addslashes($error); ?>');
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>

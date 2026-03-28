@@ -12,7 +12,7 @@ require_once 'includes/functions.php';
 $error = '';
 $success = '';
 $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
-$token = isset($_GET['token']) ? sanitize($_GET['token']) : '';
+$token = isset($_GET['token']) ? trim($_GET['token']) : ''; // Don't sanitize token - it's hex
 
 if (empty($email) || empty($token)) {
   $error = 'Invalid reset link';
@@ -21,7 +21,7 @@ if (empty($email) || empty($token)) {
 // Handle password reset
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = sanitize(getPost('email'));
-  $reset_token = sanitize(getPost('reset_token'));
+  $reset_token = trim(getPost('reset_token')); // Don't sanitize token - keep it as plain hex
   $password = getPost('password');
   $password_confirm = getPost('password_confirm');
 

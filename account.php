@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // Update session
       $_SESSION['user_name'] = $first_name . ' ' . $last_name;
 
-      $success = 'Profile updated successfully!';
+      $_SESSION['show_profile_success'] = true;
       $auth = new AuthManager($db);
       $user = $auth->getCurrentUser();
     } catch (Exception $e) {
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':id' => $_SESSION['user_id']
           ]);
 
-          $success = 'Password changed successfully!';
+          $_SESSION['show_password_success'] = true;
         }
       } catch (Exception $e) {
         $error = 'Failed to change password';
@@ -99,6 +99,8 @@ $flash = getFlash();
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <link rel="stylesheet" href="public/css/dashboard.css">
 </head>
@@ -204,6 +206,29 @@ $flash = getFlash();
   </footer>
 
   <script src="public/js/main.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert Configuration -->
+  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
+
+  <script>
+    // Show error alert if there's an error
+    <?php if ($error): ?>
+      SweetAlerts.error('Error', '<?php echo addslashes($error); ?>');
+    <?php endif; ?>
+
+    // Show profile updated alert
+    <?php if (isset($_SESSION['show_profile_success'])): ?>
+      <?php unset($_SESSION['show_profile_success']); ?>
+      SweetAlerts.profileUpdatedSuccess();
+    <?php endif; ?>
+
+    // Show password changed alert
+    <?php if (isset($_SESSION['show_password_success'])): ?>
+      <?php unset($_SESSION['show_password_success']); ?>
+      SweetAlerts.passwordChangedSuccess();
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>

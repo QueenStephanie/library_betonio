@@ -10,118 +10,203 @@ use PHPMailer\PHPMailer\Exception;
 
 class MailHandler
 {
-  private $mail;
-  private $config;
-  private $db;
+    private $mail;
+    private $config;
+    private $db;
 
-  public function __construct($database = null)
-  {
-    $this->config = require __DIR__ . '/../config/email.config.php';
-    $this->db = $database;
-    $this->initializePHPMailer();
-  }
-
-  /**
-   * Initialize PHPMailer with configured settings
-   */
-  private function initializePHPMailer()
-  {
-    try {
-      $this->mail = new PHPMailer(true);
-
-      // Server settings
-      $this->mail->isSMTP();
-      $this->mail->Host = $this->config['smtp']['host'];
-      $this->mail->SMTPAuth = true;
-      $this->mail->Username = $this->config['smtp']['username'];
-      $this->mail->Password = $this->config['smtp']['password'];
-      $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-      $this->mail->Port = $this->config['smtp']['port'];
-
-      // SSL verification
-      $this->mail->SMTPOptions = [
-        'ssl' => [
-          'verify_peer' => $this->config['enable_ssl_verification'],
-          'verify_peer_name' => $this->config['enable_ssl_verification'],
-          'allow_self_signed' => false
-        ]
-      ];
-
-      // Default sender
-      $this->mail->setFrom($this->config['smtp']['from_email'], $this->config['smtp']['from_name']);
-    } catch (Exception $e) {
-      error_log("PHPMailer initialization error: " . $e->getMessage());
-      throw $e;
+    public function __construct($database = null)
+    {
+        $this->config = require __DIR__ . '/../config/email.config.php';
+        $this->db = $database;
+        $this->initializePHPMailer();
     }
-  }
 
-  /**
-   * Send OTP verification email
-   */
-  public function sendOTPEmail($email, $otp_code, $user_name)
-  {
-    try {
-      $this->mail->addAddress($email);
-      $this->mail->isHTML(true);
-      $this->mail->Subject = 'Email Verification - OTP Code';
+    /**
+     * Initialize PHPMailer with configured settings
+     */
+    private function initializePHPMailer()
+    {
+        try {
+            $this->mail = new PHPMailer(true);
 
-      // Generate verification page link
-      $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
+            // Server settings
+            $this->mail->isSMTP();
+            $this->mail->Host = $this->config['smtp']['host'];
+            $this->mail->SMTPAuth = true;
+            $this->mail->Username = $this->config['smtp']['username'];
+            $this->mail->Password = $this->config['smtp']['password'];
+            $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $this->mail->Port = $this->config['smtp']['port'];
 
-      // HTML Email Body
-      $body = $this->getOTPEmailTemplate($user_name, $otp_code, $verification_link);
+            // SSL verification
+            $this->mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => $this->config['enable_ssl_verification'],
+                    'verify_peer_name' => $this->config['enable_ssl_verification'],
+                    'allow_self_signed' => false
+                ]
+            ];
 
-      $this->mail->Body = $body;
-      $this->mail->AltBody = "Your OTP code is: $otp_code. This code expires in 10 minutes.";
-
-      $result = $this->mail->send();
-
-      // Clear recipients for next email
-      $this->mail->clearAddresses();
-
-      return ['success' => true, 'message' => 'OTP email sent successfully'];
-    } catch (Exception $e) {
-      error_log("Error sending OTP email: " . $e->getMessage());
-      return ['success' => false, 'error' => 'Failed to send OTP email'];
+            // Default sender
+            $this->mail->setFrom($this->config['smtp']['from_email'], $this->config['smtp']['from_name']);
+        } catch (Exception $e) {
+            error_log("PHPMailer initialization error: " . $e->getMessage());
+            throw $e;
+        }
     }
-  }
 
-  /**
-   * Send password reset email
-   */
-  public function sendPasswordResetEmail($email, $reset_token, $user_name)
-  {
-    try {
-      $this->mail->addAddress($email);
-      $this->mail->isHTML(true);
-      $this->mail->Subject = 'Password Reset Request - Library Betonio';
+    /**
+     * Send OTP verification email
+     */
+    public function sendOTPEmail($email, $otp_code, $user_name, $verification_token = '')
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'Email Verification - OTP Code';
 
-      // Generate reset link
-      $reset_link = "http://localhost/library_betonio/pages/auth/reset-password.html?token=" . urlencode($reset_token);
+            // Generate verification page link WITH token
+            $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
+            if (!empty($verification_token)) {
+                $verification_link .= "&token=" . urlencode($verification_token);
+            }
 
-      $body = $this->getPasswordResetEmailTemplate($user_name, $reset_link);
+            // HTML Email Body
+            $body = $this->getOTPEmailTemplate($user_name, $otp_code, $verification_link);
 
-      $this->mail->Body = $body;
-      $this->mail->AltBody = "Click the link to reset your password: $reset_link";
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "Your OTP code is: $otp_code. This code expires in 10 minutes.";
 
-      $result = $this->mail->send();
+            $result = $this->mail->send();
 
-      // Clear recipients for next email
-      $this->mail->clearAddresses();
+            // Clear recipients for next email
+            $this->mail->clearAddresses();
 
-      return ['success' => true, 'message' => 'Password reset email sent successfully'];
-    } catch (Exception $e) {
-      error_log("Error sending password reset email: " . $e->getMessage());
-      return ['success' => false, 'error' => 'Failed to send password reset email'];
+            return ['success' => true, 'message' => 'OTP email sent successfully'];
+        } catch (Exception $e) {
+            error_log("Error sending OTP email: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Failed to send OTP email'];
+        }
     }
-  }
 
-  /**
-   * OTP Email HTML Template
-   */
-  private function getOTPEmailTemplate($name, $otp_code, $verification_link)
-  {
-    return <<<HTML
+    /**
+     * Send email verification link (token-based)
+     */
+    public function sendVerificationEmail($email, $user_name, $verification_token = '')
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'QueenLib - Verify Your Email';
+
+            // Create verification link with token
+            $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
+            if (!empty($verification_token)) {
+                $verification_link .= "&token=" . urlencode($verification_token);
+            }
+
+            // HTML Email Body
+            $body = $this->getVerificationEmailTemplate($user_name, $verification_link);
+
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "Click here to verify your email: $verification_link";
+
+            $result = $this->mail->send();
+
+            // Clear recipients for next email
+            $this->mail->clearAddresses();
+
+            return ['success' => true, 'message' => 'Verification email sent successfully'];
+        } catch (Exception $e) {
+            error_log("Error sending verification email: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Failed to send verification email'];
+        }
+    }
+
+    /**
+     * Send password reset email
+     */
+    public function sendPasswordResetEmail($email, $reset_token, $user_name)
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'Password Reset Request - Library Betonio';
+
+            // Generate reset link WITH email parameter
+            $reset_link = "http://localhost/library_betonio/reset-password.php?email=" . urlencode($email) . "&token=" . urlencode($reset_token);
+
+            $body = $this->getPasswordResetEmailTemplate($user_name, $reset_link);
+
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "Click the link to reset your password: $reset_link";
+
+            $result = $this->mail->send();
+
+            // Clear recipients for next email
+            $this->mail->clearAddresses();
+
+            return ['success' => true, 'message' => 'Password reset email sent successfully'];
+        } catch (Exception $e) {
+            error_log("Error sending password reset email: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Failed to send password reset email'];
+        }
+    }
+
+    /**
+     * Verification Email HTML Template (Link-based)
+     */
+    private function getVerificationEmailTemplate($name, $verification_link)
+    {
+        return <<<HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
+                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background-color: white; padding: 30px; }
+                .button { display: inline-block; padding: 14px 32px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+                .button:hover { background-color: #2980b9; }
+                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Library Betonio</h1>
+                    <p>Email Verification</p>
+                </div>
+                <div class="content">
+                    <h2>Hello $name,</h2>
+                    <p>Thank you for registering with QueenLib! Click the button below to verify your email address and activate your account.</p>
+                    
+                    <center>
+                        <a href="$verification_link" class="button">Verify Email</a>
+                    </center>
+                    
+                    <p style="color: #e74c3c; font-weight: bold;">This link expires in 24 hours.</p>
+                    
+                    <p style="color: #7f8c8d; font-size: 13px;">If you didn't create this account or didn't request to verify this email, please ignore this message.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2026 Library Betonio. All rights reserved.</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        HTML;
+    }
+
+    /**
+     * OTP Email HTML Template
+     */
+    private function getOTPEmailTemplate($name, $otp_code, $verification_link)
+    {
+        return <<<HTML
         <!DOCTYPE html>
         <html>
         <head>
@@ -170,14 +255,14 @@ class MailHandler
         </body>
         </html>
         HTML;
-  }
+    }
 
-  /**
-   * Password Reset Email HTML Template
-   */
-  private function getPasswordResetEmailTemplate($name, $reset_link)
-  {
-    return <<<HTML
+    /**
+     * Password Reset Email HTML Template
+     */
+    private function getPasswordResetEmailTemplate($name, $reset_link)
+    {
+        return <<<HTML
         <!DOCTYPE html>
         <html>
         <head>
@@ -222,19 +307,19 @@ class MailHandler
         </body>
         </html>
         HTML;
-  }
+    }
 
-  /**
-   * Send test email
-   */
-  public function sendTestEmail($email, $name)
-  {
-    try {
-      $this->mail->addAddress($email);
-      $this->mail->isHTML(true);
-      $this->mail->Subject = 'Test Email - PHPMailer Configuration Verification';
+    /**
+     * Send test email
+     */
+    public function sendTestEmail($email, $name)
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'Test Email - PHPMailer Configuration Verification';
 
-      $body = <<<HTML
+            $body = <<<HTML
         <!DOCTYPE html>
         <html>
         <head>
@@ -283,26 +368,26 @@ class MailHandler
         </html>
         HTML;
 
-      $this->mail->Body = $body;
-      $this->mail->AltBody = "PHPMailer test email sent successfully.";
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "PHPMailer test email sent successfully.";
 
-      $result = $this->mail->send();
+            $result = $this->mail->send();
 
-      // Clear recipients for next email
-      $this->mail->clearAddresses();
+            // Clear recipients for next email
+            $this->mail->clearAddresses();
 
-      return ['success' => true, 'message' => 'Test email sent successfully'];
-    } catch (Exception $e) {
-      error_log("Error sending test email: " . $e->getMessage());
-      return ['success' => false, 'error' => 'Failed to send test email: ' . $e->getMessage()];
+            return ['success' => true, 'message' => 'Test email sent successfully'];
+        } catch (Exception $e) {
+            error_log("Error sending test email: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Failed to send test email: ' . $e->getMessage()];
+        }
     }
-  }
 
-  /**
-   * Get current timestamp
-   */
-  private function getCurrentTimestamp()
-  {
-    return date('Y-m-d H:i:s') . ' (UTC+0)';
-  }
+    /**
+     * Get current timestamp
+     */
+    private function getCurrentTimestamp()
+    {
+        return date('Y-m-d H:i:s') . ' (UTC+0)';
+    }
 }

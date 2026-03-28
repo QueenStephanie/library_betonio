@@ -68,25 +68,12 @@ class AuthManager
 
       $user_id = $this->db->lastInsertId();
 
-      // Generate OTP
-      $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-      // Store OTP - use MySQL DATE_ADD to avoid timezone issues
-      $query = "INSERT INTO otp_codes (user_id, otp_code, purpose, expires_at) 
-                      VALUES (:user_id, :otp, 'email_verification', DATE_ADD(NOW(), INTERVAL 10 MINUTE))";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([
-        ':user_id' => $user_id,
-        ':otp' => $otp
-      ]);
-
       return [
         'success' => true,
-        'message' => 'Registration successful. Check your email for verification code.',
+        'message' => 'Registration successful. Check your email to verify your account.',
         'user_id' => $user_id,
         'email' => $email,
-        'verification_token' => $verification_token,
-        'otp_sent' => true
+        'verification_token' => $verification_token
       ];
     } catch (Exception $e) {
       return ['success' => false, 'error' => 'Registration failed: ' . $e->getMessage()];
@@ -177,84 +164,6 @@ class AuthManager
   }
 
   /**
-   * Verify OTP
-   */
-  public function verifyOTP($email, $otp)
-  {
-    if (empty($email) || empty($otp)) {
-      return ['success' => false, 'error' => 'OTP and email required'];
-    }
-
-    try {
-      // Find user by email
-      $query = "SELECT id FROM users WHERE email = :email";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':email' => $email]);
-
-      if ($stmt->rowCount() === 0) {
-        return ['success' => false, 'error' => 'User not found'];
-      }
-
-      $user = $stmt->fetch(PDO::FETCH_ASSOC);
-      $user_id = $user['id'];
-
-      // Find valid OTP for this user - check for ANY issues
-      $query = "SELECT id, otp_code, expires_at, is_used FROM otp_codes WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':user_id' => $user_id]);
-
-      if ($stmt->rowCount() === 0) {
-        return ['success' => false, 'error' => 'No verification code found. Please request a new one.'];
-      }
-
-      $otp_record = $stmt->fetch(PDO::FETCH_ASSOC);
-
-      // Check if OTP is expired
-      if (strtotime($otp_record['expires_at']) < time()) {
-        return ['success' => false, 'error' => 'Verification code has expired. Please request a new one.'];
-      }
-
-      // Check if OTP is already used
-      if ($otp_record['is_used']) {
-        return ['success' => false, 'error' => 'Verification code has already been used. Please request a new one.'];
-      }
-
-      // Check if OTP matches
-      if ($otp_record['otp_code'] !== $otp) {
-        return ['success' => false, 'error' => 'Incorrect verification code. Please try again.'];
-      }
-
-      // Mark OTP as used
-      $query = "UPDATE otp_codes SET is_used = 1, used_at = NOW() WHERE id = :id";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':id' => $otp_record['id']]);
-
-      // Update user as verified
-      $query = "UPDATE users
-                SET is_verified = 1,
-                    verification_token = NULL,
-                    verification_token_expires = NULL
-                WHERE id = :id";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':id' => $user_id]);
-
-      // Verify the update was successful
-      $verify_query = "SELECT is_verified FROM users WHERE id = :id";
-      $verify_stmt = $this->db->prepare($verify_query);
-      $verify_stmt->execute([':id' => $user_id]);
-      $verify_check = $verify_stmt->fetch(PDO::FETCH_ASSOC);
-
-      if (!$verify_check['is_verified']) {
-        return ['success' => false, 'error' => 'Verification update failed. Please try again.'];
-      }
-
-      return ['success' => true, 'message' => 'Email verified successfully! You can now log in.'];
-    } catch (Exception $e) {
-      return ['success' => false, 'error' => 'Verification failed: ' . $e->getMessage()];
-    }
-  }
-
-  /**
    * Verify email directly from the emailed verification link
    */
   public function verifyEmailByToken($email, $token)
@@ -295,14 +204,6 @@ class AuthManager
                        WHERE id = :id";
       $update_stmt = $this->db->prepare($update_query);
       $update_stmt->execute([':id' => $user['id']]);
-
-      $otp_query = "UPDATE otp_codes
-                    SET is_used = 1, used_at = NOW()
-                    WHERE user_id = :user_id
-                      AND purpose = 'email_verification'
-                      AND is_used = 0";
-      $otp_stmt = $this->db->prepare($otp_query);
-      $otp_stmt->execute([':user_id' => $user['id']]);
 
       return ['success' => true, 'message' => 'Email verified successfully! You can now log in.'];
     } catch (Exception $e) {

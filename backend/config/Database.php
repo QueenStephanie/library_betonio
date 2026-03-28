@@ -5,6 +5,9 @@
  * Configured for MySQL Server running on port 3307 with Betonio Library
  */
 
+// Set timezone to prevent timezone-related issues
+date_default_timezone_set('UTC');
+
 class Database
 {
   // Database Configuration

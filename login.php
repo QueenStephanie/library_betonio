@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Check for timeout message
 if (isset($_GET['timeout'])) {
-  $error = '⚠️ Your session expired. Please log in again.';
+  $_SESSION['show_timeout_alert'] = true;
 }
 ?>
 <!DOCTYPE html>
@@ -51,6 +51,8 @@ if (isset($_GET['timeout'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
 </head>
 
@@ -101,6 +103,29 @@ if (isset($_GET['timeout'])) {
   </main>
 
   <script src="public/js/auth.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert Configuration -->
+  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
+
+  <script>
+    // Show error alert if there's an error
+    <?php if ($error): ?>
+      SweetAlerts.error('Login Failed', '<?php echo addslashes($error); ?>');
+    <?php endif; ?>
+
+    // Show timeout alert if session expired
+    <?php if (isset($_SESSION['show_timeout_alert'])): ?>
+      <?php unset($_SESSION['show_timeout_alert']); ?>
+      SweetAlerts.warning(
+        'Session Expired',
+        'Your session has expired. Please log in again.',
+        'OK',
+        null,
+        function() {}
+      );
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>

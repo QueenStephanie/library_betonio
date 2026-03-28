@@ -96,7 +96,107 @@ function getPost($key, $default = '')
 }
 
 /**
- * Send OTP email using PHPMailer
+ * Send Verification Email using PHPMailer
+ */
+function sendVerificationEmail($email, $name = '', $verification_token = '')
+{
+  try {
+    // Load PHPMailer
+    require_once __DIR__ . '/../backend/vendor/autoload.php';
+
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+    // Get email config
+    $config = require __DIR__ . '/../backend/config/email.config.php';
+
+    // Server settings
+    $mail->isSMTP();
+    $mail->Host = $config['smtp']['host'];
+    $mail->SMTPAuth = true;
+    $mail->Username = $config['smtp']['username'];
+    $mail->Password = $config['smtp']['password'];
+    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = $config['smtp']['port'];
+
+    // SSL verification
+    $mail->SMTPOptions = [
+      'ssl' => [
+        'verify_peer' => $config['enable_ssl_verification'],
+        'verify_peer_name' => $config['enable_ssl_verification'],
+        'allow_self_signed' => false
+      ]
+    ];
+
+    // Recipients
+    $mail->setFrom($config['smtp']['from_email'], $config['smtp']['from_name']);
+    $mail->addAddress($email);
+
+    // Content
+    $mail->isHTML(true);
+    $mail->Subject = 'QueenLib - Verify Your Email';
+
+    // Create verification link with token
+    $verification_link = 'http://localhost/library_betonio/verify-otp.php?email=' . urlencode($email);
+    if (!empty($verification_token)) {
+      $verification_link .= '&token=' . urlencode($verification_token);
+    }
+
+    $body = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
+                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background-color: white; padding: 30px; }
+                .button { display: inline-block; padding: 14px 32px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+                .button:hover { background-color: #2980b9; }
+                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
+                .alt-link { color: #3498db; word-break: break-all; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>QueenLib</h1>
+                    <p>Email Verification</p>
+                </div>
+                <div class='content'>
+                    <h2>Hello $name,</h2>
+                    <p>Thank you for registering with QueenLib! Click the button below to verify your email address and activate your account.</p>
+                    
+                    <center>
+                        <a href='$verification_link' class='button'>Verify Email</a>
+                    </center>
+                    
+                    <p style='color: #e74c3c; font-weight: bold;'>This link expires in 24 hours.</p>
+                    
+                    <p style='color: #7f8c8d; font-size: 13px;'>If you didn't create this account or didn't request to verify this email, please ignore this message.</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; 2026 Library Betonio. All rights reserved.</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    ";
+
+    $mail->Body = $body;
+    $mail->AltBody = "Click here to verify your email: $verification_link";
+
+    $result = $mail->send();
+    return ['success' => true, 'message' => 'Verification email sent successfully'];
+  } catch (Exception $e) {
+    error_log("Error sending verification email: " . $e->getMessage());
+    return ['success' => false, 'error' => 'Failed to send verification email'];
+  }
+}
+
+/**
+ * Send OTP Email using PHPMailer (DEPRECATED - Use sendVerificationEmail instead)
  */
 function sendOTPEmail($email, $otp, $name = '', $verification_token = '')
 {

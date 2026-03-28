@@ -8,6 +8,9 @@
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once 'backend/vendor/autoload.php';
+require_once 'backend/classes/PasswordRecovery.php';
+require_once 'backend/mail/MailHandler.php';
 
 $error = '';
 $success = '';
@@ -16,19 +19,25 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = sanitize(getPost('email'));
 
-  $auth = new AuthManager($db);
-  $result = $auth->requestPasswordReset($email);
+  // Initialize PasswordRecovery with database and mail handler
+  // $db is already initialized in includes/config.php
+  $mail_handler = new MailHandler($db);
+  $password_recovery = new PasswordRecovery($db, $mail_handler);
+  
+  $result = $password_recovery->requestPasswordReset($email);
 
   if ($result['success']) {
-    // In production, send email with reset link
-    $reset_link = APP_URL . '/reset-password.php?token=' . $result['reset_token'] . '&email=' . urlencode($email);
-    sendPasswordResetEmail($email, $reset_link);
-
-    setFlash('success', 'Password reset instructions have been sent to your email.');
-    redirect('/library_betonio/login.php');
+    $_SESSION['show_password_reset_alert'] = true;
+    redirect('/library_betonio/forgot-password.php?success=1');
   } else {
     $error = $result['error'];
   }
+}
+
+// Check if password reset was successful
+$show_success_alert = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_password_reset_alert']);
+if ($show_success_alert) {
+  unset($_SESSION['show_password_reset_alert']);
 }
 ?>
 <!DOCTYPE html>
@@ -41,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
 </head>
 
@@ -79,6 +90,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </main>
 
   <script src="public/js/auth.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <!-- SweetAlert Configuration -->
+  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
+
+  <script>
+    // Show success alert if password reset was successful
+    <?php if ($show_success_alert): ?>
+      SweetAlerts.passwordResetSuccess(function() {
+        window.location.href = '/library_betonio/login.php';
+      });
+    <?php endif; ?>
+
+    // Show error alert if there's an error
+    <?php if ($error): ?>
+      SweetAlerts.error('Error', '<?php echo addslashes($error); ?>');
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>
