@@ -56,8 +56,20 @@ try {
 
   if (!$send_result['success']) {
     error_log("Failed to send verification email to $email: " . $send_result['error']);
-    // Don't fail registration, just notify user
-    $register_result['email_message'] = 'Registration successful but verification email could not be sent. Please check your email or contact support.';
+
+    try {
+      $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
+      $rollback->execute([':id' => $register_result['user_id']]);
+    } catch (Exception $rollback_error) {
+      error_log('API registration rollback failed: ' . $rollback_error->getMessage());
+    }
+
+    http_response_code(500);
+    echo json_encode([
+      'success' => false,
+      'error' => 'Registration failed because verification email could not be sent. Please check SMTP settings.'
+    ]);
+    exit();
   } else {
     $register_result['email_message'] = 'Verification email sent to your email address';
   }

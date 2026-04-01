@@ -7,18 +7,12 @@ if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated']
   redirect('admin-login.php');
 }
 
-// Check for admin welcome alert
-$show_admin_welcome = isset($_SESSION['show_admin_welcome']);
-if ($show_admin_welcome) {
-  unset($_SESSION['show_admin_wel come']);
-}
-
 $page_alerts = [];
-if ($show_admin_welcome) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $page_alerts[] = [
     'type' => 'success',
-    'title' => 'Admin Access Granted',
-    'message' => 'Welcome back, Administrator. You now have full system access.'
+    'title' => 'Password Updated',
+    'message' => 'Your password update request has been submitted.'
   ];
 }
 ?>
@@ -28,7 +22,7 @@ if ($show_admin_welcome) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QueenLib | Admin Dashboard</title>
+  <title>QueenLib | Change Password</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -59,7 +53,7 @@ if ($show_admin_welcome) {
       </div>
 
       <nav class="admin-nav">
-        <a class="admin-nav-item is-active" href="admin-dashboard.php">
+        <a class="admin-nav-item" href="admin-dashboard.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M3 10.5L12 3L21 10.5V21H3V10.5Z" stroke="currentColor" stroke-width="1.6" />
           </svg>
@@ -80,7 +74,7 @@ if ($show_admin_welcome) {
           </svg>
           <span>Profile</span>
         </a>
-        <a class="admin-nav-item" href="admin-change-password.php">
+        <a class="admin-nav-item is-active" href="admin-change-password.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 10V8C6 5.79 7.79 4 10 4H14C16.21 4 18 5.79 18 8V10" stroke="currentColor" stroke-width="1.6" />
             <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6" />
@@ -100,71 +94,29 @@ if ($show_admin_welcome) {
 
     <main class="admin-main">
       <header class="admin-page-hero">
-        <h1>Admin Dashboard</h1>
-        <p>Welcome back, Administrator</p>
+        <h1>Change Password</h1>
+        <p>Update your administrator account password</p>
       </header>
 
-      <section class="admin-card">
-        <div class="admin-card-header">
-          <h2>Developer Information</h2>
-          <p>System administrator access granted</p>
-        </div>
+      <section class="admin-card admin-password-card">
+        <form class="admin-form-grid" method="POST" action="admin-change-password.php">
+          <div class="admin-form-field">
+            <label for="current_password">Current Password</label>
+            <input id="current_password" name="current_password" type="password" placeholder="Enter current password" required>
+          </div>
+          <div class="admin-form-field">
+            <label for="new_password">New Password</label>
+            <input id="new_password" name="new_password" type="password" placeholder="Enter new password" required>
+          </div>
+          <div class="admin-form-field">
+            <label for="confirm_password">Confirm New Password</label>
+            <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm new password" required>
+          </div>
+          <button class="admin-button admin-button-primary" type="submit">Update Password</button>
+        </form>
 
-        <div class="admin-dashboard-grid">
-          <article class="admin-info-card">
-            <div class="admin-info-header">
-              <span class="admin-sidebar-avatar" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.6" />
-                  <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                </svg>
-              </span>
-              <div>
-                <h3>Administrator</h3>
-                <span>System Developer</span>
-              </div>
-            </div>
-
-            <div class="admin-info-list">
-              <div class="admin-info-row">
-                <span>Email</span>
-                <strong>admin@libris.dev</strong>
-              </div>
-              <div class="admin-info-row">
-                <span>Role</span>
-                <strong>Super Administrator</strong>
-              </div>
-              <div class="admin-info-row">
-                <span>Last Login</span>
-                <strong>Apr 1, 2026, 03:22 PM</strong>
-              </div>
-              <div class="admin-info-row">
-                <span>Access Level</span>
-                <span class="admin-access-pill">Full Access</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="admin-info-card admin-workspace-card">
-            <span class="admin-card-caption">Developer Workspace</span>
-            <img src="images/admin_pic.jpg" alt="Developer workspace">
-            <p class="admin-card-caption">Admin workspace environment</p>
-          </article>
-        </div>
-
-        <div class="admin-stats-row">
-          <article class="admin-stat-tile">
-            <strong>1,247</strong>
-            <span>Total Users</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong>3,542</strong>
-            <span>Books in Catalog</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong>892</strong>
-            <span>Active Loans</span>
-          </article>
+        <div class="admin-security-note">
+          <strong>Security Notice:</strong> Choose a strong password that you do not use elsewhere. A password manager is recommended for secure storage.
         </div>
       </section>
     </main>

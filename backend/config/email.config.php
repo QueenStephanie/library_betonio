@@ -5,15 +5,26 @@
  * Configure your SMTP settings for PHPMailer
  */
 
+$mailUser = trim((string) (getenv('MAIL_USER') ?: (getenv('MAIL_USERNAME') ?: '')));
+$mailPassRaw = trim((string) (getenv('MAIL_PASS') ?: (getenv('MAIL_PASSWORD') ?: '')));
+$mailPass = str_replace(' ', '', $mailPassRaw);
+$mailFrom = trim((string) (getenv('MAIL_FROM') ?: ''));
+$mailEncryption = strtolower(trim((string) (getenv('MAIL_ENCRYPTION') ?: 'tls')));
+
+if ($mailFrom === '' && $mailUser !== '') {
+  $mailFrom = $mailUser;
+}
+
 return [
   // SMTP Configuration
   'smtp' => [
     'host' => getenv('MAIL_HOST') ?: 'smtp.gmail.com',
     'port' => (int) (getenv('MAIL_PORT') ?: 587),
-    'username' => getenv('MAIL_USER') ?: (getenv('MAIL_USERNAME') ?: ''),
-    'password' => getenv('MAIL_PASS') ?: (getenv('MAIL_PASSWORD') ?: ''),
-    'from_email' => getenv('MAIL_FROM') ?: 'noreply@example.com',
-    'from_name' => getenv('MAIL_FROM_NAME') ?: 'QueenLib'
+    'username' => $mailUser,
+    'password' => $mailPass,
+    'from_email' => $mailFrom ?: 'noreply@example.com',
+    'from_name' => getenv('MAIL_FROM_NAME') ?: 'QueenLib',
+    'encryption' => in_array($mailEncryption, ['ssl', 'tls'], true) ? $mailEncryption : 'tls'
   ],
 
   // Alternative: Local Sendmail Configuration

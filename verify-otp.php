@@ -20,29 +20,69 @@ if (empty($email)) {
 
 $auth = new AuthManager($db);
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification'])) {
+  try {
+    $resend_email = sanitize(getPost('email'));
+
+    if (empty($resend_email) || !filter_var($resend_email, FILTER_VALIDATE_EMAIL)) {
+      $error = 'A valid email is required.';
+    } else {
+      $stmt = $db->prepare('SELECT id, first_name, is_verified, verification_token FROM users WHERE email = :email LIMIT 1');
+      $stmt->execute([':email' => $resend_email]);
+      $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!$user) {
+        $error = 'Email not found.';
+      } elseif (!empty($user['is_verified'])) {
+        $success = 'This email is already verified. You can log in now.';
+      } else {
+        $verificationToken = $user['verification_token'];
+
+        if (empty($verificationToken)) {
+          $verificationToken = bin2hex(random_bytes(32));
+          $tokenExpiry = date('Y-m-d H:i:s', time() + 86400);
+          $update = $db->prepare('UPDATE users SET verification_token = :token, verification_token_expires = :expiry WHERE id = :id');
+          $update->execute([
+            ':token' => $verificationToken,
+            ':expiry' => $tokenExpiry,
+            ':id' => $user['id']
+          ]);
+        }
+
+        $mailResult = sendVerificationEmail($resend_email, $user['first_name'] ?: 'User', $verificationToken);
+
+        if (!empty($mailResult['success'])) {
+          $success = 'Verification email resent. Please check Inbox/Spam/Promotions.';
+        } else {
+          $error = $mailResult['error'] ?? 'Failed to resend verification email.';
+        }
+      }
+    }
+  } catch (Exception $e) {
+    $error = 'Failed to resend verification email. Please try again.';
+    error_log('Resend verification failed: ' . $e->getMessage());
+  }
+}
+
 // If token is provided in URL, verify it automatically
 if (!empty($token)) {
   $token_result = $auth->verifyEmailByToken($email, $token);
 
   if ($token_result['success']) {
-    $_SESSION['show_verification_success'] = true;
-    redirect(appPath('verify-otp.php', ['email' => $email, 'success' => 1]));
+    setFlash('success', 'Email verified successfully. You can now log in.');
+    redirect(appPath('login.php'));
   }
 
   $error = $token_result['error'] ?? 'Verification failed. Please try again.';
 }
 
-// Check if verification was successful
-$show_success = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_verification_success']);
-if ($show_success) {
-  unset($_SESSION['show_verification_success']);
-}
-
 $page_alerts = [];
-if ($show_success) {
+
+if ($success) {
   $page_alerts[] = [
-    'method' => 'verificationSuccess',
-    'redirect' => appPath('login.php')
+    'type' => 'success',
+    'title' => 'Email Sent',
+    'message' => $success
   ];
 }
 
@@ -99,6 +139,10 @@ if ($error) {
             <p style="font-size: 16px; color: #666;">
               Processing your verification...
             </p>
+            <form method="POST" action="<?php echo appPath('verify-otp.php', ['email' => $email]); ?>" style="margin: 20px 0;">
+              <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+              <button type="submit" name="resend_verification" class="submit-button" style="display: inline-block;">Resend Verification Email</button>
+            </form>
             <p style="color: #999; margin-top: 20px;">
               <a href="<?php echo appPath('login.php'); ?>">Go to Login</a> | <a href="<?php echo appPath('register.php'); ?>">Back to Registration</a>
             </p>

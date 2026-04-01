@@ -12,8 +12,15 @@ require_once 'includes/functions.php';
 $error = '';
 $success = '';
 
+$forceLogin = isset($_GET['force']) && $_GET['force'] === '1';
+
+if (isset($_GET['logout']) && $_GET['logout'] === '1') {
+  AuthSupport::clearSession();
+  redirect('login.php');
+}
+
 // Check if already logged in
-if (isset($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id']) && !$forceLogin) {
   redirect('index.php');
 }
 

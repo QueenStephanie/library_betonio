@@ -70,7 +70,10 @@ $mailFromName = getenv('MAIL_FROM_NAME') ?: 'QueenLib';
 // ============================================
 
 $adminUsername = getenv('ADMIN_USERNAME') ?: 'admin';
-$adminPassword = getenv('ADMIN_PASSWORD') ?: '';
+$adminPassword = getenv('ADMIN_PASSWORD');
+if ($adminPassword === false || $adminPassword === '') {
+    $adminPassword = $appEnv === 'development' ? 'admin123' : '';
+}
 
 // ============================================
 // SECURITY CONFIGURATION
@@ -106,6 +109,17 @@ if (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) {
 }
 if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
     $isHttps = true;
+}
+
+$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+$hostOnly = strtolower((string) preg_replace('/:\\d+$/', '', $httpHost));
+$isLocalHost = in_array($hostOnly, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
+
+// In local development, normalize accidental HTTPS URLs back to HTTP.
+if (PHP_SAPI !== 'cli' && $isLocalHost && $isHttps) {
+    $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
+    header('Location: http://127.0.0.1' . $requestUri, true, 302);
+    exit();
 }
 
 ini_set('session.use_strict_mode', '1');

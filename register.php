@@ -29,20 +29,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
 
   if ($result['success']) {
-    // Store email in session for verification page
-    $_SESSION['verify_email'] = $email;
-    $_SESSION['verify_user_id'] = $result['user_id'];
-
-    // Send verification link email
-    sendVerificationEmail(
+    $mail_result = sendVerificationEmail(
       $email,
       $first_name,
       $result['verification_token']
     );
 
-    // Set flag to show SweetAlert on page load
-    $_SESSION['show_registration_alert'] = true;
-    redirect(appPath('register.php', ['success' => 1]));
+    if (empty($mail_result['success'])) {
+      try {
+        $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
+        $rollback->execute([':id' => $result['user_id']]);
+      } catch (Exception $rollback_error) {
+        error_log('Registration rollback failed: ' . $rollback_error->getMessage());
+      }
+
+      $error = $mail_result['error'] ?? 'Registration failed because verification email could not be sent.';
+      $error .= ' Please update MAIL_USER / MAIL_PASS in .env and try again.';
+      $page_alerts = [];
+    } else {
+      // Store email in session for verification page
+      $_SESSION['verify_email'] = $email;
+      $_SESSION['verify_user_id'] = $result['user_id'];
+
+      // Set flag to show SweetAlert on page load
+      $_SESSION['show_registration_alert'] = true;
+      redirect(appPath('register.php', ['success' => 1]));
+    }
   } else {
     $error = $result['error'];
   }

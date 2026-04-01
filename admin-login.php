@@ -4,7 +4,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 if (isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true) {
-  redirect('admin-dashboard.php');
+  redirect('admin-users.php');
 }
 
 $error = '';
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['admin_username'] = 'Administrator';
     $_SESSION['show_admin_welcome'] = true;
 
-    redirect('admin-dashboard.php');
+    redirect('admin-users.php');
   }
 
   $error = 'Invalid admin credentials.';

@@ -173,7 +173,11 @@ function sendVerificationEmail($email, $name = '', $verification_token = '')
     return $result;
   } catch (Exception $e) {
     error_log("Error sending verification email: " . $e->getMessage());
-    return ['success' => false, 'error' => 'Failed to send verification email'];
+    $message = 'Failed to send verification email';
+    if (defined('APP_DEBUG') && APP_DEBUG) {
+      $message .= ': ' . $e->getMessage();
+    }
+    return ['success' => false, 'error' => $message];
   }
 }
 

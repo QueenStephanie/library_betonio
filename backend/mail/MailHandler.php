@@ -14,6 +14,16 @@ class MailHandler
     private $config;
     private $db;
 
+    private function errorResponse($fallbackMessage, Exception $e)
+    {
+        $message = $fallbackMessage;
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            $message .= ': ' . $e->getMessage();
+        }
+
+        return ['success' => false, 'error' => $message];
+    }
+
     public function __construct($database = null)
     {
         $this->config = require __DIR__ . '/../config/email.config.php';
@@ -21,24 +31,24 @@ class MailHandler
         $this->initializePHPMailer();
     }
 
-private function buildAppUrl($path, array $query = [])
+    private function buildAppUrl($path, array $query = [])
     {
         $appUrl = getenv('APP_URL');
         if (!$appUrl && defined('APP_URL')) {
             $appUrl = APP_URL;
         }
-        
+
         $basePath = getenv('APP_BASE_PATH');
         if (!$basePath && defined('APP_BASE_PATH')) {
             $basePath = APP_BASE_PATH;
         }
 
         $base = rtrim($appUrl ?: 'http://localhost', '/');
-        
+
         if (!empty($basePath)) {
             $base = $base . $basePath;
         }
-        
+
         $url = $base . '/' . ltrim($path, '/');
 
         if (!empty($query)) {
@@ -57,6 +67,10 @@ private function buildAppUrl($path, array $query = [])
     private function initializePHPMailer()
     {
         try {
+            if (empty($this->config['smtp']['username']) || empty($this->config['smtp']['password'])) {
+                throw new Exception('SMTP credentials are missing. Set MAIL_USER and MAIL_PASS in .env.');
+            }
+
             $this->mail = new PHPMailer(true);
 
             // Server settings
@@ -65,7 +79,9 @@ private function buildAppUrl($path, array $query = [])
             $this->mail->SMTPAuth = true;
             $this->mail->Username = $this->config['smtp']['username'];
             $this->mail->Password = $this->config['smtp']['password'];
-            $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $this->mail->SMTPSecure = ($this->config['smtp']['encryption'] ?? 'tls') === 'ssl'
+                ? PHPMailer::ENCRYPTION_SMTPS
+                : PHPMailer::ENCRYPTION_STARTTLS;
             $this->mail->Port = $this->config['smtp']['port'];
 
             // SSL verification
@@ -116,7 +132,7 @@ private function buildAppUrl($path, array $query = [])
             return ['success' => true, 'message' => 'OTP email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending OTP email: " . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to send OTP email'];
+            return $this->errorResponse('Failed to send OTP email', $e);
         }
     }
 
@@ -151,7 +167,7 @@ private function buildAppUrl($path, array $query = [])
             return ['success' => true, 'message' => 'Verification email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending verification email: " . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to send verification email'];
+            return $this->errorResponse('Failed to send verification email', $e);
         }
     }
 
@@ -184,7 +200,7 @@ private function buildAppUrl($path, array $query = [])
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending password reset email: " . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to send password reset email'];
+            return $this->errorResponse('Failed to send password reset email', $e);
         }
     }
 
@@ -211,7 +227,7 @@ private function buildAppUrl($path, array $query = [])
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending password reset email by link: " . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to send password reset email'];
+            return $this->errorResponse('Failed to send password reset email', $e);
         }
     }
 
@@ -441,7 +457,7 @@ private function buildAppUrl($path, array $query = [])
             return ['success' => true, 'message' => 'Test email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending test email: " . $e->getMessage());
-            return ['success' => false, 'error' => 'Failed to send test email: ' . $e->getMessage()];
+            return $this->errorResponse('Failed to send test email', $e);
         }
     }
 
