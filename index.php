@@ -39,6 +39,272 @@ $flash = getFlash();
   <?php if ($is_logged_in): ?>
     <link rel="stylesheet" href="public/css/dashboard.css">
   <?php endif; ?>
+  <style>
+    <?php if ($is_logged_in): ?>
+      /* Dashboard Specific Styles */
+      .dashboard-header {
+        background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
+        border-bottom: 1px solid var(--line);
+        padding: 40px 0;
+        margin-bottom: 32px;
+      }
+
+      .dashboard-header h1 {
+        font-size: 2.8rem;
+        margin-bottom: 8px;
+      }
+
+      .dashboard-header p {
+        font-size: 1.1rem;
+        color: var(--muted);
+      }
+
+      .dashboard-main {
+        padding: 0 32px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+
+      .stat-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
+        border-color: var(--accent);
+      }
+
+      .stat-card:hover::before {
+        transform: scaleX(1);
+      }
+
+      .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+      }
+
+      .stat-card strong {
+        display: block;
+        font-size: 1.3rem;
+        margin-bottom: 4px;
+        color: var(--text);
+      }
+
+      .stat-card span {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .panel:hover {
+        box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
+        border-color: var(--accent);
+      }
+
+      .panel-heading {
+        padding: 28px 32px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(to right, rgba(242, 240, 236, 0.5), transparent);
+      }
+
+      .panel-heading h2 {
+        font-size: 1.6rem;
+        color: var(--text);
+        margin: 0;
+      }
+
+      .history-link {
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .history-link:hover {
+        gap: 10px;
+      }
+
+      .panel-content {
+        padding: 32px;
+      }
+
+      .profile-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .profile-item:last-child {
+        border-bottom: none;
+      }
+
+      .profile-label {
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .profile-value {
+        color: var(--muted);
+      }
+
+      .profile-value.verified {
+        color: #5d8049;
+        font-weight: 600;
+      }
+
+      .profile-value.pending {
+        color: #ca8616;
+        font-weight: 600;
+      }
+
+      .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+      }
+
+      .action-btn {
+        padding: 14px 24px;
+        border: none;
+        border-radius: 12px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .action-btn.primary {
+        background: linear-gradient(135deg, var(--accent), #b83d14);
+        color: white;
+        box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
+      }
+
+      .action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
+      }
+
+      .action-btn.secondary {
+        background: var(--neutral-bg);
+        color: var(--text);
+        border: 1.5px solid var(--line);
+      }
+
+      .action-btn.secondary:hover {
+        background: white;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .action-btn.danger {
+        background: #fff2ef;
+        color: #a62f0d;
+        border: 1.5px solid #f0b7a7;
+      }
+
+      .action-btn.danger:hover {
+        background: #a62f0d;
+        color: white;
+      }
+
+      @media (max-width: 1024px) {
+        .dashboard-main {
+          padding: 0 24px;
+        }
+
+        .panel-heading {
+          padding: 20px 24px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .panel-content {
+          padding: 24px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-header {
+          padding: 24px 0;
+          margin-bottom: 24px;
+        }
+
+        .dashboard-header h1 {
+          font-size: 2rem;
+        }
+
+        .dashboard-main {
+          padding: 0 16px;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .stat-card {
+          padding: 16px;
+        }
+
+        .stat-card strong {
+          font-size: 1.1rem;
+        }
+
+        .action-buttons {
+          grid-template-columns: 1fr;
+        }
+      }
+    <?php endif; ?>
+  </style>
 </head>
 
 <body>
@@ -46,18 +312,15 @@ $flash = getFlash();
   <?php if ($is_logged_in && $user): ?>
     <!-- LOGGED IN - DASHBOARD VIEW -->
     <div class="dashboard-layout">
-      <!-- ==================== SIDEBAR ==================== -->
+      <!-- SIDEBAR -->
       <aside class="sidebar" role="navigation" aria-label="Main navigation">
-        <!-- Brand -->
         <a class="sidebar-brand" href="index.php">QueenLib</a>
 
-        <!-- User Info -->
         <div class="sidebar-user" id="userProfile">
           <div class="avatar"><?php echo strtoupper(substr($user['first_name'], 0, 1)); ?></div>
           <p class="user-greeting">Hi, <?php echo htmlspecialchars($user['first_name']); ?></p>
         </div>
 
-        <!-- Navigation Menu -->
         <nav class="sidebar-nav">
           <a class="nav-item is-active" href="index.php">
             <span class="nav-icon">⌂</span>
@@ -74,46 +337,48 @@ $flash = getFlash();
         </nav>
       </aside>
 
-      <!-- ==================== MAIN CONTENT ==================== -->
+      <!-- MAIN CONTENT -->
       <main class="dashboard-main">
         <!-- Header -->
-        <header class="dashboard-header">
+        <div class="dashboard-header">
           <h1>My Account</h1>
           <p>Welcome back, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
-        </header>
+        </div>
 
+        <!-- Flash Messages -->
         <?php if ($flash): ?>
-          <div style="padding: 15px 20px; border-radius: 4px; margin-bottom: 20px; background-color: #e8f5e9; color: #2e7d32; border-left: 4px solid #388e3c;">
+          <div style="padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; background: var(--success-bg); color: var(--success-text); border-left: 4px solid #5d8049; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.3rem;">✓</span>
             <?php echo htmlspecialchars($flash['message']); ?>
           </div>
         <?php endif; ?>
 
-        <!-- ==================== STATS SECTION ==================== -->
-        <section class="stats-grid" id="statsGrid" aria-label="Account statistics">
-          <!-- User Email -->
+        <!-- STATS SECTION -->
+        <section class="stats-grid" aria-label="Account statistics">
+          <!-- Email -->
           <article class="stat-card">
-            <div class="stat-icon coral">✉</div>
+            <div class="stat-icon">✉</div>
             <strong><?php echo htmlspecialchars($user['email']); ?></strong>
             <span>Email Address</span>
           </article>
 
           <!-- Verification Status -->
           <article class="stat-card">
-            <div class="stat-icon green">✓</div>
+            <div class="stat-icon"><?php echo $user['is_verified'] ? '✓' : '⚠'; ?></div>
             <strong><?php echo $user['is_verified'] ? 'Verified' : 'Pending'; ?></strong>
             <span>Account Status</span>
           </article>
 
           <!-- Member Since -->
           <article class="stat-card">
-            <div class="stat-icon gold">⏰</div>
+            <div class="stat-icon">📅</div>
             <strong><?php echo date('M d, Y', strtotime($user['created_at'])); ?></strong>
             <span>Member Since</span>
           </article>
 
-          <!-- Quick Access -->
+          <!-- Settings -->
           <article class="stat-card">
-            <div class="stat-icon gray">◷</div>
+            <div class="stat-icon">⚙</div>
             <a href="account.php" style="color: inherit; text-decoration: none;">
               <strong>Account</strong>
               <span>Settings →</span>
@@ -121,34 +386,57 @@ $flash = getFlash();
           </article>
         </section>
 
-        <!-- ==================== PROFILE INFO SECTION ==================== -->
+        <!-- PROFILE INFO SECTION -->
         <section class="panel">
           <div class="panel-heading">
             <h2>Profile Information</h2>
-            <a href="account.php" class="history-link">Edit Profile →</a>
+            <a href="account.php" class="history-link">
+              <span>Edit Profile</span>
+              <span>→</span>
+            </a>
           </div>
-          <div style="padding: 20px;">
-            <p><strong>First Name:</strong> <?php echo htmlspecialchars($user['first_name']); ?></p>
-            <p style="margin-top: 12px;"><strong>Last Name:</strong> <?php echo htmlspecialchars($user['last_name']); ?></p>
-            <p style="margin-top: 12px;"><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-            <p style="margin-top: 12px;">
-              <strong>Account Status:</strong>
-              <span style="<?php echo $user['is_verified'] ? 'color: #2e7d32;' : 'color: #f57c00;'; ?>">
+          <div class="panel-content">
+            <div class="profile-item">
+              <span class="profile-label">First Name</span>
+              <span class="profile-value"><?php echo htmlspecialchars($user['first_name']); ?></span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">Last Name</span>
+              <span class="profile-value"><?php echo htmlspecialchars($user['last_name']); ?></span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">Email Address</span>
+              <span class="profile-value"><?php echo htmlspecialchars($user['email']); ?></span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">Account Status</span>
+              <span class="profile-value <?php echo $user['is_verified'] ? 'verified' : 'pending'; ?>">
                 <?php echo $user['is_verified'] ? '✓ Verified' : '⚠ Not Verified'; ?>
               </span>
-            </p>
+            </div>
           </div>
         </section>
 
-        <!-- ==================== ACCOUNT ACTIONS SECTION ==================== -->
+        <!-- ACCOUNT ACTIONS SECTION -->
         <section class="panel">
           <div class="panel-heading">
-            <h2>Account Actions</h2>
+            <h2>Quick Actions</h2>
           </div>
-          <div style="padding: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="account.php" style="display: inline-block; padding: 12px 24px; background-color: #333; color: white; border-radius: 4px; text-decoration: none; cursor: pointer;">Edit Profile</a>
-            <a href="account.php" style="display: inline-block; padding: 12px 24px; background-color: #8B7355; color: white; border-radius: 4px; text-decoration: none; cursor: pointer;">Change Password</a>
-            <a href="logout.php" style="display: inline-block; padding: 12px 24px; background-color: #d32f2f; color: white; border-radius: 4px; text-decoration: none; cursor: pointer;">Logout</a>
+          <div class="panel-content">
+            <div class="action-buttons">
+              <a href="account.php" class="action-btn primary">
+                <span>📝</span>
+                <span>Edit Profile</span>
+              </a>
+              <a href="account.php" class="action-btn secondary">
+                <span>🔐</span>
+                <span>Change Password</span>
+              </a>
+              <a href="logout.php" class="action-btn danger">
+                <span>🚪</span>
+                <span>Logout</span>
+              </a>
+            </div>
           </div>
         </section>
       </main>
@@ -282,7 +570,6 @@ $flash = getFlash();
 
   <?php endif; ?>
 
-  <script src="config/api.config.js"></script>
   <script src="public/js/main.js"></script>
 </body>
 

@@ -8,37 +8,67 @@
 // Set timezone to prevent timezone-related issues
 date_default_timezone_set('UTC');
 
-class Database
+require_once __DIR__ . '/AppBootstrap.php';
+
+class DatabaseConnection
 {
   // Database Configuration
-  private $host = 'localhost';
-  private $port = 3307;
-  private $db_name = 'library_betonio';
-  private $user = 'root';
-  private $password = '';
+  private $host;
+  private $port;
+  private $db_name;
+  private $user;
+  private $password;
 
   private $conn;
+
+  public function __construct()
+  {
+    $dbConfig = AppBootstrap::getDatabaseConfig();
+    $this->host = $dbConfig['host'];
+    $this->port = $dbConfig['port'];
+    $this->db_name = $dbConfig['name'];
+    $this->user = $dbConfig['user'];
+    $this->password = $dbConfig['password'];
+  }
 
   /**
    * Connect to database using PDO for secure operations
    */
   public function connect()
   {
-    try {
-      $dsn = "mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
+    $portsToTry = [(int)$this->port];
+    $dbPortFromEnv = getenv('DB_PORT');
+    $hostIsLocal = in_array(strtolower($this->host), ['localhost', '127.0.0.1', '::1'], true);
 
-      $this->conn = new PDO($dsn, $this->user, $this->password);
-      $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-      return $this->conn;
-    } catch (PDOException $e) {
-      http_response_code(500);
-      die(json_encode([
-        'success' => false,
-        'error' => 'Database connection failed',
-        'details' => $e->getMessage()
-      ]));
+    if ($dbPortFromEnv === false && $hostIsLocal) {
+      if (!in_array(3306, $portsToTry, true)) {
+        $portsToTry[] = 3306;
+      }
+      if (!in_array(3307, $portsToTry, true)) {
+        $portsToTry[] = 3307;
+      }
     }
+
+    $lastError = null;
+    foreach ($portsToTry as $port) {
+      try {
+        $dsn = "mysql:host=" . $this->host . ";port=" . (int)$port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
+
+        $this->conn = new PDO($dsn, $this->user, $this->password);
+        $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        return $this->conn;
+      } catch (PDOException $e) {
+        $lastError = $e;
+      }
+    }
+
+    error_log("Database connection error: " . ($lastError ? $lastError->getMessage() : 'unknown'));
+    http_response_code(500);
+    die(json_encode([
+      'success' => false,
+      'error' => 'Database connection failed'
+    ]));
   }
 
   /**
@@ -55,12 +85,8 @@ class Database
   public static function initializeDatabase()
   {
     try {
-      $db_config = [
-        'host' => 'localhost',
-        'port' => 3307,
-        'user' => 'root',
-        'password' => ''
-      ];
+      $db_config = AppBootstrap::getDatabaseConfig();
+      $databaseName = $db_config['name'];
 
       $conn = new PDO(
         "mysql:host=" . $db_config['host'] . ";port=" . $db_config['port'],
@@ -69,7 +95,7 @@ class Database
       );
 
       // Create database if not exists
-      $sql = "CREATE DATABASE IF NOT EXISTS library_betonio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+      $sql = "CREATE DATABASE IF NOT EXISTS `" . str_replace('`', '', $databaseName) . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
       $conn->exec($sql);
 
       echo "Database initialized successfully";
@@ -79,4 +105,8 @@ class Database
       return false;
     }
   }
+}
+
+if (!class_exists('Database')) {
+  class Database extends DatabaseConnection {}
 }

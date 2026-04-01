@@ -8,6 +8,8 @@
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once 'backend/vendor/autoload.php';
+require_once 'backend/classes/PasswordRecovery.php';
 
 $error = '';
 $success = '';
@@ -25,15 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $password = getPost('password');
   $password_confirm = getPost('password_confirm');
 
-  $auth = new AuthManager($db);
-  $result = $auth->resetPassword($email, $reset_token, $password, $password_confirm);
+  // Initialize PasswordRecovery with database
+  // $db is already initialized in includes/config.php
+  $password_recovery = new PasswordRecovery($db);
+  
+  $result = $password_recovery->resetPassword($email, $reset_token, $password, $password_confirm);
 
   if ($result['success']) {
     setFlash('success', 'Password reset successfully! You can now log in with your new password.');
-    redirect('/library_betonio/login.php');
+    redirect('login.php');
   } else {
     $error = $result['error'];
   }
+}
+
+$page_alerts = [];
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Password Reset Failed',
+    'message' => $error
+  ];
 }
 ?>
 <!DOCTYPE html>
@@ -46,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
 </head>
 
@@ -107,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </main>
 
   <script src="public/js/auth.js"></script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

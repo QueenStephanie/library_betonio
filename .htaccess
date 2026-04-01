@@ -1,33 +1,41 @@
+Options -Indexes
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Remove index.php from URLs
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?$1 [L,QSA]
+# HTTPS redirect for Infinity Free (SSL is automatic)
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$ [NC]
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Disable directory listing
-Options -Indexes
+# Block hidden files (except .well-known)
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
 
-# Set proper cache headers for assets
-<FilesMatch "\.(jpg|jpeg|png|gif|css|js|svg|woff|woff2)$">
-    Header set Cache-Control "max-age=31536000, public"
-</FilesMatch>
+# Block sensitive directories
+RewriteRule ^(?:includes|docs|_legacy)/ - [F,L]
+RewriteRule ^backend/(?:config|classes|mail|vendor)/ - [F,L]
 
-# Prevent direct access to sensitive files
-<FilesMatch "\.env|\.git|\.htaccess|config\.php|functions\.php|auth\.php">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>
+# Deny direct access to configuration files
+RewriteRule ^\.env(?:\.production)?$ - [F,L]
+RewriteRule ^\.env\.example$ - [F,L]
 </IfModule>
 
-# Enable gzip compression
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    <FilesMatch "\.(?:css|js|jpg|jpeg|png|gif|svg|woff|woff2)$">
+        Header set Cache-Control "public, max-age=31536000"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(?:\.env|composer\.(?:json|lock)|phpunit\.xml|README\.md|CHANGELOG\.md)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
-</IfModule>
-
-# Set proper MIME types
-<IfModule mod_mime.c>
-    AddType application/javascript js
-    AddEncoding gzip svg
 </IfModule>

@@ -1,8 +1,7 @@
--- Library Betonio Database Schema
+-- Library Betonium Database Schema
 -- MySQL 15.1 (MariaDB)
 -- PHP 8.2.12
-
-USE library_betonio;
+-- NOTE: Select your database in phpMyAdmin before importing this file
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (

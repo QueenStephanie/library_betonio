@@ -14,7 +14,7 @@ $success = '';
 
 // Check if already logged in
 if (isset($_SESSION['user_id'])) {
-  redirect('/library_betonio/index.php');
+  redirect('index.php');
 }
 
 // Handle form submission
@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($result['success']) {
     setFlash('success', $result['message']);
-    redirect('/library_betonio/index.php');
+    redirect('index.php');
   } else {
     if (isset($result['unverified']) && $result['unverified']) {
-      redirect('/library_betonio/verify-otp.php?email=' . urlencode($result['email']));
+      redirect(appPath('verify-otp.php', ['email' => $result['email']]));
     }
     $error = $result['error'];
   }
@@ -39,6 +39,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Check for timeout message
 if (isset($_GET['timeout'])) {
   $_SESSION['show_timeout_alert'] = true;
+}
+
+$page_alerts = [];
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Login Failed',
+    'message' => $error
+  ];
+}
+
+if (isset($_SESSION['show_timeout_alert'])) {
+  unset($_SESSION['show_timeout_alert']);
+  $page_alerts[] = [
+    'type' => 'warning',
+    'title' => 'Session Expired',
+    'message' => 'Your session has expired. Please log in again.',
+    'confirmText' => 'OK',
+    'cancelText' => null
+  ];
 }
 ?>
 <!DOCTYPE html>
@@ -97,35 +117,15 @@ if (isset($_GET['timeout'])) {
         <div class="auth-links">
           <a class="forgot-link" href="forgot-password.php">Forgot your password?</a>
           <p>Don't have an account? <a class="register-link" href="register.php">Register →</a></p>
+          <p>Admin access? <a class="register-link" href="admin-login.php">Admin Login →</a></p>
         </div>
       </div>
     </section>
   </main>
 
   <script src="public/js/auth.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <!-- SweetAlert Configuration -->
-  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-  <script>
-    // Show error alert if there's an error
-    <?php if ($error): ?>
-      SweetAlerts.error('Login Failed', '<?php echo addslashes($error); ?>');
-    <?php endif; ?>
-
-    // Show timeout alert if session expired
-    <?php if (isset($_SESSION['show_timeout_alert'])): ?>
-      <?php unset($_SESSION['show_timeout_alert']); ?>
-      SweetAlerts.warning(
-        'Session Expired',
-        'Your session has expired. Please log in again.',
-        'OK',
-        null,
-        function() {}
-      );
-    <?php endif; ?>
-  </script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

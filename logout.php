@@ -1,10 +1,32 @@
+<?php
+
+/**
+ * Logout Handler
+ * Clears session first, then renders success UI
+ */
+
+require_once 'includes/config.php';
+require_once 'includes/auth.php';
+require_once 'includes/functions.php';
+
+$auth = new AuthManager($db);
+$auth->logout();
+
+$page_alerts = [
+  [
+    'type' => 'success',
+    'title' => 'Logged Out Successfully',
+    'message' => 'You have been logged out. Redirecting to login page...',
+    'redirect' => appPath('login.php')
+  ]
+];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logout - QueenLib</title>
-    <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         body {
@@ -19,34 +41,7 @@
     </style>
 </head>
 <body>
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    <!-- SweetAlert Configuration -->
-    <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-    <script>
-        // Show logout success alert
-        SweetAlerts.success(
-            'Logged Out Successfully',
-            'You have been logged out. Redirecting to login page...',
-            function() {
-                window.location.href = '/library_betonio/login.php';
-            }
-        );
-    </script>
-
-    <?php
-    /**
-     * Logout Handler (Backend)
-     * Clears session and prepares for redirect
-     */
-
-    require_once 'includes/config.php';
-    require_once 'includes/auth.php';
-    require_once 'includes/functions.php';
-
-    $auth = new AuthManager($db);
-    $auth->logout();
-    ?>
+    <?php renderSweetAlertScripts(); ?>
+    <?php renderPageAlerts($page_alerts); ?>
 </body>
 </html>

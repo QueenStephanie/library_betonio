@@ -15,7 +15,7 @@ $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 
 if (empty($email)) {
-  redirect('/library_betonio/register.php');
+  redirect('register.php');
 }
 
 $auth = new AuthManager($db);
@@ -26,7 +26,7 @@ if (!empty($token)) {
 
   if ($token_result['success']) {
     $_SESSION['show_verification_success'] = true;
-    redirect('/library_betonio/verify-otp.php?email=' . urlencode($email) . '&success=1');
+    redirect(appPath('verify-otp.php', ['email' => $email, 'success' => 1]));
   }
 
   $error = $token_result['error'] ?? 'Verification failed. Please try again.';
@@ -36,6 +36,23 @@ if (!empty($token)) {
 $show_success = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_verification_success']);
 if ($show_success) {
   unset($_SESSION['show_verification_success']);
+}
+
+$page_alerts = [];
+if ($show_success) {
+  $page_alerts[] = [
+    'method' => 'verificationSuccess',
+    'redirect' => appPath('login.php')
+  ];
+}
+
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Verification Failed',
+    'message' => $error,
+    'redirect' => appPath('register.php')
+  ];
 }
 ?>
 <!DOCTYPE html>
@@ -75,7 +92,7 @@ if ($show_success) {
             The verification link may have expired or is invalid.
           </p>
           <p style="text-align: center;">
-            <a href="/library_betonio/register.php" class="submit-button" style="display: inline-block; margin-top: 10px;">← Back to Registration</a>
+            <a href="<?php echo appPath('register.php'); ?>" class="submit-button" style="display: inline-block; margin-top: 10px;">← Back to Registration</a>
           </p>
         <?php else: ?>
           <div style="text-align: center; padding: 40px 0;">
@@ -83,7 +100,7 @@ if ($show_success) {
               Processing your verification...
             </p>
             <p style="color: #999; margin-top: 20px;">
-              <a href="/library_betonio/login.php">Go to Login</a> | <a href="/library_betonio/register.php">Back to Registration</a>
+              <a href="<?php echo appPath('login.php'); ?>">Go to Login</a> | <a href="<?php echo appPath('register.php'); ?>">Back to Registration</a>
             </p>
           </div>
         <?php endif; ?>
@@ -92,26 +109,8 @@ if ($show_success) {
   </main>
 
   <script src="public/js/auth.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <!-- SweetAlert Configuration -->
-  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-  <script>
-    // Show verification success alert
-    <?php if ($show_success): ?>
-      SweetAlerts.verificationSuccess(function() {
-        window.location.href = '/library_betonio/login.php';
-      });
-    <?php endif; ?>
-
-    // Show error alert if there's an error
-    <?php if ($error): ?>
-      SweetAlerts.error('Verification Failed', '<?php echo addslashes($error); ?>', function() {
-        window.location.href = '/library_betonio/register.php';
-      });
-    <?php endif; ?>
-  </script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

@@ -8,11 +8,14 @@
 header('Content-Type: application/json');
 
 try {
+  require_once __DIR__ . '/config/AppBootstrap.php';
+  $dbConfig = AppBootstrap::getDatabaseConfig();
+
   // Connection credentials
-  $host = "localhost:3307";
-  $username = "root";
-  $password = "";
-  $database = "library_betonio";
+  $host = $dbConfig['host'] . ':' . $dbConfig['port'];
+  $username = $dbConfig['user'];
+  $password = $dbConfig['password'];
+  $database = $dbConfig['name'];
 
   // Step 1: Connect to MySQL server (without database)
   $pdo = new PDO("mysql:host=$host", $username, $password);

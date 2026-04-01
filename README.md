@@ -2,40 +2,67 @@
 
 A professional PHP-based library management system with secure authentication, email verification, and account management.
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Local)
 
-1. **Setup Database:**
+1. **Setup environment file**
+
+   - Copy `.env.production.example` to `.env`
+   - Set local values (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `APP_URL`)
+
+2. **Setup Database:**
 
    ```bash
    php backend/setup-db.php
    ```
 
-2. **Configure Email** (Edit `/backend/config/email.config.php`):
+3. **Configure Email** (`.env`):
 
-   ```php
-   'username' => 'your-email@gmail.com',
-   'password' => 'your-app-password',
+   ```env
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_USER=your-email@gmail.com
+   MAIL_PASS=your-app-password
+   MAIL_FROM=your-email@gmail.com
+   MAIL_FROM_NAME=QueenLib
    ```
 
-3. **Access Application:**
+4. **Access Application:**
    - Visit: `http://localhost/library_betonio/`
    - Register: `http://localhost/library_betonio/register.php`
    - Login: `http://localhost/library_betonio/login.php`
 
+## 🌐 InfinityFree Hosting (Production)
+
+1. Upload project files to `htdocs` (or a subfolder inside `htdocs`)
+2. Create MySQL database from InfinityFree control panel
+3. Import `backend/config/schema.sql` using phpMyAdmin
+4. Create `.env.production` in project root (same level as `index.php`)
+5. Set production values from your InfinityFree panel:
+   - `APP_URL=https://yourdomain.epizy.com`
+   - `APP_BASE_PATH=` (or `/subfolder` if not at root)
+   - `DB_HOST=sql###.infinityfree.com`
+   - `DB_NAME=if0_xxxxxxxx_dbname`
+   - `DB_USER=if0_xxxxxxxx`
+   - `DB_PASS=your_mysql_password`
+6. Update admin credentials in `.env.production`:
+   - `ADMIN_USERNAME=...`
+   - `ADMIN_PASSWORD=...`
+7. Configure SMTP in `.env.production` (Gmail app password or provider SMTP)
+8. Make sure `.env.production` is not publicly accessible (already protected by `.htaccess`)
+9. Open your deployed URL and test register/login/reset flows
+
 ## 📚 Documentation
 
-**Complete documentation available in: [`DOCUMENTATION.md`](DOCUMENTATION.md)**
+**All documentation has been consolidated into the `docs/` folder**
 
-The unified documentation includes:
+Start with: [`docs/INDEX.md`](docs/INDEX.md) - Documentation index and quick navigation
 
-- ✓ System Architecture
-- ✓ Installation & Setup
-- ✓ Database Schema
-- ✓ Authentication Flow
-- ✓ API Endpoints
-- ✓ File Structure
-- ✓ Usage Guide
-- ✓ Troubleshooting
+Key documentation files:
+- [`docs/QUICK_START.md`](docs/QUICK_START.md) - Quick start guide
+- [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) - Comprehensive system documentation
+- [`docs/BACKEND.md`](docs/BACKEND.md) - Backend architecture and API documentation
+- [`docs/PRODUCTION_DEPLOYMENT.md`](docs/PRODUCTION_DEPLOYMENT.md) - Deployment guide
+- [`docs/SWEETALERT2_INTEGRATION.md`](docs/SWEETALERT2_INTEGRATION.md) - Alert system guide
 
 ## 🎯 Features
 

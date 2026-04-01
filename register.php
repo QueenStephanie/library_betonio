@@ -14,7 +14,7 @@ $success = '';
 
 // Check if already logged in
 if (isset($_SESSION['user_id'])) {
-  redirect('/library_betonio/index.php');
+  redirect('index.php');
 }
 
 // Handle form submission
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Set flag to show SweetAlert on page load
     $_SESSION['show_registration_alert'] = true;
-    redirect('/library_betonio/register.php?success=1');
+    redirect(appPath('register.php', ['success' => 1]));
   } else {
     $error = $result['error'];
   }
@@ -52,6 +52,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $show_success_alert = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_registration_alert']);
 if ($show_success_alert) {
   unset($_SESSION['show_registration_alert']);
+}
+
+$page_alerts = [];
+if ($show_success_alert) {
+  $verify_email = $_SESSION['verify_email'] ?? '';
+  $page_alerts[] = [
+    'method' => 'registrationSuccess',
+    'redirect' => appPath('verify-otp.php', ['email' => $verify_email])
+  ];
+}
+
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Registration Failed',
+    'message' => $error
+  ];
 }
 ?>
 <!DOCTYPE html>
@@ -134,24 +151,8 @@ if ($show_success_alert) {
   </main>
 
   <script src="public/js/auth.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <!-- SweetAlert Configuration -->
-  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-  <script>
-    // Show success alert if registration was successful
-    <?php if ($show_success_alert): ?>
-      SweetAlerts.registrationSuccess(function() {
-        window.location.href = '/library_betonio/verify-otp.php?email=<?php echo urlencode($_SESSION['verify_email']); ?>';
-      });
-    <?php endif; ?>
-
-    // Show error alert if there's an error
-    <?php if ($error): ?>
-      SweetAlerts.error('Registration Failed', '<?php echo addslashes($error); ?>');
-    <?php endif; ?>
-  </script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

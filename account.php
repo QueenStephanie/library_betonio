@@ -88,6 +88,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $flash = getFlash();
+
+$page_alerts = [];
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Error',
+    'message' => $error
+  ];
+}
+
+if (isset($_SESSION['show_profile_success'])) {
+  unset($_SESSION['show_profile_success']);
+  $page_alerts[] = [
+    'method' => 'profileUpdatedSuccess'
+  ];
+}
+
+if (isset($_SESSION['show_password_success'])) {
+  unset($_SESSION['show_password_success']);
+  $page_alerts[] = [
+    'method' => 'passwordChangedSuccess'
+  ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,9 +126,241 @@ $flash = getFlash();
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <link rel="stylesheet" href="public/css/dashboard.css">
+  <style>
+    /* Account Page Specific Styles */
+    .account-header {
+      background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
+      padding: 40px 0;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 40px;
+    }
+
+    .account-header h1 {
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .account-header p {
+      font-size: 1.1rem;
+      color: var(--muted);
+    }
+
+    .account-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .settings-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(43, 28, 16, 0.04);
+      transition: all 0.3s ease;
+    }
+
+    .settings-card:hover {
+      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
+      border-color: var(--accent);
+    }
+
+    .settings-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-card h2::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #fafaf8;
+    }
+
+    .form-group input:hover {
+      border-color: #ddd;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(210, 71, 24, 0.1);
+    }
+
+    .form-group input:disabled {
+      background-color: #f5f5f5;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #b83d14);
+      color: white;
+      box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .back-link-section {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      color: var(--accent);
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .back-link:hover {
+      gap: 12px;
+      transform: translateX(-4px);
+    }
+
+    .alert {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border-left: 4px solid;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-left-color: #5d8049;
+    }
+
+    .alert-error {
+      background: #fff2ef;
+      color: #a62f0d;
+      border-left-color: #d24718;
+    }
+
+    .alert::before {
+      font-size: 1.3rem;
+    }
+
+    .alert-success::before {
+      content: '✓';
+    }
+
+    .alert-error::before {
+      content: '✕';
+    }
+
+    @media (max-width: 768px) {
+      .account-header {
+        padding: 24px 0;
+        margin-bottom: 24px;
+      }
+
+      .account-header h1 {
+        font-size: 2rem;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .settings-card {
+        padding: 24px;
+      }
+
+      .btn {
+        padding: 14px 20px;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <!-- Navigation -->
   <nav class="navbar">
     <div class="navbar-brand">
       <a href="index.php" class="logo">QueenLib</a>
@@ -119,116 +374,109 @@ $flash = getFlash();
     </div>
   </nav>
 
-  <main class="container">
-    <div class="account-page">
+  <!-- Page Header -->
+  <div class="account-header">
+    <div class="account-container">
       <h1>Account Settings</h1>
+      <p>Manage your profile and security preferences</p>
+    </div>
+  </div>
 
-      <?php if ($flash): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($flash['type']); ?>" role="alert">
-          <?php echo htmlspecialchars($flash['message']); ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($success): ?>
-        <div class="alert alert-success" role="alert">✅ <?php echo htmlspecialchars($success); ?></div>
-      <?php endif; ?>
-
-      <?php if ($error): ?>
-        <div class="alert alert-error" role="alert">❌ <?php echo htmlspecialchars($error); ?></div>
-      <?php endif; ?>
-
-      <div class="settings-grid">
-        <!-- Profile Settings -->
-        <section class="settings-card">
-          <h2>Profile Information</h2>
-          <form method="POST" action="account.php">
-            <input type="hidden" name="action" value="update_profile">
-
-            <div class="form-group">
-              <label for="first_name">First Name</label>
-              <input type="text" id="first_name" name="first_name"
-                value="<?php echo htmlspecialchars($user['first_name']); ?>" required>
-            </div>
-
-            <div class="form-group">
-              <label for="last_name">Last Name</label>
-              <input type="text" id="last_name" name="last_name"
-                value="<?php echo htmlspecialchars($user['last_name']); ?>" required>
-            </div>
-
-            <div class="form-group">
-              <label for="email">Email (Cannot be changed)</label>
-              <input type="email" id="email" name="email"
-                value="<?php echo htmlspecialchars($user['email']); ?>" disabled>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-          </form>
-        </section>
-
-        <!-- Change Password -->
-        <section class="settings-card">
-          <h2>Change Password</h2>
-          <form method="POST" action="account.php">
-            <input type="hidden" name="action" value="change_password">
-
-            <div class="form-group">
-              <label for="current_password">Current Password</label>
-              <input type="password" id="current_password" name="current_password"
-                autocomplete="current-password" required>
-            </div>
-
-            <div class="form-group">
-              <label for="new_password">New Password</label>
-              <input type="password" id="new_password" name="new_password"
-                autocomplete="new-password" placeholder="At least 8 characters" required>
-            </div>
-
-            <div class="form-group">
-              <label for="new_password_confirm">Confirm New Password</label>
-              <input type="password" id="new_password_confirm" name="new_password_confirm"
-                autocomplete="new-password" required>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Change Password</button>
-          </form>
-        </section>
+  <!-- Main Content -->
+  <main class="account-container">
+    <!-- Flash Messages -->
+    <?php if ($flash): ?>
+      <div class="alert alert-<?php echo htmlspecialchars($flash['type']); ?>" role="alert">
+        <?php echo htmlspecialchars($flash['message']); ?>
       </div>
+    <?php endif; ?>
 
-      <div class="back-link">
-        <a href="index.php">← Back to Dashboard</a>
+    <?php if ($error): ?>
+      <div class="alert alert-error" role="alert">
+        <?php echo htmlspecialchars($error); ?>
       </div>
+    <?php endif; ?>
+
+    <!-- Settings Grid -->
+    <div class="settings-grid">
+      <!-- Profile Settings Card -->
+      <section class="settings-card">
+        <h2>Profile Information</h2>
+        <form method="POST" action="account.php">
+          <input type="hidden" name="action" value="update_profile">
+
+          <div class="form-group">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name"
+              value="<?php echo htmlspecialchars($user['first_name']); ?>" required>
+          </div>
+
+          <div class="form-group">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name"
+              value="<?php echo htmlspecialchars($user['last_name']); ?>" required>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email"
+              value="<?php echo htmlspecialchars($user['email']); ?>" disabled>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 6px; font-style: italic;">
+              Contact support to change your email
+            </p>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 24px;">Save Changes</button>
+        </form>
+      </section>
+
+      <!-- Change Password Card -->
+      <section class="settings-card">
+        <h2>Change Password</h2>
+        <form method="POST" action="account.php">
+          <input type="hidden" name="action" value="change_password">
+
+          <div class="form-group">
+            <label for="current_password">Current Password</label>
+            <input type="password" id="current_password" name="current_password"
+              autocomplete="current-password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="new_password">New Password</label>
+            <input type="password" id="new_password" name="new_password"
+              autocomplete="new-password" placeholder="At least 8 characters" required>
+          </div>
+
+          <div class="form-group">
+            <label for="new_password_confirm">Confirm New Password</label>
+            <input type="password" id="new_password_confirm" name="new_password_confirm"
+              autocomplete="new-password" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 24px;">Change Password</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link-section">
+      <a href="index.php" class="back-link">
+        <span>←</span>
+        <span>Back to Dashboard</span>
+      </a>
     </div>
   </main>
 
+  <!-- Footer -->
   <footer class="footer">
     <p>&copy; 2026 QueenLib. All rights reserved.</p>
   </footer>
 
+  <!-- Scripts -->
   <script src="public/js/main.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <!-- SweetAlert Configuration -->
-  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-  <script>
-    // Show error alert if there's an error
-    <?php if ($error): ?>
-      SweetAlerts.error('Error', '<?php echo addslashes($error); ?>');
-    <?php endif; ?>
-
-    // Show profile updated alert
-    <?php if (isset($_SESSION['show_profile_success'])): ?>
-      <?php unset($_SESSION['show_profile_success']); ?>
-      SweetAlerts.profileUpdatedSuccess();
-    <?php endif; ?>
-
-    // Show password changed alert
-    <?php if (isset($_SESSION['show_password_success'])): ?>
-      <?php unset($_SESSION['show_password_success']); ?>
-      SweetAlerts.passwordChangedSuccess();
-    <?php endif; ?>
-  </script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

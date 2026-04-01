@@ -10,8 +10,56 @@
  */
 function redirect($path, $status = 302)
 {
+  if (strpos($path, 'http://') !== 0 && strpos($path, 'https://') !== 0) {
+    if ($path === '') {
+      $path = '/';
+    }
+
+    if ($path[0] !== '/') {
+      $path = '/' . $path;
+    }
+
+    $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+    if ($basePath !== '' && strpos($path, $basePath . '/') !== 0 && $path !== $basePath) {
+      $path = $basePath . $path;
+    }
+  }
+
   header("Location: $path", true, $status);
   exit();
+}
+
+/**
+ * Build an application path with optional query string
+ */
+function appPath($path = '', array $query = [])
+{
+  $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+  $normalizedPath = '/' . ltrim($path, '/');
+
+  if ($normalizedPath === '/') {
+    $fullPath = $basePath === '' ? '/' : $basePath . '/';
+  } else {
+    $fullPath = $basePath . $normalizedPath;
+  }
+
+  if (!empty($query)) {
+    $queryString = http_build_query($query);
+    if ($queryString !== '') {
+      $fullPath .= '?' . $queryString;
+    }
+  }
+
+  return $fullPath;
+}
+
+/**
+ * Build an absolute application URL
+ */
+function appUrl($path = '', array $query = [])
+{
+  $appUrl = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+  return $appUrl . appPath($path, $query);
 }
 
 /**
@@ -20,7 +68,7 @@ function redirect($path, $status = 302)
 function requireLogin()
 {
   if (!isset($_SESSION['user_id'])) {
-    redirect('/library_betonio/login.php');
+    redirect('login.php');
   }
 }
 
@@ -96,99 +144,33 @@ function getPost($key, $default = '')
 }
 
 /**
+ * Get shared mail handler instance.
+ */
+function getMailHandler()
+{
+  static $mail_handler = null;
+
+  if ($mail_handler !== null) {
+    return $mail_handler;
+  }
+
+  global $db;
+
+  require_once __DIR__ . '/../backend/vendor/autoload.php';
+  require_once __DIR__ . '/../backend/mail/MailHandler.php';
+
+  $mail_handler = new MailHandler($db ?? null);
+  return $mail_handler;
+}
+
+/**
  * Send Verification Email using PHPMailer
  */
 function sendVerificationEmail($email, $name = '', $verification_token = '')
 {
   try {
-    // Load PHPMailer
-    require_once __DIR__ . '/../backend/vendor/autoload.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-    // Get email config
-    $config = require __DIR__ . '/../backend/config/email.config.php';
-
-    // Server settings
-    $mail->isSMTP();
-    $mail->Host = $config['smtp']['host'];
-    $mail->SMTPAuth = true;
-    $mail->Username = $config['smtp']['username'];
-    $mail->Password = $config['smtp']['password'];
-    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = $config['smtp']['port'];
-
-    // SSL verification
-    $mail->SMTPOptions = [
-      'ssl' => [
-        'verify_peer' => $config['enable_ssl_verification'],
-        'verify_peer_name' => $config['enable_ssl_verification'],
-        'allow_self_signed' => false
-      ]
-    ];
-
-    // Recipients
-    $mail->setFrom($config['smtp']['from_email'], $config['smtp']['from_name']);
-    $mail->addAddress($email);
-
-    // Content
-    $mail->isHTML(true);
-    $mail->Subject = 'QueenLib - Verify Your Email';
-
-    // Create verification link with token
-    $verification_link = 'http://localhost/library_betonio/verify-otp.php?email=' . urlencode($email);
-    if (!empty($verification_token)) {
-      $verification_link .= '&token=' . urlencode($verification_token);
-    }
-
-    $body = "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
-                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background-color: white; padding: 30px; }
-                .button { display: inline-block; padding: 14px 32px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-                .button:hover { background-color: #2980b9; }
-                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
-                .alt-link { color: #3498db; word-break: break-all; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h1>QueenLib</h1>
-                    <p>Email Verification</p>
-                </div>
-                <div class='content'>
-                    <h2>Hello $name,</h2>
-                    <p>Thank you for registering with QueenLib! Click the button below to verify your email address and activate your account.</p>
-                    
-                    <center>
-                        <a href='$verification_link' class='button'>Verify Email</a>
-                    </center>
-                    
-                    <p style='color: #e74c3c; font-weight: bold;'>This link expires in 24 hours.</p>
-                    
-                    <p style='color: #7f8c8d; font-size: 13px;'>If you didn't create this account or didn't request to verify this email, please ignore this message.</p>
-                </div>
-                <div class='footer'>
-                    <p>&copy; 2026 Library Betonio. All rights reserved.</p>
-                    <p>This is an automated email. Please do not reply.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    ";
-
-    $mail->Body = $body;
-    $mail->AltBody = "Click here to verify your email: $verification_link";
-
-    $result = $mail->send();
-    return ['success' => true, 'message' => 'Verification email sent successfully'];
+    $result = getMailHandler()->sendVerificationEmail($email, $name, $verification_token);
+    return $result;
   } catch (Exception $e) {
     error_log("Error sending verification email: " . $e->getMessage());
     return ['success' => false, 'error' => 'Failed to send verification email'];
@@ -201,109 +183,14 @@ function sendVerificationEmail($email, $name = '', $verification_token = '')
 function sendOTPEmail($email, $otp, $name = '', $verification_token = '')
 {
   try {
-    // Load PHPMailer
-    require_once __DIR__ . '/../backend/vendor/autoload.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-    // Get email config
-    $config = require __DIR__ . '/../backend/config/email.config.php';
-
-    // Server settings
-    $mail->isSMTP();
-    $mail->Host = $config['smtp']['host'];
-    $mail->SMTPAuth = true;
-    $mail->Username = $config['smtp']['username'];
-    $mail->Password = $config['smtp']['password'];
-    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = $config['smtp']['port'];
-
-    // SSL verification
-    $mail->SMTPOptions = [
-      'ssl' => [
-        'verify_peer' => $config['enable_ssl_verification'],
-        'verify_peer_name' => $config['enable_ssl_verification'],
-        'allow_self_signed' => false
-      ]
-    ];
-
-    // Recipients
-    $mail->setFrom($config['smtp']['from_email'], $config['smtp']['from_name']);
-    $mail->addAddress($email);
-
-    // Content
-    $mail->isHTML(true);
-    $mail->Subject = 'QueenLib - Email Verification Code';
-
-    // Create verification page link
-    $verification_link = 'http://localhost/library_betonio/verify-otp.php?email=' . urlencode($email);
-    if (!empty($verification_token)) {
-      $verification_link .= '&token=' . urlencode($verification_token);
-    }
-
-    $body = "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
-                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background-color: white; padding: 30px; }
-                .otp-box { background-color: #e8f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
-                .otp-code { font-size: 36px; font-weight: bold; color: #2c3e50; letter-spacing: 8px; }
-                .button { display: inline-block; padding: 14px 32px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-                .button:hover { background-color: #2980b9; }
-                .alt-text { color: #7f8c8d; font-size: 13px; word-break: break-all; }
-                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h1>QueenLib</h1>
-                    <p>Email Verification</p>
-                </div>
-                <div class='content'>
-                    <h2>Hello $name,</h2>
-                    <p>Thank you for registering! Open the verification page below, then enter the 6-digit code to complete your email verification:</p>
-                    
-                    <center>
-                        <a href='$verification_link' class='button'>Open Verification Page</a>
-                    </center>
-                    
-                    <div class='otp-box'>
-                        <p>Or enter this verification code:</p>
-                        <div class='otp-code'>$otp</div>
-                        <p style='color: #e74c3c; font-weight: bold;'>This code expires in 10 minutes</p>
-                    </div>
-                    
-                    <p style='color: #7f8c8d; font-size: 13px;'>If the button above doesn't work, copy and paste this verification page link in your browser:</p>
-                    <p class='alt-text'><strong>$verification_link</strong></p>
-                    
-                    <p>If you didn't create this account, please ignore this email.</p>
-                </div>
-                <div class='footer'>
-                    <p>&copy; 2026 QueenLib. All rights reserved.</p>
-                    <p>This is an automated email. Please do not reply.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    ";
-
-    $mail->Body = $body;
-    $mail->AltBody = "Your OTP code is: $otp. This code expires in 10 minutes.\n\nVerify here: $verification_link";
-
-    if ($mail->send()) {
-      error_log("OTP email sent successfully to: $email");
-      return true;
-    }
+    $result = getMailHandler()->sendOTPEmail($email, $otp, $name, $verification_token);
+    return !empty($result['success']);
   } catch (Exception $e) {
     error_log("Email sending error: " . $e->getMessage());
     return false;
   }
+
+  return false;
 }
 
 /**
@@ -312,98 +199,14 @@ function sendOTPEmail($email, $otp, $name = '', $verification_token = '')
 function sendPasswordResetEmail($email, $reset_link, $name = '')
 {
   try {
-    // Load PHPMailer
-    require_once __DIR__ . '/../backend/vendor/autoload.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-
-    // Get email config
-    $config = require __DIR__ . '/../backend/config/email.config.php';
-
-    // Server settings
-    $mail->isSMTP();
-    $mail->Host = $config['smtp']['host'];
-    $mail->SMTPAuth = true;
-    $mail->Username = $config['smtp']['username'];
-    $mail->Password = $config['smtp']['password'];
-    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = $config['smtp']['port'];
-
-    // SSL verification
-    $mail->SMTPOptions = [
-      'ssl' => [
-        'verify_peer' => $config['enable_ssl_verification'],
-        'verify_peer_name' => $config['enable_ssl_verification'],
-        'allow_self_signed' => false
-      ]
-    ];
-
-    // Recipients
-    $mail->setFrom($config['smtp']['from_email'], $config['smtp']['from_name']);
-    $mail->addAddress($email);
-
-    // Content
-    $mail->isHTML(true);
-    $mail->Subject = 'QueenLib - Password Reset Request';
-
-    $body = "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
-                .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background-color: white; padding: 30px; }
-                .button { display: inline-block; padding: 12px 30px; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                .warning { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
-                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h1>QueenLib</h1>
-                    <p>Password Reset Request</p>
-                </div>
-                <div class='content'>
-                    <h2>Hello $name,</h2>
-                    <p>We received a request to reset your password. Click the button below to proceed:</p>
-                    
-                    <center>
-                        <a href='$reset_link' class='button'>Reset Your Password</a>
-                    </center>
-                    
-                    <div class='warning'>
-                        <strong>⚠️ Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email and your account will remain secure.
-                    </div>
-                    
-                    <p>If the button doesn't work, copy and paste this link in your browser:</p>
-                    <p style='word-break: break-all; color: #3498db; font-family: monospace; font-size: 12px;'>
-                        $reset_link
-                    </p>
-                </div>
-                <div class='footer'>
-                    <p>&copy; 2026 QueenLib. All rights reserved.</p>
-                    <p>This is an automated email. Please do not reply.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    ";
-
-    $mail->Body = $body;
-    $mail->AltBody = "Click the link to reset your password: $reset_link";
-
-    if ($mail->send()) {
-      error_log("Password reset email sent successfully to: $email");
-      return true;
-    }
+    $result = getMailHandler()->sendPasswordResetEmailByLink($email, $reset_link, $name);
+    return !empty($result['success']);
   } catch (Exception $e) {
     error_log("Email sending error: " . $e->getMessage());
     return false;
   }
+
+  return false;
 }
 
 /**
@@ -435,7 +238,37 @@ function checkSessionTimeout()
     $elapsed = time() - $_SESSION['login_time'];
     if ($elapsed > SESSION_TIMEOUT) {
       session_destroy();
-      redirect('/library_betonio/login.php?timeout=1');
+      redirect(appPath('login.php', ['timeout' => 1]));
     }
   }
+}
+
+/**
+ * Render shared SweetAlert script assets.
+ */
+function renderSweetAlertScripts()
+{
+  $config_path = htmlspecialchars(appPath('public/js/sweetalert-config.js'), ENT_QUOTES, 'UTF-8');
+  $page_alerts_path = htmlspecialchars(appPath('public/js/page-alerts.js'), ENT_QUOTES, 'UTF-8');
+
+  echo '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>' . PHP_EOL;
+  echo '<script src="' . $config_path . '"></script>' . PHP_EOL;
+  echo '<script src="' . $page_alerts_path . '"></script>' . PHP_EOL;
+}
+
+/**
+ * Render queued page alerts.
+ */
+function renderPageAlerts(array $alerts)
+{
+  if (empty($alerts)) {
+    return;
+  }
+
+  $payload = json_encode(array_values($alerts), JSON_UNESCAPED_SLASHES);
+  if ($payload === false) {
+    $payload = '[]';
+  }
+
+  echo '<script>PageAlerts.run(' . $payload . ');</script>' . PHP_EOL;
 }

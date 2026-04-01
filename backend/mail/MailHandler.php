@@ -21,6 +21,36 @@ class MailHandler
         $this->initializePHPMailer();
     }
 
+private function buildAppUrl($path, array $query = [])
+    {
+        $appUrl = getenv('APP_URL');
+        if (!$appUrl && defined('APP_URL')) {
+            $appUrl = APP_URL;
+        }
+        
+        $basePath = getenv('APP_BASE_PATH');
+        if (!$basePath && defined('APP_BASE_PATH')) {
+            $basePath = APP_BASE_PATH;
+        }
+
+        $base = rtrim($appUrl ?: 'http://localhost', '/');
+        
+        if (!empty($basePath)) {
+            $base = $base . $basePath;
+        }
+        
+        $url = $base . '/' . ltrim($path, '/');
+
+        if (!empty($query)) {
+            $queryString = http_build_query($query);
+            if ($queryString !== '') {
+                $url .= '?' . $queryString;
+            }
+        }
+
+        return $url;
+    }
+
     /**
      * Initialize PHPMailer with configured settings
      */
@@ -66,10 +96,11 @@ class MailHandler
             $this->mail->Subject = 'Email Verification - OTP Code';
 
             // Generate verification page link WITH token
-            $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
+            $query = ['email' => $email];
             if (!empty($verification_token)) {
-                $verification_link .= "&token=" . urlencode($verification_token);
+                $query['token'] = $verification_token;
             }
+            $verification_link = $this->buildAppUrl('verify-otp.php', $query);
 
             // HTML Email Body
             $body = $this->getOTPEmailTemplate($user_name, $otp_code, $verification_link);
@@ -100,10 +131,11 @@ class MailHandler
             $this->mail->Subject = 'QueenLib - Verify Your Email';
 
             // Create verification link with token
-            $verification_link = "http://localhost/library_betonio/verify-otp.php?email=" . urlencode($email);
+            $query = ['email' => $email];
             if (!empty($verification_token)) {
-                $verification_link .= "&token=" . urlencode($verification_token);
+                $query['token'] = $verification_token;
             }
+            $verification_link = $this->buildAppUrl('verify-otp.php', $query);
 
             // HTML Email Body
             $body = $this->getVerificationEmailTemplate($user_name, $verification_link);
@@ -134,7 +166,10 @@ class MailHandler
             $this->mail->Subject = 'Password Reset Request - Library Betonio';
 
             // Generate reset link WITH email parameter
-            $reset_link = "http://localhost/library_betonio/reset-password.php?email=" . urlencode($email) . "&token=" . urlencode($reset_token);
+            $reset_link = $this->buildAppUrl('reset-password.php', [
+                'email' => $email,
+                'token' => $reset_token
+            ]);
 
             $body = $this->getPasswordResetEmailTemplate($user_name, $reset_link);
 
@@ -149,6 +184,33 @@ class MailHandler
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending password reset email: " . $e->getMessage());
+            return ['success' => false, 'error' => 'Failed to send password reset email'];
+        }
+    }
+
+    /**
+     * Send password reset email using a pre-built reset link.
+     */
+    public function sendPasswordResetEmailByLink($email, $reset_link, $user_name)
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'Password Reset Request - Library Betonio';
+
+            $body = $this->getPasswordResetEmailTemplate($user_name, $reset_link);
+
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "Click the link to reset your password: $reset_link";
+
+            $this->mail->send();
+
+            // Clear recipients for next email
+            $this->mail->clearAddresses();
+
+            return ['success' => true, 'message' => 'Password reset email sent successfully'];
+        } catch (Exception $e) {
+            error_log("Error sending password reset email by link: " . $e->getMessage());
             return ['success' => false, 'error' => 'Failed to send password reset email'];
         }
     }
@@ -292,7 +354,7 @@ class MailHandler
                     </center>
                     
                     <div class="warning">
-                        <strong>⚠️ Security Notice:</strong> This link will expire in 1 hour. If you didn't request a password reset, please ignore this email and your account will remain secure.
+                        <strong>⚠️ Security Notice:</strong> This link will expire in 10 minutes. If you didn't request a password reset, please ignore this email and your account will remain secure.
                     </div>
                     
                     <p>If the button doesn't work, copy and paste this link in your browser:</p>

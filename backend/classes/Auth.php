@@ -5,6 +5,9 @@
  * Handles login, registration, OTP generation, password reset
  */
 
+require_once __DIR__ . '/AuthSupport.php';
+require_once __DIR__ . '/UserRepository.php';
+
 class Auth
 {
   private $db;
@@ -43,12 +46,8 @@ class Auth
 
     try {
       // Check if user already exists
-      $query = "SELECT id FROM " . $this->table . " WHERE email = :email";
-      $stmt = $this->db->prepare($query);
-      $stmt->bindParam(':email', $email);
-      $stmt->execute();
-
-      if ($stmt->rowCount() > 0) {
+      $existing_user = UserRepository::findByEmail($this->db, $this->table, $email, ['id']);
+      if ($existing_user) {
         return ['success' => false, 'error' => 'Email already registered'];
       }
 
@@ -101,15 +100,15 @@ class Auth
     }
 
     try {
-      $query = "SELECT id, first_name, last_name, email, password_hash, is_verified, is_active 
-                      FROM " . $this->table . " WHERE email = :email AND is_active = 1";
+      $user = UserRepository::findByEmail(
+        $this->db,
+        $this->table,
+        $email,
+        ['id', 'first_name', 'last_name', 'email', 'password_hash', 'is_verified', 'is_active'],
+        true
+      );
 
-      $stmt = $this->db->prepare($query);
-      $stmt->bindParam(':email', $email);
-      $stmt->execute();
-
-      if ($stmt->rowCount() > 0) {
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+      if ($user) {
 
         // Verify password
         if (password_verify($password, $user['password_hash'])) {
@@ -131,12 +130,7 @@ class Auth
           $this->logAttempt($email, 'login_attempt', $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', true);
 
           // Create session
-          session_start();
-          $_SESSION['user_id'] = $user['id'];
-          $_SESSION['email'] = $user['email'];
-          $_SESSION['first_name'] = $user['first_name'];
-          $_SESSION['last_name'] = $user['last_name'];
-          $_SESSION['login_time'] = time();
+          AuthSupport::setBackendSession($user);
 
           // Generate auth token (JWT alternative)
           $auth_token = $this->generateAuthToken($user['id'], $user['email']);
@@ -172,7 +166,7 @@ class Auth
   public function logout()
   {
     try {
-      session_start();
+      AuthSupport::ensureSessionStarted();
 
       if (isset($_SESSION['user_id'])) {
         // Log logout time
@@ -186,7 +180,7 @@ class Auth
       }
 
       // Destroy session
-      session_destroy();
+      AuthSupport::clearSession();
 
       return ['success' => true, 'message' => 'Logout successful'];
     } catch (Exception $e) {
@@ -200,7 +194,7 @@ class Auth
    */
   public function isAuthenticated()
   {
-    session_start();
+    AuthSupport::ensureSessionStarted();
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
   }
 
@@ -213,17 +207,14 @@ class Auth
       return null;
     }
 
-    session_start();
+    AuthSupport::ensureSessionStarted();
     try {
-      $query = "SELECT id, first_name, last_name, email, is_verified, created_at 
-                      FROM " . $this->table . " WHERE id = :id";
-      $stmt = $this->db->prepare($query);
-      $stmt->bindParam(':id', $_SESSION['user_id']);
-      $stmt->execute();
-
-      if ($stmt->rowCount() > 0) {
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-      }
+      return UserRepository::findById(
+        $this->db,
+        $this->table,
+        $_SESSION['user_id'],
+        ['id', 'first_name', 'last_name', 'email', 'is_verified', 'created_at']
+      );
     } catch (PDOException $e) {
       error_log("Get user error: " . $e->getMessage());
     }
@@ -292,4 +283,5 @@ class Auth
       error_log("Log history error: " . $e->getMessage());
     }
   }
+
 }

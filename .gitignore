@@ -12,11 +12,16 @@ build/
 *.swp
 *.swo
 *~
+*.sublime-workspace
+*.sublime-project
 
-# Environment
+# Environment - CRITICAL: Never commit sensitive data
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
 
 # Backup files
 *.bak
@@ -28,12 +33,32 @@ build/
 *.exe
 *.dll
 *.pyd
+Thumbs.db
 
 # Testing
 .coverage
 htmlcov/
+*.log
 
-# Old/unused files (leave commented out as needed)
-# old/
-# backup/
-# temp/
+# Log files
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+cache/
+*.tmp
+
+# IDE specific
+.vscode/
+.idea/
+.vim/
+
+# Old/legacy code
+_legacy/
+old_backup/
+
+# Test configuration and reports (keep test plans, exclude test execution results)
+testsprite_tests/results/
+testsprite_tests/.cache/

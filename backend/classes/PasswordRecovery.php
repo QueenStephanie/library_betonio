@@ -55,10 +55,10 @@ class PasswordRecovery
         return ['success' => false, 'error' => 'Too many password reset requests. Try again later.'];
       }
 
-      // Generate reset token (valid for 1 hour)
-      $reset_token = bin2hex(random_bytes(32));
-      $reset_token_hash = password_hash($reset_token, PASSWORD_BCRYPT);
-      $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
+       // Generate reset token (valid for 10 minutes)
+       $reset_token = bin2hex(random_bytes(32));
+       $reset_token_hash = password_hash($reset_token, PASSWORD_BCRYPT);
+       $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
       // Update user with reset token
       $update_query = "UPDATE " . $this->table . " 
@@ -108,16 +108,11 @@ class PasswordRecovery
       return ['success' => false, 'error' => 'Passwords do not match'];
     }
 
-    if (strlen($new_password) < 8) {
-      return ['success' => false, 'error' => 'Password must be at least 8 characters long'];
-    }
+     if (strlen($new_password) < 8) {
+       return ['success' => false, 'error' => 'Password must be at least 8 characters long'];
+     }
 
-    // Check password strength
-    if (!$this->isPasswordStrong($new_password)) {
-      return ['success' => false, 'error' => 'Password must contain uppercase, lowercase, number, and special character'];
-    }
-
-    try {
+     try {
       // Get user and verify reset token
       $query = "SELECT id, email, reset_token, reset_token_expires, password_hash 
                       FROM " . $this->table . " 
@@ -172,7 +167,7 @@ class PasswordRecovery
         'success' => true,
         'message' => 'Password reset successfully. You can now login with your new password.',
         'user_id' => $user['id'],
-        'redirect' => '/library_betonio/login.html'
+        'redirect' => 'login.php'
       ];
     } catch (PDOException $e) {
       error_log("Password reset error: " . $e->getMessage());

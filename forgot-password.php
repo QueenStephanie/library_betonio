@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($result['success']) {
     $_SESSION['show_password_reset_alert'] = true;
-    redirect('/library_betonio/forgot-password.php?success=1');
+    redirect(appPath('forgot-password.php', ['success' => 1]));
   } else {
     $error = $result['error'];
   }
@@ -38,6 +38,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $show_success_alert = isset($_GET['success']) && $_GET['success'] === '1' && isset($_SESSION['show_password_reset_alert']);
 if ($show_success_alert) {
   unset($_SESSION['show_password_reset_alert']);
+}
+
+$page_alerts = [];
+if ($show_success_alert) {
+  $page_alerts[] = [
+    'method' => 'passwordResetSuccess',
+    'redirect' => appPath('login.php')
+  ];
+}
+
+if ($error) {
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'Error',
+    'message' => $error
+  ];
 }
 ?>
 <!DOCTYPE html>
@@ -90,24 +106,8 @@ if ($show_success_alert) {
   </main>
 
   <script src="public/js/auth.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <!-- SweetAlert Configuration -->
-  <script src="/library_betonio/public/js/sweetalert-config.js"></script>
-
-  <script>
-    // Show success alert if password reset was successful
-    <?php if ($show_success_alert): ?>
-      SweetAlerts.passwordResetSuccess(function() {
-        window.location.href = '/library_betonio/login.php';
-      });
-    <?php endif; ?>
-
-    // Show error alert if there's an error
-    <?php if ($error): ?>
-      SweetAlerts.error('Error', '<?php echo addslashes($error); ?>');
-    <?php endif; ?>
-  </script>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

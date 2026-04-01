@@ -3,6 +3,31 @@
 
 ---
 
+## 🚀 QUICK START - InfinityFree (5 minutes)
+
+### Already done ✅:
+- [x] Code is host-ready (env-based config)
+- [x] Schema file ready
+- [x] Security files in place
+
+### Do these NOW:
+
+**1. Get InfinityFree credentials:**
+- MySQL Host: `sql000.infinityfree.com`
+- Database Name: `if0_XXXXX_queenlib`  
+- Username: `if0_XXXXX`
+- Password: your MySQL password
+
+**2. Edit `.env.production` with your values**
+
+**3. Upload to htdocs**
+
+**4. Import `backend/config/schema.sql` in phpMyAdmin**
+
+**5. Test!**
+
+---
+
 ## 📋 Pre-Deployment Phase (1-2 weeks before)
 
 ### Domain & Hosting Setup

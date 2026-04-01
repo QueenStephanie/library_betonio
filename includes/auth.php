@@ -5,6 +5,9 @@
  * Handles user registration, login, logout, and session management
  */
 
+require_once __DIR__ . '/../backend/classes/AuthSupport.php';
+require_once __DIR__ . '/../backend/classes/UserRepository.php';
+
 class AuthManager
 {
   private $db;
@@ -38,11 +41,8 @@ class AuthManager
 
     try {
       // Check if user exists
-      $query = "SELECT id FROM users WHERE email = :email";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':email' => $email]);
-
-      if ($stmt->rowCount() > 0) {
+      $existing_user = UserRepository::findByEmail($this->db, 'users', $email, ['id']);
+      if ($existing_user) {
         return ['success' => false, 'error' => 'Email already registered'];
       }
 
@@ -91,15 +91,16 @@ class AuthManager
 
     try {
       // Find user
-      $query = "SELECT id, first_name, last_name, email, password_hash, is_verified FROM users WHERE email = :email";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':email' => $email]);
+      $user = UserRepository::findByEmail(
+        $this->db,
+        'users',
+        $email,
+        ['id', 'first_name', 'last_name', 'email', 'password_hash', 'is_verified']
+      );
 
-      if ($stmt->rowCount() === 0) {
+      if (!$user) {
         return ['success' => false, 'error' => 'Invalid email or password'];
       }
-
-      $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
       // Verify password
       if (!password_verify($password, $user['password_hash'])) {
@@ -112,10 +113,7 @@ class AuthManager
       }
 
       // Set session
-      $_SESSION['user_id'] = $user['id'];
-      $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-      $_SESSION['user_email'] = $user['email'];
-      $_SESSION['login_time'] = time();
+      AuthSupport::setFrontendSession($user);
 
       return [
         'success' => true,
@@ -132,7 +130,7 @@ class AuthManager
    */
   public function logout()
   {
-    session_destroy();
+    AuthSupport::clearSession();
     return ['success' => true];
   }
 
@@ -154,10 +152,12 @@ class AuthManager
     }
 
     try {
-      $query = "SELECT id, first_name, last_name, email, is_verified FROM users WHERE id = :id";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':id' => $_SESSION['user_id']]);
-      return $stmt->fetch(PDO::FETCH_ASSOC);
+      return UserRepository::findById(
+        $this->db,
+        'users',
+        $_SESSION['user_id'],
+        ['id', 'first_name', 'last_name', 'email', 'is_verified']
+      );
     } catch (Exception $e) {
       return null;
     }
@@ -222,19 +222,14 @@ class AuthManager
 
     try {
       // Find user
-      $query = "SELECT id FROM users WHERE email = :email";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':email' => $email]);
-
-      if ($stmt->rowCount() === 0) {
+      $user = UserRepository::findByEmail($this->db, 'users', $email, ['id']);
+      if (!$user) {
         return ['success' => false, 'error' => 'Email not found'];
       }
 
-      $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-      // Generate reset token
-      $reset_token = bin2hex(random_bytes(32));
-      $token_expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour
+       // Generate reset token
+       $reset_token = bin2hex(random_bytes(32));
+       $token_expires = date('Y-m-d H:i:s', time() + 600); // 10 minutes
 
       // Store token
       $query = "UPDATE users SET reset_token = :token, reset_token_expires = :expires WHERE id = :id";
@@ -277,17 +272,22 @@ class AuthManager
       return ['success' => false, 'error' => 'Password must be at least 8 characters'];
     }
 
-    try {
-      // Verify token
-      $query = "SELECT id FROM users WHERE email = :email AND reset_token = :token AND reset_token_expires > NOW()";
-      $stmt = $this->db->prepare($query);
-      $stmt->execute([':email' => $email, ':token' => $reset_token]);
+     try {
+       // Verify token
+       $query = "SELECT id, reset_token FROM users WHERE email = :email AND reset_token IS NOT NULL AND reset_token_expires > NOW()";
+       $stmt = $this->db->prepare($query);
+       $stmt->execute([':email' => $email]);
 
-      if ($stmt->rowCount() === 0) {
-        return ['success' => false, 'error' => 'Invalid or expired reset token'];
-      }
+       if ($stmt->rowCount() === 0) {
+         return ['success' => false, 'error' => 'Invalid or expired reset token'];
+       }
 
-      $user = $stmt->fetch(PDO::FETCH_ASSOC);
+       $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+       // Verify token using password_verify (token is hashed)
+       if (!password_verify($reset_token, $user['reset_token'])) {
+         return ['success' => false, 'error' => 'Invalid or expired reset token'];
+       }
 
       // Update password
       $password_hash = password_hash($password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);

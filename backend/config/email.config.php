@@ -8,12 +8,12 @@
 return [
   // SMTP Configuration
   'smtp' => [
-    'host' => 'smtp.gmail.com',           // Change to your email provider
-    'port' => 587,                        // 587 for TLS, 465 for SSL
-    'username' => 'sordillamike1@gmail.com', // Your email address
-    'password' => 'ibps fndh cbvv iriv',    // App-specific password
-    'from_email' => 'sordillamike1@gmail.com',
-    'from_name' => 'Library Betonio'
+    'host' => getenv('MAIL_HOST') ?: 'smtp.gmail.com',
+    'port' => (int) (getenv('MAIL_PORT') ?: 587),
+    'username' => getenv('MAIL_USER') ?: (getenv('MAIL_USERNAME') ?: ''),
+    'password' => getenv('MAIL_PASS') ?: (getenv('MAIL_PASSWORD') ?: ''),
+    'from_email' => getenv('MAIL_FROM') ?: 'noreply@example.com',
+    'from_name' => getenv('MAIL_FROM_NAME') ?: 'QueenLib'
   ],
 
   // Alternative: Local Sendmail Configuration
@@ -32,5 +32,5 @@ return [
   ],
 
   // Security
-  'enable_ssl_verification' => true
+  'enable_ssl_verification' => filter_var(getenv('MAIL_VERIFY_SSL') ?: true, FILTER_VALIDATE_BOOL)
 ];
