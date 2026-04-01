@@ -61,6 +61,35 @@ CREATE TABLE IF NOT EXISTS login_history (
     INDEX idx_user_login (user_id, login_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Admin Credential Store (DB-primary admin authentication)
+CREATE TABLE IF NOT EXISTS admin_credentials (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    password_changed_at DATETIME NULL,
+    INDEX idx_admin_credentials_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Admin Session Registry (for cross-session invalidation)
+CREATE TABLE IF NOT EXISTS admin_session_registry (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    admin_identity VARCHAR(120) NOT NULL,
+    admin_credential_id INT NULL,
+    session_id_hash CHAR(64) NOT NULL UNIQUE,
+    auth_mode ENUM('db', 'bootstrap_env') NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at DATETIME NULL,
+    invalidated_at DATETIME NULL,
+    FOREIGN KEY (admin_credential_id) REFERENCES admin_credentials(id) ON DELETE SET NULL,
+    INDEX idx_admin_session_identity (admin_identity),
+    INDEX idx_admin_session_active (admin_identity, invalidated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Indexes for Performance and Security
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_verification_token ON users(verification_token);

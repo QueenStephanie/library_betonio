@@ -188,6 +188,71 @@ a {
   font-weight: 700;
 }
 
+.alert {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.alert-error {
+  border-color: #f1b7a7;
+  background: #fff2ee;
+  color: #8e2b0f;
+}
+
+.auth-status-panel {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f8f4ee;
+}
+
+.auth-status-title {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.auth-status-message {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: #54483d;
+}
+
+.auth-status-panel.status-db {
+  border-color: #b2d8c2;
+  background: #edf8f1;
+}
+
+.auth-status-panel.status-db .auth-status-title {
+  color: #1d6a3d;
+}
+
+.auth-status-panel.status-bootstrap {
+  border-color: #ebd59f;
+  background: #fff8e8;
+}
+
+.auth-status-panel.status-bootstrap .auth-status-title {
+  color: #8f5f00;
+}
+
+.auth-status-panel.status-blocked {
+  border-color: #f1b7a7;
+  background: #fff2ee;
+}
+
+.auth-status-panel.status-blocked .auth-status-title {
+  color: #8e2b0f;
+}
+
 .auth-form {
   display: grid;
   gap: 8px;
@@ -407,5 +472,10 @@ a {
   .otp-box {
     height: 70px;
     font-size: 1.6rem;
+  }
+
+  .auth-status-panel,
+  .alert {
+    padding: 10px 12px;
   }
 }

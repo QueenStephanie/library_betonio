@@ -62,3 +62,8 @@ old_backup/
 # Test configuration and reports (keep test plans, exclude test execution results)
 testsprite_tests/results/
 testsprite_tests/.cache/
+
+# PHP/composer artifacts
+vendor/
+backend/vendor/
+*.cache

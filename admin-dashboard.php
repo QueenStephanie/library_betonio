@@ -3,14 +3,12 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
-  redirect('admin-login.php');
-}
+requireAdminAuth();
 
 // Check for admin welcome alert
 $show_admin_welcome = isset($_SESSION['show_admin_welcome']);
 if ($show_admin_welcome) {
-  unset($_SESSION['show_admin_wel come']);
+  unset($_SESSION['show_admin_welcome']);
 }
 
 $page_alerts = [];

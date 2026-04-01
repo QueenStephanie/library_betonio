@@ -73,6 +73,126 @@ function requireLogin()
 }
 
 /**
+ * Check whether an admin session is authenticated.
+ */
+function isAdminAuthenticated()
+{
+  return isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true;
+}
+
+/**
+ * Validate that the current admin session is still active in registry.
+ */
+function isActiveAdminSession()
+{
+  if (!isAdminAuthenticated()) {
+    return false;
+  }
+
+  if (!isset($_SESSION['admin_username']) || !is_string($_SESSION['admin_username']) || $_SESSION['admin_username'] === '') {
+    return false;
+  }
+
+  global $db;
+  if (!isset($db)) {
+    return false;
+  }
+
+  $sessionId = session_id();
+  if (!is_string($sessionId) || $sessionId === '') {
+    return false;
+  }
+
+  try {
+    $stmt = $db->prepare(
+      'SELECT id
+       FROM admin_session_registry
+       WHERE session_id_hash = :session_id_hash
+         AND admin_identity = :admin_identity
+         AND invalidated_at IS NULL
+       LIMIT 1'
+    );
+    $stmt->execute([
+      ':session_id_hash' => hash('sha256', $sessionId),
+      ':admin_identity' => $_SESSION['admin_username'],
+    ]);
+    return (bool)$stmt->fetchColumn();
+  } catch (Exception $e) {
+    error_log('isActiveAdminSession error: ' . $e->getMessage());
+    return false;
+  }
+}
+
+/**
+ * Enforce admin authentication for protected admin pages.
+ */
+function requireAdminAuth($redirectPath = 'admin-login.php')
+{
+  if (!isAdminAuthenticated() || !isActiveAdminSession()) {
+    unset($_SESSION['admin_authenticated']);
+    unset($_SESSION['admin_username']);
+    unset($_SESSION['admin_last_login']);
+    unset($_SESSION['admin_auth_mode']);
+    unset($_SESSION['admin_credential_id']);
+    unset($_SESSION['show_admin_welcome']);
+    unset($_SESSION['admin_profile']);
+    unset($_SESSION['admin_password_changed_at']);
+    clearAdminCsrfToken();
+    redirect($redirectPath);
+  }
+}
+
+/**
+ * Ensure a reusable session-scoped admin CSRF token exists.
+ */
+function ensureAdminCsrfToken()
+{
+  if (
+    !isset($_SESSION['admin_csrf_token']) ||
+    !is_string($_SESSION['admin_csrf_token']) ||
+    $_SESSION['admin_csrf_token'] === ''
+  ) {
+    $_SESSION['admin_csrf_token'] = bin2hex(random_bytes(32));
+    $_SESSION['admin_csrf_issued_at'] = time();
+  }
+
+  return $_SESSION['admin_csrf_token'];
+}
+
+/**
+ * Get the active admin CSRF token.
+ */
+function getAdminCsrfToken()
+{
+  return ensureAdminCsrfToken();
+}
+
+/**
+ * Validate a submitted admin CSRF token against current session token.
+ */
+function validateAdminCsrfToken($submittedToken)
+{
+  if (!is_string($submittedToken) || $submittedToken === '') {
+    return false;
+  }
+
+  $sessionToken = $_SESSION['admin_csrf_token'] ?? null;
+  if (!is_string($sessionToken) || $sessionToken === '') {
+    return false;
+  }
+
+  return hash_equals($sessionToken, $submittedToken);
+}
+
+/**
+ * Clear admin CSRF token state.
+ */
+function clearAdminCsrfToken()
+{
+  unset($_SESSION['admin_csrf_token'], $_SESSION['admin_csrf_issued_at']);
+}
+
+/**
  * Sanitize user input
  */
 function sanitize($data)

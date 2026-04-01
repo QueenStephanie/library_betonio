@@ -89,7 +89,8 @@ composer require phpmailer/phpmailer
    ```
 2. The script will create:
    - Database: `library_betonio`
-   - Tables: users, otp_codes, verification_attempts, login_history
+
+- Tables: users, otp_codes, verification_attempts, login_history, admin_credentials, admin_session_registry
 
 ### Step 2: Verify Database Setup
 
@@ -123,6 +124,18 @@ SHOW TABLES;
 
 - Logs all login/logout activities
 - Useful for security audits
+
+#### admin_credentials
+
+- DB-primary admin credential store (username + bcrypt hash)
+- Tracks `password_changed_at` for operational audits
+- Environment credentials are bootstrap-only fallback when this table has no active row
+
+#### admin_session_registry
+
+- Stores hashed admin PHP session identifiers (`sha256(session_id)`) for active-session management
+- Enables cross-session invalidation after admin password changes
+- Keeps per-session metadata (`auth_mode`, `ip_address`, `user_agent`, `last_seen_at`, `invalidated_at`)
 
 ---
 
@@ -394,7 +407,25 @@ Response:
 - Login history tracking
 - User agent logging
 
-### 6. **Email Security**
+### 6. **Admin Control-Plane Hardening**
+
+- Hybrid admin auth mode:
+  - DB credentials are primary (`admin_credentials`)
+  - Env credentials allowed only in bootstrap mode (no active DB admin credential)
+- Session ID regeneration on admin login and successful admin password change
+- Admin session registry lifecycle:
+  - Create/update row on login
+  - Invalidate current row on logout
+  - Invalidate all non-current rows on password change
+- Session-scoped reusable CSRF token for privileged admin form mutations
+
+Operational notes:
+
+- Run `php backend/setup-db.php` after pulling remediation changes to create/verify admin tables and indexes idempotently.
+- In non-development environments, admin bootstrap credentials should never be defaults.
+- Password updates are persisted to DB even if login originally occurred in bootstrap mode.
+
+### 7. **Email Security**
 
 - TLS/SSL encryption for SMTP
 - Secure token generation (random_bytes)

@@ -3,9 +3,7 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
-  redirect('admin-login.php');
-}
+requireAdminAuth();
 
 $admin_profile = [
   'name' => 'System Administrator',
@@ -20,15 +18,19 @@ $admin_profile = [
 $profile_updated = false;
 $update_error = null;
 $is_editing = isset($_GET['edit']);
+$csrf_token = getAdminCsrfToken();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_editing) {
+  $submittedToken = $_POST['csrf_token'] ?? '';
   $name = trim($_POST['name'] ?? '');
   $email = trim($_POST['email'] ?? '');
   $phone = trim($_POST['phone'] ?? '');
   $address = trim($_POST['address'] ?? '');
   $appointment_date = trim($_POST['appointment_date'] ?? '');
 
-  if (empty($name)) {
+  if (!validateAdminCsrfToken($submittedToken)) {
+    $update_error = 'Invalid or missing security token. Please refresh and try again.';
+  } elseif (empty($name)) {
     $update_error = 'Name is required.';
   } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $update_error = 'Valid email is required.';
@@ -171,6 +173,7 @@ if ($update_error) {
         </div>
 
         <form class="admin-profile-form" method="POST" action="admin-profile.php?edit=1">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
           <div class="admin-profile-grid">
             <div class="admin-form-field">
               <label for="name">Full Name</label>

@@ -2,18 +2,84 @@
 
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
+require_once 'includes/auth.php';
 
-if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
-  redirect('admin-login.php');
-}
+requireAdminAuth();
 
 $page_alerts = [];
+$csrf_token = getAdminCsrfToken();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $page_alerts[] = [
-    'type' => 'success',
-    'title' => 'Password Updated',
-    'message' => 'Your password update request has been submitted.'
-  ];
+  $submittedToken = $_POST['csrf_token'] ?? '';
+  $currentPassword = getPost('current_password');
+  $newPassword = getPost('new_password');
+  $confirmPassword = getPost('confirm_password');
+  $errorMessage = null;
+
+  if (!validateAdminCsrfToken($submittedToken)) {
+    $errorMessage = 'Invalid or missing security token. Please refresh and try again.';
+  } elseif ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+    $errorMessage = 'All password fields are required.';
+  } elseif (strlen($newPassword) < 8) {
+    $errorMessage = 'New password must be at least 8 characters long.';
+  } elseif (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/\d/', $newPassword) || !preg_match('/[^a-zA-Z\d]/', $newPassword)) {
+    $errorMessage = 'New password must include uppercase, lowercase, number, and special character.';
+  } elseif ($newPassword !== $confirmPassword) {
+    $errorMessage = 'New password and confirmation do not match.';
+  } elseif (hash_equals($currentPassword, $newPassword)) {
+    $errorMessage = 'New password must be different from the current password.';
+  } else {
+    $adminIdentity = $_SESSION['admin_username'] ?? ADMIN_USERNAME;
+    $sessionAuthMode = $_SESSION['admin_auth_mode'] ?? '';
+
+    $verification = verifyAdminCurrentPassword($adminIdentity, $currentPassword, $sessionAuthMode);
+    if (empty($verification['success'])) {
+      $errorMessage = $verification['error'] ?? 'Current password verification failed.';
+    } else {
+      $persistResult = updateAdminPassword($adminIdentity, $newPassword);
+      if (empty($persistResult['success'])) {
+        $errorMessage = $persistResult['error'] ?? 'Unable to update password at this time.';
+      } else {
+        $oldSessionId = session_id();
+        AuthSupport::invalidateOtherAdminSessions($db, $persistResult['admin_identity'], $oldSessionId);
+
+        session_regenerate_id(true);
+
+        $_SESSION['admin_authenticated'] = true;
+        $_SESSION['admin_username'] = $persistResult['admin_identity'];
+        $_SESSION['admin_auth_mode'] = 'db';
+        $_SESSION['admin_password_changed_at'] = time();
+        if (isset($persistResult['admin_credential_id']) && $persistResult['admin_credential_id'] !== null) {
+          $_SESSION['admin_credential_id'] = (int)$persistResult['admin_credential_id'];
+        } else {
+          unset($_SESSION['admin_credential_id']);
+        }
+
+        clearAdminCsrfToken();
+        $csrf_token = getAdminCsrfToken();
+
+        AuthSupport::refreshAdminSessionRegistry($db, [
+          'admin_identity' => $_SESSION['admin_username'],
+          'admin_credential_id' => $_SESSION['admin_credential_id'] ?? null,
+          'auth_mode' => $_SESSION['admin_auth_mode'],
+        ], $oldSessionId);
+
+        $page_alerts[] = [
+          'type' => 'success',
+          'title' => 'Password Updated',
+          'message' => 'Password updated successfully. Other active admin sessions were signed out.'
+        ];
+      }
+    }
+  }
+
+  if ($errorMessage !== null) {
+    $page_alerts[] = [
+      'type' => 'error',
+      'title' => 'Password Update Failed',
+      'message' => $errorMessage
+    ];
+  }
 }
 ?>
 <!DOCTYPE html>
@@ -100,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <section class="admin-card admin-password-card">
         <form class="admin-form-grid" method="POST" action="admin-change-password.php">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
           <div class="admin-form-field">
             <label for="current_password">Current Password</label>
             <input id="current_password" name="current_password" type="password" placeholder="Enter current password" required>

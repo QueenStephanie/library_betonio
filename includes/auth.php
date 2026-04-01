@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../backend/classes/AuthSupport.php';
+require_once __DIR__ . '/../backend/classes/AdminSecurity.php';
 require_once __DIR__ . '/../backend/classes/UserRepository.php';
 
 class AuthManager
@@ -329,4 +330,51 @@ class AuthManager
       return ['success' => false, 'error' => 'Password reset failed: ' . $e->getMessage()];
     }
   }
+}
+
+/**
+ * Get singleton admin security service for page controllers.
+ */
+function getAdminSecurityService()
+{
+  global $db;
+
+  static $adminSecurity = null;
+  if ($adminSecurity === null) {
+    $adminSecurity = new AdminSecurity($db);
+  }
+
+  return $adminSecurity;
+}
+
+/**
+ * Resolve admin login attempt against DB-primary/bootstrap fallback policy.
+ */
+function resolveAdminLoginAttempt($username, $password)
+{
+  return getAdminSecurityService()->verifyLoginCredentials($username, $password);
+}
+
+/**
+ * Verify the currently authenticated admin password against active source.
+ */
+function verifyAdminCurrentPassword($adminIdentity, $currentPassword, $sessionAuthMode = '')
+{
+  return getAdminSecurityService()->verifyCurrentPassword($adminIdentity, $currentPassword, $sessionAuthMode);
+}
+
+/**
+ * Persist an updated admin password into DB credentials.
+ */
+function updateAdminPassword($adminIdentity, $newPassword)
+{
+  return getAdminSecurityService()->persistPassword($adminIdentity, $newPassword);
+}
+
+/**
+ * Surface active credential-source state for UI guardrails.
+ */
+function getAdminCredentialSourceState()
+{
+  return getAdminSecurityService()->getCredentialSourceState();
 }

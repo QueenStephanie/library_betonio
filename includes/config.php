@@ -75,6 +75,13 @@ if ($adminPassword === false || $adminPassword === '') {
     $adminPassword = $appEnv === 'development' ? 'admin123' : '';
 }
 
+$adminBootstrapUsernameConfigured = trim((string)$adminUsername) !== '';
+$adminBootstrapPasswordConfigured = trim((string)$adminPassword) !== '';
+$adminBootstrapConfigured = $adminBootstrapUsernameConfigured && $adminBootstrapPasswordConfigured;
+$adminBootstrapLooksDefault = in_array((string)$adminPassword, ['admin123', 'password', 'changeme'], true);
+$adminBootstrapUnsafe = $appEnv !== 'development' && (!$adminBootstrapConfigured || $adminBootstrapLooksDefault);
+$adminBootstrapAllowed = $adminBootstrapConfigured && !$adminBootstrapUnsafe;
+
 // ============================================
 // SECURITY CONFIGURATION
 // ============================================
@@ -169,6 +176,11 @@ define('OTP_LENGTH', 6);
 
 define('ADMIN_USERNAME', $adminUsername);
 define('ADMIN_PASSWORD', $adminPassword);
+define('ADMIN_BOOTSTRAP_USERNAME_CONFIGURED', $adminBootstrapUsernameConfigured);
+define('ADMIN_BOOTSTRAP_PASSWORD_CONFIGURED', $adminBootstrapPasswordConfigured);
+define('ADMIN_BOOTSTRAP_CONFIGURED', $adminBootstrapConfigured);
+define('ADMIN_BOOTSTRAP_UNSAFE', $adminBootstrapUnsafe);
+define('ADMIN_BOOTSTRAP_ALLOWED', $adminBootstrapAllowed);
 
 define('MAIL_HOST', $mailHost);
 define('MAIL_PORT', $mailPort);

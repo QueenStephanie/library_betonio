@@ -3,11 +3,16 @@
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
-  redirect('admin-login.php');
-}
+requireAdminAuth();
 
 $page_alerts = [];
+
+$mainCssFile = APP_ROOT . '/public/css/main.css';
+$adminCssFile = APP_ROOT . '/public/css/admin.css';
+$mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
+$adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+$mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,8 +24,8 @@ $page_alerts = [];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/admin.css">
+  <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
@@ -88,7 +93,7 @@ $page_alerts = [];
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>User Management</h1>
-        <p>Manage system users, roles, and permissions</p>
+        <p>Manage system users, roles, and permissions in a safe test workspace.</p>
       </header>
 
       <section class="admin-card">
@@ -112,19 +117,24 @@ $page_alerts = [];
         </div>
 
         <div class="admin-toolbar">
+          <div class="admin-toolbar-meta">
+            <span class="admin-count-pill" id="userCountPill">Showing 5 users</span>
+            <span class="admin-demo-note">UI test mode: actions are local-only previews.</span>
+          </div>
           <label class="admin-search" aria-label="Search users">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6" />
               <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
-            <input type="search" placeholder="Search users by name, email, or ID...">
+            <input id="userSearchInput" type="search" placeholder="Search users by name, email, or ID...">
           </label>
-          <select class="admin-select" aria-label="Filter roles">
-            <option>All Roles</option>
-            <option>User</option>
-            <option>Librarian</option>
-            <option>Admin</option>
+          <select id="roleFilter" class="admin-select" aria-label="Filter roles">
+            <option value="all">All Roles</option>
+            <option value="user">User</option>
+            <option value="librarian">Librarian</option>
+            <option value="admin">Admin</option>
           </select>
+          <button class="admin-button admin-button-ghost" id="resetUserFilters" type="button">Reset</button>
           <button class="admin-button admin-button-primary" type="button" data-open-modal="#addUserModal">
             + Add User
           </button>
@@ -143,8 +153,8 @@ $page_alerts = [];
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
+            <tbody id="usersTableBody">
+              <tr data-user-id="USR-001" data-user-name="John Smith" data-user-email="john.smith@email.com" data-user-role="user" data-user-status="active">
                 <td>USR-001</td>
                 <td>John Smith</td>
                 <td>john.smith@email.com</td>
@@ -153,12 +163,12 @@ $page_alerts = [];
                 <td>Mar 28, 2024</td>
                 <td>
                   <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" aria-label="Edit user">
+                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                       </svg>
                     </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" aria-label="Delete user">
+                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                         <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
@@ -168,7 +178,7 @@ $page_alerts = [];
                   </div>
                 </td>
               </tr>
-              <tr>
+              <tr data-user-id="USR-002" data-user-name="Sarah Johnson" data-user-email="sarah.j@email.com" data-user-role="user" data-user-status="active">
                 <td>USR-002</td>
                 <td>Sarah Johnson</td>
                 <td>sarah.j@email.com</td>
@@ -177,12 +187,12 @@ $page_alerts = [];
                 <td>Mar 30, 2024</td>
                 <td>
                   <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" aria-label="Edit user">
+                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                       </svg>
                     </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" aria-label="Delete user">
+                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                         <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
@@ -192,7 +202,7 @@ $page_alerts = [];
                   </div>
                 </td>
               </tr>
-              <tr>
+              <tr data-user-id="LIB-001" data-user-name="Head Librarian" data-user-email="librarian@libris.com" data-user-role="librarian" data-user-status="active">
                 <td>LIB-001</td>
                 <td>Head Librarian</td>
                 <td>librarian@libris.com</td>
@@ -201,12 +211,12 @@ $page_alerts = [];
                 <td>Apr 1, 2024</td>
                 <td>
                   <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" aria-label="Edit user">
+                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                       </svg>
                     </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" aria-label="Delete user">
+                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                         <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
@@ -216,7 +226,7 @@ $page_alerts = [];
                   </div>
                 </td>
               </tr>
-              <tr>
+              <tr data-user-id="ADM-001" data-user-name="System Administrator" data-user-email="admin@libris.com" data-user-role="admin" data-user-status="active">
                 <td>ADM-001</td>
                 <td>System Administrator</td>
                 <td>admin@libris.com</td>
@@ -225,12 +235,12 @@ $page_alerts = [];
                 <td>Apr 1, 2024</td>
                 <td>
                   <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" aria-label="Edit user">
+                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                       </svg>
                     </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" aria-label="Delete user">
+                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                         <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
@@ -240,7 +250,7 @@ $page_alerts = [];
                   </div>
                 </td>
               </tr>
-              <tr>
+              <tr data-user-id="USR-003" data-user-name="Michael Brown" data-user-email="m.brown@email.com" data-user-role="user" data-user-status="inactive">
                 <td>USR-003</td>
                 <td>Michael Brown</td>
                 <td>m.brown@email.com</td>
@@ -249,12 +259,12 @@ $page_alerts = [];
                 <td>Jan 5, 2024</td>
                 <td>
                   <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" aria-label="Edit user">
+                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                       </svg>
                     </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" aria-label="Delete user">
+                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
                       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                         <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
@@ -263,6 +273,9 @@ $page_alerts = [];
                     </button>
                   </div>
                 </td>
+              </tr>
+              <tr id="noUserRows" class="admin-table-empty" hidden>
+                <td colspan="7">No users match your current search/filter.</td>
               </tr>
             </tbody>
           </table>
@@ -277,14 +290,14 @@ $page_alerts = [];
         <h2 id="addUserTitle">Add New User</h2>
         <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
       </div>
-      <form class="admin-form-grid">
+      <form class="admin-form-grid" id="addUserForm">
         <div class="admin-form-field">
           <label for="add_name">Full Name</label>
-          <input id="add_name" type="text" placeholder="Enter full name">
+          <input id="add_name" type="text" placeholder="Enter full name" required>
         </div>
         <div class="admin-form-field">
           <label for="add_email">Email Address</label>
-          <input id="add_email" type="email" placeholder="Enter email address">
+          <input id="add_email" type="email" placeholder="Enter email address" required>
         </div>
         <div class="admin-form-field">
           <label for="add_role">Role</label>
@@ -308,7 +321,7 @@ $page_alerts = [];
         <h2 id="editUserTitle">Edit User</h2>
         <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
       </div>
-      <form class="admin-form-grid">
+      <form class="admin-form-grid" id="editUserForm">
         <div class="admin-form-field">
           <label for="edit_id">User ID (Read-only)</label>
           <input id="edit_id" type="text" value="USR-001" readonly>
@@ -350,34 +363,166 @@ $page_alerts = [];
   <?php renderPageAlerts($page_alerts); ?>
 
   <script>
+    function openModal(target) {
+      if (!target) {
+        return;
+      }
+
+      target.classList.add('is-open');
+      target.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modal) {
+      if (!modal) {
+        return;
+      }
+
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function showToast(title, text, icon) {
+      if (window.Swal) {
+        Swal.fire({
+          title: title,
+          text: text,
+          icon: icon,
+          confirmButtonColor: '#d24718'
+        });
+        return;
+      }
+
+      alert(title + '\n\n' + text);
+    }
+
     document.querySelectorAll('[data-open-modal]').forEach(function(button) {
       button.addEventListener('click', function() {
         var target = document.querySelector(button.getAttribute('data-open-modal'));
-        if (target) {
-          target.classList.add('is-open');
-          target.setAttribute('aria-hidden', 'false');
-        }
+        openModal(target);
       });
     });
 
     document.querySelectorAll('[data-close-modal]').forEach(function(button) {
       button.addEventListener('click', function() {
         var modal = button.closest('.admin-modal-backdrop');
-        if (modal) {
-          modal.classList.remove('is-open');
-          modal.setAttribute('aria-hidden', 'true');
-        }
+        closeModal(modal);
       });
     });
 
     document.querySelectorAll('.admin-modal-backdrop').forEach(function(backdrop) {
       backdrop.addEventListener('click', function(event) {
         if (event.target === backdrop) {
-          backdrop.classList.remove('is-open');
-          backdrop.setAttribute('aria-hidden', 'true');
+          closeModal(backdrop);
         }
       });
     });
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      document.querySelectorAll('.admin-modal-backdrop.is-open').forEach(function(openBackdrop) {
+        closeModal(openBackdrop);
+      });
+    });
+
+    var searchInput = document.getElementById('userSearchInput');
+    var roleFilter = document.getElementById('roleFilter');
+    var resetFiltersButton = document.getElementById('resetUserFilters');
+    var usersTableBody = document.getElementById('usersTableBody');
+    var countPill = document.getElementById('userCountPill');
+    var noRows = document.getElementById('noUserRows');
+    var rows = Array.prototype.slice.call(usersTableBody.querySelectorAll('tr[data-user-id]'));
+
+    function applyUserFilters() {
+      var query = (searchInput.value || '').trim().toLowerCase();
+      var selectedRole = roleFilter.value;
+      var visibleCount = 0;
+
+      rows.forEach(function(row) {
+        var rowId = (row.dataset.userId || '').toLowerCase();
+        var rowName = (row.dataset.userName || '').toLowerCase();
+        var rowEmail = (row.dataset.userEmail || '').toLowerCase();
+        var rowRole = (row.dataset.userRole || '').toLowerCase();
+
+        var matchesQuery = query === '' || rowId.indexOf(query) !== -1 || rowName.indexOf(query) !== -1 || rowEmail.indexOf(query) !== -1;
+        var matchesRole = selectedRole === 'all' || rowRole === selectedRole;
+
+        var shouldShow = matchesQuery && matchesRole;
+        row.hidden = !shouldShow;
+        if (shouldShow) {
+          visibleCount += 1;
+        }
+      });
+
+      countPill.textContent = visibleCount === 1 ? 'Showing 1 user' : 'Showing ' + visibleCount + ' users';
+      noRows.hidden = visibleCount !== 0;
+    }
+
+    searchInput.addEventListener('input', applyUserFilters);
+    roleFilter.addEventListener('change', applyUserFilters);
+    resetFiltersButton.addEventListener('click', function() {
+      searchInput.value = '';
+      roleFilter.value = 'all';
+      applyUserFilters();
+      searchInput.focus();
+    });
+
+    usersTableBody.querySelectorAll('[data-edit-user]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var row = button.closest('tr[data-user-id]');
+        if (!row) {
+          return;
+        }
+
+        var editRole = document.getElementById('edit_role');
+        var editStatus = document.getElementById('edit_status');
+        document.getElementById('edit_id').value = row.dataset.userId || '';
+        document.getElementById('edit_name').value = row.dataset.userName || '';
+        document.getElementById('edit_email').value = row.dataset.userEmail || '';
+        if (editRole) {
+          editRole.value = row.dataset.userRole === 'librarian' ? 'Librarian' : (row.dataset.userRole === 'admin' ? 'Admin' : 'User');
+        }
+        if (editStatus) {
+          editStatus.value = row.dataset.userStatus === 'inactive' ? 'Inactive' : 'Active';
+        }
+      });
+    });
+
+    usersTableBody.querySelectorAll('[data-delete-user]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var row = button.closest('tr[data-user-id]');
+        if (!row) {
+          return;
+        }
+
+        showToast('Delete Preview', 'This is UI test mode. User "' + (row.dataset.userName || 'Unknown') + '" was not deleted.', 'info');
+      });
+    });
+
+    var addUserForm = document.getElementById('addUserForm');
+    if (addUserForm) {
+      addUserForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        closeModal(document.getElementById('addUserModal'));
+        showToast('Add User Preview', 'New user form submitted in test mode. No data was persisted.', 'success');
+        addUserForm.reset();
+      });
+    }
+
+    var editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+      editUserForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        closeModal(document.getElementById('editUserModal'));
+        showToast('Save Changes Preview', 'User updates were captured in UI test mode only.', 'success');
+      });
+    }
+
+    applyUserFilters();
   </script>
 </body>
 
