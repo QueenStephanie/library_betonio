@@ -2,10 +2,9 @@
 
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/backend/classes/UserRepository.php';
 
 requireAdminAuth();
-
-$page_alerts = [];
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
@@ -13,6 +12,232 @@ $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : 
 $adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
 $mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
 $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
+
+$page_alerts = [];
+$csrf_token = getAdminCsrfToken();
+$allowedRoles = UserRepository::MANAGED_ROLES;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $submittedToken = $_POST['csrf_token'] ?? '';
+  if (!validateAdminCsrfToken($submittedToken)) {
+    $page_alerts[] = [
+      'type' => 'error',
+      'title' => 'Security Validation Failed',
+      'message' => 'Invalid or missing security token. Please refresh and try again.',
+    ];
+  } else {
+    $action = trim((string)($_POST['action'] ?? ''));
+
+    if ($action === 'create_user') {
+      $firstName = trim((string)($_POST['first_name'] ?? ''));
+      $lastName = trim((string)($_POST['last_name'] ?? ''));
+      $email = strtolower(trim((string)($_POST['email'] ?? '')));
+      $role = UserRepository::normalizeRole($_POST['role'] ?? 'borrower');
+      $password = (string)($_POST['password'] ?? '');
+      $roleInformation = trim((string)($_POST['role_information'] ?? ''));
+      $status = trim((string)($_POST['status'] ?? 'active'));
+      $isActive = $status !== 'inactive';
+
+      $errorMessage = null;
+      if ($firstName === '' || $lastName === '') {
+        $errorMessage = 'First and last name are required.';
+      } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errorMessage = 'A valid email address is required.';
+      } elseif (strlen($password) < 8) {
+        $errorMessage = 'Temporary password must be at least 8 characters long.';
+      } elseif (!in_array($role, $allowedRoles, true)) {
+        $errorMessage = 'Unsupported role selected.';
+      } elseif (UserRepository::emailExistsForOtherUser($db, $email, null)) {
+        $errorMessage = 'This email already exists. Use a different email.';
+      }
+
+      if ($errorMessage !== null) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Create User Failed',
+          'message' => $errorMessage,
+        ];
+      } else {
+        try {
+          UserRepository::createManagedUser($db, [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
+            'password_hash' => password_hash($password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS),
+            'is_verified' => true,
+            'is_active' => $isActive,
+            'role' => $role,
+            'role_information' => $roleInformation,
+          ]);
+
+          $page_alerts[] = [
+            'type' => 'success',
+            'title' => 'User Created',
+            'message' => 'User account and role assignment were created successfully.',
+          ];
+        } catch (Exception $e) {
+          error_log('admin-users create_user error: ' . $e->getMessage());
+          $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Create User Failed',
+            'message' => 'Unable to create user at this time.',
+          ];
+        }
+      }
+    } elseif ($action === 'update_user') {
+      $userId = (int)($_POST['user_id'] ?? 0);
+      $firstName = trim((string)($_POST['first_name'] ?? ''));
+      $lastName = trim((string)($_POST['last_name'] ?? ''));
+      $email = strtolower(trim((string)($_POST['email'] ?? '')));
+      $role = UserRepository::normalizeRole($_POST['role'] ?? 'borrower');
+      $roleInformation = trim((string)($_POST['role_information'] ?? ''));
+      $status = trim((string)($_POST['status'] ?? 'active'));
+      $isActive = $status !== 'inactive';
+
+      $errorMessage = null;
+      if ($userId <= 0) {
+        $errorMessage = 'Invalid user selected.';
+      } elseif ($firstName === '' || $lastName === '') {
+        $errorMessage = 'First and last name are required.';
+      } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errorMessage = 'A valid email address is required.';
+      } elseif (!in_array($role, $allowedRoles, true)) {
+        $errorMessage = 'Unsupported role selected.';
+      } elseif (UserRepository::emailExistsForOtherUser($db, $email, $userId)) {
+        $errorMessage = 'This email is already assigned to another user.';
+      }
+
+      if ($errorMessage !== null) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Update Failed',
+          'message' => $errorMessage,
+        ];
+      } else {
+        try {
+          $updated = UserRepository::updateManagedUser($db, $userId, [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
+            'role' => $role,
+            'is_active' => $isActive,
+            'role_information' => $roleInformation,
+          ]);
+
+          if ($updated === null) {
+            $page_alerts[] = [
+              'type' => 'error',
+              'title' => 'Update Failed',
+              'message' => 'User not found.',
+            ];
+          } else {
+            $page_alerts[] = [
+              'type' => 'success',
+              'title' => 'User Updated',
+              'message' => 'User details and role were updated successfully.',
+            ];
+          }
+        } catch (Exception $e) {
+          error_log('admin-users update_user error: ' . $e->getMessage());
+          $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Update Failed',
+            'message' => 'Unable to update user at this time.',
+          ];
+        }
+      }
+    } elseif ($action === 'toggle_status') {
+      $userId = (int)($_POST['user_id'] ?? 0);
+      $status = trim((string)($_POST['status'] ?? 'active'));
+      $isActive = $status !== 'inactive';
+
+      if ($userId <= 0) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Status Update Failed',
+          'message' => 'Invalid user selected.',
+        ];
+      } else {
+        try {
+          $updated = UserRepository::setUserActiveState($db, $userId, $isActive);
+          if ($updated === null) {
+            $page_alerts[] = [
+              'type' => 'error',
+              'title' => 'Status Update Failed',
+              'message' => 'User not found.',
+            ];
+          } else {
+            $page_alerts[] = [
+              'type' => 'success',
+              'title' => 'Status Updated',
+              'message' => $isActive ? 'User has been activated.' : 'User has been set to inactive.',
+            ];
+          }
+        } catch (Exception $e) {
+          error_log('admin-users toggle_status error: ' . $e->getMessage());
+          $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Status Update Failed',
+            'message' => 'Unable to update user status right now.',
+          ];
+        }
+      }
+    }
+  }
+}
+
+$users = [];
+try {
+  $users = UserRepository::listManagedUsers($db, true);
+} catch (Exception $e) {
+  error_log('admin-users listManagedUsers error: ' . $e->getMessage());
+  $page_alerts[] = [
+    'type' => 'error',
+    'title' => 'User Listing Warning',
+    'message' => 'User data could not be loaded. Run database setup to initialize required tables.',
+  ];
+}
+
+$stats = [
+  'total' => count($users),
+  'active' => 0,
+  'borrower' => 0,
+  'librarian' => 0,
+  'admin' => 0,
+];
+
+foreach ($users as $user) {
+  if (!empty($user['is_active'])) {
+    $stats['active']++;
+  }
+  $role = UserRepository::normalizeRole($user['role'] ?? 'borrower');
+  if (isset($stats[$role])) {
+    $stats[$role]++;
+  }
+}
+
+function roleBadgeClass($role)
+{
+  if ($role === 'admin') {
+    return 'is-admin';
+  }
+  if ($role === 'librarian') {
+    return 'is-librarian';
+  }
+  return 'is-borrower';
+}
+
+function roleLabel($role)
+{
+  if ($role === 'admin') {
+    return 'Admin';
+  }
+  if ($role === 'librarian') {
+    return 'Librarian';
+  }
+  return 'Borrower';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,6 +304,13 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
           </svg>
           <span>Change Password</span>
         </a>
+        <a class="admin-nav-item" href="admin-fines.php">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5H20V19H4V5Z" stroke="currentColor" stroke-width="1.6" />
+            <path d="M8 14L11 11L13 13L16 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Fines Report</span>
+        </a>
         <a class="admin-nav-item admin-nav-logout" href="admin-logout.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 7L20 12L15 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -93,33 +325,33 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>User Management</h1>
-        <p>Manage system users, roles, and permissions in a safe test workspace.</p>
+        <p>Create users, assign roles, and keep role details up to date.</p>
       </header>
 
       <section class="admin-card">
         <div class="admin-stats-row">
           <article class="admin-stat-tile">
-            <strong>5</strong>
+            <strong><?php echo (int)$stats['total']; ?></strong>
             <span>Total Users</span>
           </article>
           <article class="admin-stat-tile">
-            <strong>4</strong>
+            <strong><?php echo (int)$stats['active']; ?></strong>
             <span>Active Users</span>
           </article>
           <article class="admin-stat-tile">
-            <strong>1</strong>
+            <strong><?php echo (int)$stats['librarian']; ?></strong>
             <span>Librarians</span>
           </article>
           <article class="admin-stat-tile">
-            <strong>1</strong>
+            <strong><?php echo (int)$stats['admin']; ?></strong>
             <span>Administrators</span>
           </article>
         </div>
 
         <div class="admin-toolbar">
           <div class="admin-toolbar-meta">
-            <span class="admin-count-pill" id="userCountPill">Showing 5 users</span>
-            <span class="admin-demo-note">UI test mode: actions are local-only previews.</span>
+            <span class="admin-count-pill" id="userCountPill">Showing <?php echo count($users); ?> users</span>
+            <span class="admin-demo-note">Role changes replace prior role-specific data.</span>
           </div>
           <label class="admin-search" aria-label="Search users">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -130,7 +362,7 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
           </label>
           <select id="roleFilter" class="admin-select" aria-label="Filter roles">
             <option value="all">All Roles</option>
-            <option value="user">User</option>
+            <option value="borrower">Borrower</option>
             <option value="librarian">Librarian</option>
             <option value="admin">Admin</option>
           </select>
@@ -154,126 +386,54 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
               </tr>
             </thead>
             <tbody id="usersTableBody">
-              <tr data-user-id="USR-001" data-user-name="John Smith" data-user-email="john.smith@email.com" data-user-role="user" data-user-status="active">
-                <td>USR-001</td>
-                <td>John Smith</td>
-                <td>john.smith@email.com</td>
-                <td><span class="admin-badge is-user">User</span></td>
-                <td><span class="admin-badge is-active">Active</span></td>
-                <td>Mar 28, 2024</td>
-                <td>
-                  <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                        <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                        <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr data-user-id="USR-002" data-user-name="Sarah Johnson" data-user-email="sarah.j@email.com" data-user-role="user" data-user-status="active">
-                <td>USR-002</td>
-                <td>Sarah Johnson</td>
-                <td>sarah.j@email.com</td>
-                <td><span class="admin-badge is-user">User</span></td>
-                <td><span class="admin-badge is-active">Active</span></td>
-                <td>Mar 30, 2024</td>
-                <td>
-                  <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                        <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                        <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr data-user-id="LIB-001" data-user-name="Head Librarian" data-user-email="librarian@libris.com" data-user-role="librarian" data-user-status="active">
-                <td>LIB-001</td>
-                <td>Head Librarian</td>
-                <td>librarian@libris.com</td>
-                <td><span class="admin-badge is-librarian">Librarian</span></td>
-                <td><span class="admin-badge is-active">Active</span></td>
-                <td>Apr 1, 2024</td>
-                <td>
-                  <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                        <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                        <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr data-user-id="ADM-001" data-user-name="System Administrator" data-user-email="admin@libris.com" data-user-role="admin" data-user-status="active">
-                <td>ADM-001</td>
-                <td>System Administrator</td>
-                <td>admin@libris.com</td>
-                <td><span class="admin-badge is-admin">Admin</span></td>
-                <td><span class="admin-badge is-active">Active</span></td>
-                <td>Apr 1, 2024</td>
-                <td>
-                  <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                        <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                        <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr data-user-id="USR-003" data-user-name="Michael Brown" data-user-email="m.brown@email.com" data-user-role="user" data-user-status="inactive">
-                <td>USR-003</td>
-                <td>Michael Brown</td>
-                <td>m.brown@email.com</td>
-                <td><span class="admin-badge is-user">User</span></td>
-                <td><span class="admin-badge is-inactive">Inactive</span></td>
-                <td>Jan 5, 2024</td>
-                <td>
-                  <div class="admin-actions">
-                    <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button class="admin-action-btn admin-action-danger" type="button" data-delete-user aria-label="Delete user">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                        <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                        <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              <?php foreach ($users as $user): ?>
+                <?php
+                $role = UserRepository::normalizeRole($user['role'] ?? 'borrower');
+                $roleInfo = (string)($user['role_information'] ?? '');
+                $isActive = !empty($user['is_active']);
+                $fullName = trim(((string)$user['first_name']) . ' ' . ((string)$user['last_name']));
+                $lastLogin = $user['last_login'] ? date('M j, Y g:i A', strtotime((string)$user['last_login'])) : 'Never';
+                ?>
+                <tr
+                  data-user-id="<?php echo (int)$user['id']; ?>"
+                  data-user-name="<?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?>"
+                  data-first-name="<?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                  data-last-name="<?php echo htmlspecialchars((string)$user['last_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                  data-user-email="<?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?>"
+                  data-user-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>"
+                  data-user-status="<?php echo $isActive ? 'active' : 'inactive'; ?>"
+                  data-role-information="<?php echo htmlspecialchars($roleInfo, ENT_QUOTES, 'UTF-8'); ?>"
+                >
+                  <td>USR-<?php echo str_pad((string)$user['id'], 3, '0', STR_PAD_LEFT); ?></td>
+                  <td><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><span class="admin-badge <?php echo roleBadgeClass($role); ?>"><?php echo roleLabel($role); ?></span></td>
+                  <td><span class="admin-badge <?php echo $isActive ? 'is-active' : 'is-inactive'; ?>"><?php echo $isActive ? 'Active' : 'Inactive'; ?></span></td>
+                  <td><?php echo htmlspecialchars($lastLogin, ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td>
+                    <div class="admin-actions">
+                      <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                        </svg>
+                      </button>
+                      <form method="POST" class="admin-inline-form" data-requires-confirm="true">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="toggle_status">
+                        <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
+                        <input type="hidden" name="status" value="<?php echo $isActive ? 'inactive' : 'active'; ?>">
+                        <button class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>" type="submit" aria-label="Toggle user status">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
+                            <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                          </svg>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
               <tr id="noUserRows" class="admin-table-empty" hidden>
                 <td colspan="7">No users match your current search/filter.</td>
               </tr>
@@ -290,22 +450,43 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
         <h2 id="addUserTitle">Add New User</h2>
         <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
       </div>
-      <form class="admin-form-grid" id="addUserForm">
+      <form class="admin-form-grid" method="POST" id="addUserForm">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+        <input type="hidden" name="action" value="create_user">
         <div class="admin-form-field">
-          <label for="add_name">Full Name</label>
-          <input id="add_name" type="text" placeholder="Enter full name" required>
+          <label for="add_first_name">First Name</label>
+          <input id="add_first_name" name="first_name" type="text" placeholder="Enter first name" required>
+        </div>
+        <div class="admin-form-field">
+          <label for="add_last_name">Last Name</label>
+          <input id="add_last_name" name="last_name" type="text" placeholder="Enter last name" required>
         </div>
         <div class="admin-form-field">
           <label for="add_email">Email Address</label>
-          <input id="add_email" type="email" placeholder="Enter email address" required>
+          <input id="add_email" name="email" type="email" placeholder="Enter email address" required>
+        </div>
+        <div class="admin-form-field">
+          <label for="add_password">Temporary Password</label>
+          <input id="add_password" name="password" type="password" placeholder="At least 8 characters" required>
         </div>
         <div class="admin-form-field">
           <label for="add_role">Role</label>
-          <select id="add_role">
-            <option>User</option>
-            <option>Librarian</option>
-            <option>Admin</option>
+          <select id="add_role" name="role" required>
+            <option value="borrower">Borrower</option>
+            <option value="librarian">Librarian</option>
+            <option value="admin">Admin</option>
           </select>
+        </div>
+        <div class="admin-form-field">
+          <label for="add_status">Status</label>
+          <select id="add_status" name="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="admin-form-field admin-span-2">
+          <label for="add_role_information">Role Information</label>
+          <input id="add_role_information" name="role_information" type="text" placeholder="Role-specific notes or assignment details">
         </div>
         <div class="admin-modal-actions">
           <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
@@ -321,33 +502,44 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
         <h2 id="editUserTitle">Edit User</h2>
         <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
       </div>
-      <form class="admin-form-grid" id="editUserForm">
+      <form class="admin-form-grid" id="editUserForm" method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+        <input type="hidden" name="action" value="update_user">
+        <input id="edit_user_id" name="user_id" type="hidden" value="">
         <div class="admin-form-field">
-          <label for="edit_id">User ID (Read-only)</label>
-          <input id="edit_id" type="text" value="USR-001" readonly>
-        </div>
-        <div class="admin-form-field">
-          <label for="edit_name">Full Name</label>
-          <input id="edit_name" type="text" value="John Smith">
-        </div>
-        <div class="admin-form-field">
-          <label for="edit_email">Email Address</label>
-          <input id="edit_email" type="email" value="john.smith@email.com">
+          <label for="edit_id_display">User ID (Read-only)</label>
+          <input id="edit_id_display" type="text" readonly>
         </div>
         <div class="admin-form-field">
           <label for="edit_role">Role</label>
-          <select id="edit_role">
-            <option>User</option>
-            <option>Librarian</option>
-            <option>Admin</option>
+          <select id="edit_role" name="role" required>
+            <option value="borrower">Borrower</option>
+            <option value="librarian">Librarian</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
         <div class="admin-form-field">
+          <label for="edit_first_name">First Name</label>
+          <input id="edit_first_name" name="first_name" type="text" required>
+        </div>
+        <div class="admin-form-field">
+          <label for="edit_last_name">Last Name</label>
+          <input id="edit_last_name" name="last_name" type="text" required>
+        </div>
+        <div class="admin-form-field">
+          <label for="edit_email">Email Address</label>
+          <input id="edit_email" name="email" type="email" required>
+        </div>
+        <div class="admin-form-field">
           <label for="edit_status">Status</label>
-          <select id="edit_status">
-            <option>Active</option>
-            <option>Inactive</option>
+          <select id="edit_status" name="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
+        </div>
+        <div class="admin-form-field admin-span-2">
+          <label for="edit_role_information">Role Information</label>
+          <input id="edit_role_information" name="role_information" type="text" placeholder="Role-specific notes or assignment details">
         </div>
         <div class="admin-modal-actions">
           <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
@@ -383,20 +575,6 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
       document.body.style.overflow = '';
     }
 
-    function showToast(title, text, icon) {
-      if (window.Swal) {
-        Swal.fire({
-          title: title,
-          text: text,
-          icon: icon,
-          confirmButtonColor: '#d24718'
-        });
-        return;
-      }
-
-      alert(title + '\n\n' + text);
-    }
-
     document.querySelectorAll('[data-open-modal]').forEach(function(button) {
       button.addEventListener('click', function() {
         var target = document.querySelector(button.getAttribute('data-open-modal'));
@@ -406,8 +584,7 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
 
     document.querySelectorAll('[data-close-modal]').forEach(function(button) {
       button.addEventListener('click', function() {
-        var modal = button.closest('.admin-modal-backdrop');
-        closeModal(modal);
+        closeModal(button.closest('.admin-modal-backdrop'));
       });
     });
 
@@ -450,8 +627,8 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
 
         var matchesQuery = query === '' || rowId.indexOf(query) !== -1 || rowName.indexOf(query) !== -1 || rowEmail.indexOf(query) !== -1;
         var matchesRole = selectedRole === 'all' || rowRole === selectedRole;
-
         var shouldShow = matchesQuery && matchesRole;
+
         row.hidden = !shouldShow;
         if (shouldShow) {
           visibleCount += 1;
@@ -478,49 +655,27 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
           return;
         }
 
-        var editRole = document.getElementById('edit_role');
-        var editStatus = document.getElementById('edit_status');
-        document.getElementById('edit_id').value = row.dataset.userId || '';
-        document.getElementById('edit_name').value = row.dataset.userName || '';
+        document.getElementById('edit_user_id').value = row.dataset.userId || '';
+        document.getElementById('edit_id_display').value = 'USR-' + String(row.dataset.userId || '').padStart(3, '0');
+        document.getElementById('edit_first_name').value = row.dataset.firstName || '';
+        document.getElementById('edit_last_name').value = row.dataset.lastName || '';
         document.getElementById('edit_email').value = row.dataset.userEmail || '';
-        if (editRole) {
-          editRole.value = row.dataset.userRole === 'librarian' ? 'Librarian' : (row.dataset.userRole === 'admin' ? 'Admin' : 'User');
-        }
-        if (editStatus) {
-          editStatus.value = row.dataset.userStatus === 'inactive' ? 'Inactive' : 'Active';
-        }
+        document.getElementById('edit_role').value = row.dataset.userRole || 'borrower';
+        document.getElementById('edit_status').value = row.dataset.userStatus || 'active';
+        document.getElementById('edit_role_information').value = row.dataset.roleInformation || '';
       });
     });
 
-    usersTableBody.querySelectorAll('[data-delete-user]').forEach(function(button) {
-      button.addEventListener('click', function() {
-        var row = button.closest('tr[data-user-id]');
-        if (!row) {
-          return;
+    document.querySelectorAll('form[data-requires-confirm="true"]').forEach(function(form) {
+      form.addEventListener('submit', function(event) {
+        var targetStatusInput = form.querySelector('input[name="status"]');
+        var nextStatus = targetStatusInput ? targetStatusInput.value : 'inactive';
+        var confirmed = window.confirm(nextStatus === 'inactive' ? 'Set this user to inactive?' : 'Reactivate this user?');
+        if (!confirmed) {
+          event.preventDefault();
         }
-
-        showToast('Delete Preview', 'This is UI test mode. User "' + (row.dataset.userName || 'Unknown') + '" was not deleted.', 'info');
       });
     });
-
-    var addUserForm = document.getElementById('addUserForm');
-    if (addUserForm) {
-      addUserForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        closeModal(document.getElementById('addUserModal'));
-        showToast('Add User Preview', 'New user form submitted in test mode. No data was persisted.', 'success');
-        addUserForm.reset();
-      });
-    }
-
-    var editUserForm = document.getElementById('editUserForm');
-    if (editUserForm) {
-      editUserForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        closeModal(document.getElementById('editUserModal'));
-        showToast('Save Changes Preview', 'User updates were captured in UI test mode only.', 'success');
-      });
-    }
 
     applyUserFilters();
   </script>

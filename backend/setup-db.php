@@ -28,6 +28,26 @@ function ensureIndex(PDO $pdo, $database, $table, $indexName, $createSql)
 }
 
 /**
+ * Ensure a column exists only once.
+ */
+function ensureColumn(PDO $pdo, $database, $table, $columnName, $alterSql)
+{
+  $check = $pdo->prepare(
+    'SELECT COUNT(*) FROM information_schema.columns
+     WHERE table_schema = :schema AND table_name = :table_name AND column_name = :column_name'
+  );
+  $check->execute([
+    ':schema' => $database,
+    ':table_name' => $table,
+    ':column_name' => $columnName,
+  ]);
+
+  if ((int)$check->fetchColumn() === 0) {
+    $pdo->exec($alterSql);
+  }
+}
+
+/**
  * Verify admin remediation tables and indexes idempotently.
  */
 function ensureAdminSecuritySchema(PDO $pdo, $database)
@@ -81,6 +101,77 @@ function ensureAdminSecuritySchema(PDO $pdo, $database)
     'admin_session_registry',
     'idx_admin_session_active',
     'CREATE INDEX idx_admin_session_active ON admin_session_registry(admin_identity, invalidated_at)'
+  );
+}
+
+/**
+ * Verify admin dashboard feature tables and indexes idempotently.
+ */
+function ensureAdminDashboardSchema(PDO $pdo, $database)
+{
+  ensureColumn(
+    $pdo,
+    $database,
+    'users',
+    'role',
+    "ALTER TABLE users ADD COLUMN role ENUM('admin', 'librarian', 'borrower') NOT NULL DEFAULT 'borrower' AFTER is_active"
+  );
+
+  $pdo->exec(
+    "CREATE TABLE IF NOT EXISTS role_profiles (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      role ENUM('admin', 'librarian', 'borrower') NOT NULL,
+      role_information TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_role_profiles_user (user_id),
+      INDEX idx_role_profiles_role (role),
+      CONSTRAINT fk_role_profiles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  );
+
+  $pdo->exec(
+    "CREATE TABLE IF NOT EXISTS admin_profiles (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      admin_username VARCHAR(100) NOT NULL UNIQUE,
+      full_name VARCHAR(150) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(40) NOT NULL,
+      address VARCHAR(255) NOT NULL,
+      appointment_date DATE NOT NULL,
+      access_level VARCHAR(150) NOT NULL DEFAULT 'Full Access - Super Administrator',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_admin_profiles_username (admin_username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  );
+
+  $pdo->exec(
+    "CREATE TABLE IF NOT EXISTS fine_collections (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      borrower_user_id INT NULL,
+      collected_by_user_id INT NULL,
+      receipt_code VARCHAR(64) NULL UNIQUE,
+      amount DECIMAL(10,2) NOT NULL,
+      status ENUM('collected', 'voided') NOT NULL DEFAULT 'collected',
+      notes VARCHAR(255) NULL,
+      collected_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_fine_collections_borrower FOREIGN KEY (borrower_user_id) REFERENCES users(id) ON DELETE SET NULL,
+      CONSTRAINT fk_fine_collections_collector FOREIGN KEY (collected_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+      INDEX idx_fine_collections_collected_at (collected_at),
+      INDEX idx_fine_collections_status (status),
+      INDEX idx_fine_collections_collector (collected_by_user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  );
+
+  ensureIndex(
+    $pdo,
+    $database,
+    'users',
+    'idx_users_role',
+    'CREATE INDEX idx_users_role ON users(role)'
   );
 }
 
@@ -160,6 +251,7 @@ try {
 
   // Step 5: Idempotent verification for remediation tables/indexes.
   ensureAdminSecuritySchema($pdo, $database);
+  ensureAdminDashboardSchema($pdo, $database);
 
   http_response_code(200);
   echo json_encode([
@@ -172,7 +264,10 @@ try {
       'verification_attempts',
       'login_history',
       'admin_credentials',
-      'admin_session_registry'
+      'admin_session_registry',
+      'role_profiles',
+      'admin_profiles',
+      'fine_collections'
     ],
     'status' => 'All tables created or already exist'
   ], JSON_PRETTY_PRINT);

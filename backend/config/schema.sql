@@ -18,7 +18,21 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login DATETIME NULL,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    role ENUM('admin', 'librarian', 'borrower') NOT NULL DEFAULT 'borrower'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Role-specific profile store (one active role profile per user)
+CREATE TABLE IF NOT EXISTS role_profiles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    role ENUM('admin', 'librarian', 'borrower') NOT NULL,
+    role_information TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_role_profiles_user (user_id),
+    INDEX idx_role_profiles_role (role),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- OTP Verification Table
@@ -90,8 +104,42 @@ CREATE TABLE IF NOT EXISTS admin_session_registry (
     INDEX idx_admin_session_active (admin_identity, invalidated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Admin Profile Store (separate from credentials)
+CREATE TABLE IF NOT EXISTS admin_profiles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    admin_username VARCHAR(100) NOT NULL UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(40) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    appointment_date DATE NOT NULL,
+    access_level VARCHAR(150) NOT NULL DEFAULT 'Full Access - Super Administrator',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_admin_profiles_username (admin_username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Fine Collection Events (admin month-to-date reporting source)
+CREATE TABLE IF NOT EXISTS fine_collections (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    borrower_user_id INT NULL,
+    collected_by_user_id INT NULL,
+    receipt_code VARCHAR(64) NULL UNIQUE,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('collected', 'voided') NOT NULL DEFAULT 'collected',
+    notes VARCHAR(255) NULL,
+    collected_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (borrower_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (collected_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_fine_collections_collected_at (collected_at),
+    INDEX idx_fine_collections_status (status),
+    INDEX idx_fine_collections_collector (collected_by_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Indexes for Performance and Security
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_verification_token ON users(verification_token);
 CREATE INDEX idx_users_reset_token ON users(reset_token);
 CREATE INDEX idx_users_is_verified ON users(is_verified);
+CREATE INDEX idx_users_role ON users(role);

@@ -147,6 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </svg>
           <span>Change Password</span>
         </a>
+        <a class="admin-nav-item" href="admin-fines.php">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5H20V19H4V5Z" stroke="currentColor" stroke-width="1.6" />
+            <path d="M8 14L11 11L13 13L16 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Fines Report</span>
+        </a>
         <a class="admin-nav-item admin-nav-logout" href="admin-logout.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 7L20 12L15 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />

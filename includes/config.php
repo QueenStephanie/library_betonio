@@ -125,7 +125,7 @@ $isLocalHost = in_array($hostOnly, ['localhost', '127.0.0.1', '::1', '[::1]'], t
 // In local development, normalize accidental HTTPS URLs back to HTTP.
 if (PHP_SAPI !== 'cli' && $isLocalHost && $isHttps) {
     $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
-    header('Location: http://127.0.0.1' . $requestUri, true, 302);
+    header('Location: http://localhost' . $requestUri, true, 302);
     exit();
 }
 

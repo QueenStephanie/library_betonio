@@ -1225,6 +1225,11 @@ body {
   color: #456b32;
 }
 
+.admin-badge.is-borrower {
+  background: #e9f3e1;
+  color: #456b32;
+}
+
 .admin-badge.is-librarian {
   background: #e7effa;
   color: #2c4f87;
@@ -1248,6 +1253,10 @@ body {
 .admin-actions {
   display: flex;
   gap: 8px;
+}
+
+.admin-inline-form {
+  margin: 0;
 }
 
 .admin-action-btn {
@@ -1275,6 +1284,19 @@ body {
 
 .admin-action-btn.admin-action-danger:hover {
   background: #fdece2;
+}
+
+.admin-helper-text {
+  margin: 16px 0;
+  color: var(--admin-muted);
+  font-size: 0.92rem;
+}
+
+.admin-empty-state {
+  text-align: center;
+  color: var(--admin-muted);
+  font-style: italic;
+  padding: 20px 10px;
 }
 
 /* ===== MODALS ===== */

@@ -2,75 +2,93 @@
 
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/backend/classes/AdminProfileRepository.php';
 
 requireAdminAuth();
 
-$admin_profile = [
-  'name' => 'System Administrator',
-  'email' => 'admin@libris.com',
-  'phone' => '(555) 123-4567',
-  'admin_id' => 'ADM-2024-001',
-  'address' => '456 Admin Boulevard, Central City, CC 67890',
-  'appointment_date' => 'January 1, 2024',
-  'access_level' => 'Full Access - Super Administrator'
-];
+$mainCssFile = APP_ROOT . '/public/css/main.css';
+$adminCssFile = APP_ROOT . '/public/css/admin.css';
+$mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
+$adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+$mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
 
-$profile_updated = false;
-$update_error = null;
+$page_alerts = [];
+$adminUsername = $_SESSION['admin_username'] ?? ADMIN_USERNAME;
 $is_editing = isset($_GET['edit']);
 $csrf_token = getAdminCsrfToken();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_editing) {
   $submittedToken = $_POST['csrf_token'] ?? '';
-  $name = trim($_POST['name'] ?? '');
-  $email = trim($_POST['email'] ?? '');
-  $phone = trim($_POST['phone'] ?? '');
-  $address = trim($_POST['address'] ?? '');
-  $appointment_date = trim($_POST['appointment_date'] ?? '');
+  $payload = [
+    'full_name' => trim((string)($_POST['name'] ?? '')),
+    'email' => trim((string)($_POST['email'] ?? '')),
+    'phone' => trim((string)($_POST['phone'] ?? '')),
+    'address' => trim((string)($_POST['address'] ?? '')),
+    'appointment_date' => trim((string)($_POST['appointment_date'] ?? '')),
+    'access_level' => trim((string)($_POST['access_level'] ?? 'Full Access - Super Administrator')),
+  ];
 
+  $errorMessage = null;
   if (!validateAdminCsrfToken($submittedToken)) {
-    $update_error = 'Invalid or missing security token. Please refresh and try again.';
-  } elseif (empty($name)) {
-    $update_error = 'Name is required.';
-  } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $update_error = 'Valid email is required.';
-  } elseif (empty($phone)) {
-    $update_error = 'Phone number is required.';
-  } elseif (empty($address)) {
-    $update_error = 'Address is required.';
-  } elseif (empty($appointment_date)) {
-    $update_error = 'Appointment date is required.';
-  } else {
-    $_SESSION['admin_profile'] = [
-      'name' => $name,
-      'email' => $email,
-      'phone' => $phone,
-      'address' => $address,
-      'appointment_date' => $appointment_date
-    ];
+    $errorMessage = 'Invalid or missing security token. Please refresh and try again.';
+  } elseif ($payload['full_name'] === '') {
+    $errorMessage = 'Name is required.';
+  } elseif ($payload['email'] === '' || !filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
+    $errorMessage = 'Valid email is required.';
+  } elseif ($payload['phone'] === '') {
+    $errorMessage = 'Phone number is required.';
+  } elseif ($payload['address'] === '') {
+    $errorMessage = 'Address is required.';
+  } elseif ($payload['appointment_date'] === '') {
+    $errorMessage = 'Appointment date is required.';
+  }
 
-    $admin_profile = array_merge($admin_profile, $_SESSION['admin_profile']);
-    $profile_updated = true;
+  if ($errorMessage !== null) {
+    $page_alerts[] = [
+      'type' => 'error',
+      'title' => 'Update Failed',
+      'message' => $errorMessage,
+    ];
+  } else {
+    try {
+      AdminProfileRepository::upsertByUsername($db, $adminUsername, $payload);
+      $page_alerts[] = [
+        'type' => 'success',
+        'title' => 'Profile Updated',
+        'message' => 'Your profile information has been updated successfully.',
+      ];
+      $is_editing = false;
+    } catch (Exception $e) {
+      error_log('admin-profile update error: ' . $e->getMessage());
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Update Failed',
+        'message' => 'Unable to update profile at this time. Please try again.',
+      ];
+    }
   }
 }
 
-if (isset($_SESSION['admin_profile'])) {
-  $admin_profile = array_merge($admin_profile, $_SESSION['admin_profile']);
-}
+$admin_profile = [
+  'name' => 'System Administrator',
+  'email' => strtolower((string)$adminUsername) . '@libris.com',
+  'phone' => '(555) 123-4567',
+  'admin_id' => 'ADM-BOOTSTRAP',
+  'address' => '456 Admin Boulevard, Central City',
+  'appointment_date' => date('F j, Y'),
+  'appointment_date_value' => date('Y-m-d'),
+  'access_level' => 'Full Access - Super Administrator',
+];
 
-$page_alerts = [];
-if ($profile_updated) {
-  $page_alerts[] = [
-    'type' => 'success',
-    'title' => 'Profile Updated',
-    'message' => 'Your profile information has been updated successfully.'
-  ];
-}
-if ($update_error) {
+try {
+  $admin_profile = AdminProfileRepository::getOrCreate($db, $adminUsername);
+} catch (Exception $e) {
+  error_log('admin-profile load error: ' . $e->getMessage());
   $page_alerts[] = [
     'type' => 'error',
-    'title' => 'Update Failed',
-    'message' => $update_error
+    'title' => 'Profile Load Warning',
+    'message' => 'Using fallback profile data until database profile tables are available.',
   ];
 }
 ?>
@@ -84,8 +102,8 @@ if ($update_error) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/admin.css">
+  <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
@@ -105,7 +123,7 @@ if ($update_error) {
           </svg>
         </span>
         <div>
-          <div class="admin-sidebar-name">Admin</div>
+          <div class="admin-sidebar-name"><?php echo htmlspecialchars($admin_profile['name'], ENT_QUOTES, 'UTF-8'); ?></div>
           <div class="admin-sidebar-role">System Administrator</div>
         </div>
       </div>
@@ -139,6 +157,13 @@ if ($update_error) {
           </svg>
           <span>Change Password</span>
         </a>
+        <a class="admin-nav-item" href="admin-fines.php">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5H20V19H4V5Z" stroke="currentColor" stroke-width="1.6" />
+            <path d="M8 14L11 11L13 13L16 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Fines Report</span>
+        </a>
         <a class="admin-nav-item admin-nav-logout" href="admin-logout.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 7L20 12L15 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -153,7 +178,7 @@ if ($update_error) {
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>Administrator Profile</h1>
-        <p>Manage your administrative information and settings</p>
+        <p>Manage your administrative information and settings.</p>
       </header>
 
       <section class="admin-card admin-profile-card">
@@ -165,43 +190,48 @@ if ($update_error) {
               </svg>
             </span>
             <div>
-              <h2>System Administrator</h2>
+              <h2><?php echo htmlspecialchars($admin_profile['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
               <p>System Administration</p>
             </div>
           </div>
-          <a class="admin-button admin-button-ghost" href="admin-profile.php?edit=1">Edit Profile</a>
+          <?php if ($is_editing): ?>
+            <a class="admin-button admin-button-ghost" href="admin-profile.php">View Mode</a>
+          <?php else: ?>
+            <a class="admin-button admin-button-ghost" href="admin-profile.php?edit=1">Edit Profile</a>
+          <?php endif; ?>
         </div>
 
         <form class="admin-profile-form" method="POST" action="admin-profile.php?edit=1">
-          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+          <input type="hidden" name="access_level" value="<?php echo htmlspecialchars($admin_profile['access_level'], ENT_QUOTES, 'UTF-8'); ?>">
           <div class="admin-profile-grid">
             <div class="admin-form-field">
               <label for="name">Full Name</label>
-              <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($admin_profile['name']); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
+              <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($admin_profile['name'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
             </div>
             <div class="admin-form-field">
               <label for="email">Email Address</label>
-              <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($admin_profile['email']); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
+              <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($admin_profile['email'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
             </div>
             <div class="admin-form-field">
               <label for="phone">Phone Number</label>
-              <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($admin_profile['phone']); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
+              <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($admin_profile['phone'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
             </div>
             <div class="admin-form-field">
               <label for="admin_id">Administrator ID</label>
-              <input type="text" id="admin_id" value="<?php echo htmlspecialchars($admin_profile['admin_id']); ?>" readonly>
+              <input type="text" id="admin_id" value="<?php echo htmlspecialchars($admin_profile['admin_id'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
             </div>
             <div class="admin-form-field admin-span-2">
               <label for="address">Address</label>
-              <input type="text" id="address" name="address" value="<?php echo htmlspecialchars($admin_profile['address']); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
+              <input type="text" id="address" name="address" value="<?php echo htmlspecialchars($admin_profile['address'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
             </div>
             <div class="admin-form-field">
               <label for="appointment_date">Appointment Date</label>
-              <input type="text" id="appointment_date" name="appointment_date" value="<?php echo htmlspecialchars($admin_profile['appointment_date']); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
+              <input type="date" id="appointment_date" name="appointment_date" value="<?php echo htmlspecialchars($admin_profile['appointment_date_value'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $is_editing ? '' : 'readonly'; ?> required>
             </div>
             <div class="admin-form-field">
               <label for="access_level">Access Level</label>
-              <input type="text" id="access_level" value="<?php echo htmlspecialchars($admin_profile['access_level']); ?>" readonly>
+              <input type="text" id="access_level" value="<?php echo htmlspecialchars($admin_profile['access_level'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
             </div>
           </div>
 
