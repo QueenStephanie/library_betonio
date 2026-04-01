@@ -5,6 +5,7 @@ require_once 'includes/functions.php';
 require_once APP_ROOT . '/backend/classes/AdminProfileRepository.php';
 
 requireAdminAuth();
+redirect('admin-dashboard.php#about-me');
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';

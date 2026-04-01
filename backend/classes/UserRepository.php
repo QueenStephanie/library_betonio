@@ -7,6 +7,19 @@ class UserRepository
 {
   const MANAGED_ROLES = ['admin', 'librarian', 'borrower'];
 
+  private static function assertActorCanManageRole($actorIsSuperadmin, $role)
+  {
+    // Backward compatibility: enforce only when caller explicitly provides actor context.
+    if ($actorIsSuperadmin === null) {
+      return;
+    }
+
+    $normalizedRole = self::normalizeRole($role);
+    if (in_array($normalizedRole, self::MANAGED_ROLES, true) && $actorIsSuperadmin !== true) {
+      throw new RuntimeException('Only superadmin can create or update borrower, librarian, and admin profiles.');
+    }
+  }
+
   public static function findByEmail(PDO $db, $table, $email, array $columns = ['*'], $onlyActive = false)
   {
     $column_sql = implode(', ', $columns);
@@ -121,9 +134,59 @@ class UserRepository
     return (bool)$stmt->fetchColumn();
   }
 
+  public static function getSuperadminUser(PDO $db)
+  {
+    try {
+      $stmt = $db->query(
+        'SELECT
+          u.id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.role,
+          u.is_active,
+          u.is_superadmin,
+          u.last_login,
+          u.created_at,
+          rp.role_information
+        FROM users u
+        LEFT JOIN role_profiles rp ON rp.user_id = u.id
+        WHERE u.is_superadmin = 1
+        ORDER BY u.id ASC
+        LIMIT 1'
+      );
+
+      $row = $stmt->fetch(PDO::FETCH_ASSOC);
+      return $row ?: null;
+    } catch (Exception $e) {
+      error_log('UserRepository::getSuperadminUser error: ' . $e->getMessage());
+      return null;
+    }
+  }
+
+  public static function isSuperadminUser(PDO $db, $userId)
+  {
+    try {
+      $stmt = $db->prepare(
+        'SELECT is_superadmin
+         FROM users
+         WHERE id = :id
+         LIMIT 1'
+      );
+      $stmt->execute([':id' => (int)$userId]);
+      $value = $stmt->fetchColumn();
+      return (int)$value === 1;
+    } catch (Exception $e) {
+      error_log('UserRepository::isSuperadminUser error: ' . $e->getMessage());
+      return false;
+    }
+  }
+
   public static function createManagedUser(PDO $db, array $payload)
   {
     $role = self::normalizeRole($payload['role'] ?? 'borrower');
+    $actorIsSuperadmin = array_key_exists('actor_is_superadmin', $payload) ? (bool)$payload['actor_is_superadmin'] : null;
+    self::assertActorCanManageRole($actorIsSuperadmin, $role);
     $isActive = !empty($payload['is_active']) ? 1 : 0;
     $roleInformation = trim((string)($payload['role_information'] ?? ''));
 
@@ -184,6 +247,8 @@ class UserRepository
     }
 
     $nextRole = self::normalizeRole($payload['role'] ?? $current['role']);
+    $actorIsSuperadmin = array_key_exists('actor_is_superadmin', $payload) ? (bool)$payload['actor_is_superadmin'] : null;
+    self::assertActorCanManageRole($actorIsSuperadmin, $nextRole);
     $isActive = !empty($payload['is_active']) ? 1 : 0;
     $roleInformation = trim((string)($payload['role_information'] ?? ''));
     $roleChanged = $nextRole !== $current['role'];
@@ -230,6 +295,11 @@ class UserRepository
 
   public static function setUserActiveState(PDO $db, $userId, $isActive)
   {
+    $userId = (int)$userId;
+    if (!$isActive && self::isSuperadminUser($db, $userId)) {
+      throw new RuntimeException('Superadmin account cannot be deactivated.');
+    }
+
     $stmt = $db->prepare(
       'UPDATE users
        SET is_active = :is_active, updated_at = NOW()
@@ -238,10 +308,40 @@ class UserRepository
     );
     $stmt->execute([
       ':is_active' => $isActive ? 1 : 0,
-      ':id' => (int)$userId,
+      ':id' => $userId,
     ]);
 
     return self::getManagedUserById($db, $userId);
+  }
+
+  public static function deleteManagedUser(PDO $db, $userId)
+  {
+    $userId = (int)$userId;
+    $current = self::getManagedUserById($db, $userId);
+    if (!$current) {
+      return null;
+    }
+
+    if (self::isSuperadminUser($db, $userId)) {
+      throw new RuntimeException('Superadmin account cannot be deleted.');
+    }
+
+    $db->beginTransaction();
+    try {
+      $deleteRole = $db->prepare('DELETE FROM role_profiles WHERE user_id = :user_id');
+      $deleteRole->execute([':user_id' => $userId]);
+
+      $deleteUser = $db->prepare('DELETE FROM users WHERE id = :id LIMIT 1');
+      $deleteUser->execute([':id' => $userId]);
+
+      $db->commit();
+      return $current;
+    } catch (Exception $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+      throw $e;
+    }
   }
 
   private static function replaceRoleProfile(PDO $db, $userId, $role, $roleInformation)

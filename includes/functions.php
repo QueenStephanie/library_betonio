@@ -81,6 +81,50 @@ function isAdminAuthenticated()
 }
 
 /**
+ * Resolve configured superadmin username safely.
+ */
+function getConfiguredSuperadminUsername()
+{
+  if (defined('SUPERADMIN_USERNAME')) {
+    return strtolower(trim((string)SUPERADMIN_USERNAME));
+  }
+
+  if (defined('ADMIN_USERNAME')) {
+    return strtolower(trim((string)ADMIN_USERNAME));
+  }
+
+  return '';
+}
+
+/**
+ * Check whether an identity matches configured superadmin username.
+ */
+function isConfiguredSuperadminIdentity($identity)
+{
+  $identity = strtolower(trim((string)$identity));
+  $superadmin = getConfiguredSuperadminUsername();
+
+  if ($identity === '' || $superadmin === '') {
+    return false;
+  }
+
+  return hash_equals($superadmin, $identity);
+}
+
+/**
+ * Check whether current authenticated admin is configured superadmin.
+ */
+function isCurrentAdminSuperadmin()
+{
+  if (!isAdminAuthenticated()) {
+    return false;
+  }
+
+  $identity = $_SESSION['admin_username'] ?? '';
+  return isConfiguredSuperadminIdentity($identity);
+}
+
+/**
  * Validate that the current admin session is still active in registry.
  */
 function isActiveAdminSession()
@@ -137,6 +181,7 @@ function requireAdminAuth($redirectPath = 'admin-login.php')
     unset($_SESSION['show_admin_welcome']);
     unset($_SESSION['admin_profile']);
     unset($_SESSION['admin_password_changed_at']);
+    unset($_SESSION['admin_is_superadmin']);
     clearAdminCsrfToken();
     redirect($redirectPath);
   }

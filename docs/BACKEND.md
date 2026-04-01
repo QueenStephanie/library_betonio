@@ -423,6 +423,9 @@ Operational notes:
 
 - Run `php backend/setup-db.php` after pulling remediation changes to create/verify admin tables and indexes idempotently.
 - In non-development environments, admin bootstrap credentials should never be defaults.
+- Set `SUPERADMIN_USERNAME` in `.env` or `.env.production` to declare the protected superadmin identity (falls back to `ADMIN_USERNAME` if omitted).
+- `backend/setup-db.php` now auto-provisions or updates one managed superadmin user (`username@local.admin`) and enforces uniqueness via `users.is_superadmin` normalization.
+- Superadmin safety controls block deactivation and deletion through repository and admin-user-management flows.
 - Password updates are persisted to DB even if login originally occurred in bootstrap mode.
 
 ### 7. **Email Security**

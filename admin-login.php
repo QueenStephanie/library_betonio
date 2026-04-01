@@ -15,6 +15,7 @@ if (isAdminAuthenticated()) {
   unset($_SESSION['admin_auth_mode']);
   unset($_SESSION['admin_credential_id']);
   unset($_SESSION['show_admin_welcome']);
+  unset($_SESSION['admin_is_superadmin']);
   clearAdminCsrfToken();
 }
 
@@ -40,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       unset($_SESSION['admin_credential_id']);
     }
+    $_SESSION['admin_is_superadmin'] = isConfiguredSuperadminIdentity($_SESSION['admin_username']);
     $_SESSION['show_admin_welcome'] = true;
 
     clearAdminCsrfToken();

@@ -70,6 +70,11 @@ $mailFromName = getenv('MAIL_FROM_NAME') ?: 'QueenLib';
 // ============================================
 
 $adminUsername = getenv('ADMIN_USERNAME') ?: 'admin';
+$superadminUsername = getenv('SUPERADMIN_USERNAME');
+$superadminUsername = $superadminUsername !== false ? trim((string)$superadminUsername) : '';
+if ($superadminUsername === '') {
+    $superadminUsername = trim((string)$adminUsername);
+}
 $adminPassword = getenv('ADMIN_PASSWORD');
 if ($adminPassword === false || $adminPassword === '') {
     $adminPassword = $appEnv === 'development' ? 'admin123' : '';
@@ -175,6 +180,7 @@ define('OTP_EXPIRY', $otpExpiry);
 define('OTP_LENGTH', 6);
 
 define('ADMIN_USERNAME', $adminUsername);
+define('SUPERADMIN_USERNAME', $superadminUsername);
 define('ADMIN_PASSWORD', $adminPassword);
 define('ADMIN_BOOTSTRAP_USERNAME_CONFIGURED', $adminBootstrapUsernameConfigured);
 define('ADMIN_BOOTSTRAP_PASSWORD_CONFIGURED', $adminBootstrapPasswordConfigured);

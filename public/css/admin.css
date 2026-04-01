@@ -1065,6 +1065,35 @@ body {
   font-size: 0.9rem;
 }
 
+.admin-aboutme-meta {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-aboutme-meta .admin-info-row {
+  align-items: flex-start;
+}
+
+.admin-aboutme-meta .admin-access-pill {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.admin-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--admin-line);
+  font-size: 0.95rem;
+}
+
+.admin-alert-warning {
+  background: #fff5e5;
+  border-color: #f4c17b;
+  color: #8d5300;
+}
+
 /* ===== USER MANAGEMENT ===== */
 .admin-toolbar {
   display: flex;

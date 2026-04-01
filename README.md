@@ -5,7 +5,6 @@ A professional PHP-based library management system with secure authentication, e
 ## 🚀 Quick Start (Local)
 
 1. **Setup environment file**
-
    - Copy `.env.production.example` to `.env`
    - Set local values (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `APP_URL`)
 
@@ -47,6 +46,9 @@ A professional PHP-based library management system with secure authentication, e
 6. Update admin credentials in `.env.production`:
    - `ADMIN_USERNAME=...`
    - `ADMIN_PASSWORD=...`
+
+- `SUPERADMIN_USERNAME=...` (protected control-plane owner; defaults to `ADMIN_USERNAME`)
+
 7. Configure SMTP in `.env.production` (Gmail app password or provider SMTP)
 8. Make sure `.env.production` is not publicly accessible (already protected by `.htaccess`)
 9. Open your deployed URL and test register/login/reset flows
@@ -58,6 +60,7 @@ A professional PHP-based library management system with secure authentication, e
 Start with: [`docs/INDEX.md`](docs/INDEX.md) - Documentation index and quick navigation
 
 Key documentation files:
+
 - [`docs/QUICK_START.md`](docs/QUICK_START.md) - Quick start guide
 - [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) - Comprehensive system documentation
 - [`docs/BACKEND.md`](docs/BACKEND.md) - Backend architecture and API documentation
@@ -70,6 +73,9 @@ Key documentation files:
 - ✓ OTP-based Email Verification (6-digit, 10-minute expiry)
 - ✓ Secure Password Hashing (Bcrypt)
 - ✓ Session-based Authentication
+- ✓ Superadmin Auto-Provisioning from Environment Configuration
+- ✓ Undeletable/Protected Superadmin Account Controls
+- ✓ Admin Dashboard "About Me" Portfolio Section
 - ✓ Password Reset Functionality
 - ✓ User Dashboard with Account Management
 - ✓ Email Notifications via Gmail SMTP

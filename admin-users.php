@@ -16,6 +16,17 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
 $page_alerts = [];
 $csrf_token = getAdminCsrfToken();
 $allowedRoles = UserRepository::MANAGED_ROLES;
+$superadminUserId = null;
+$isCurrentSuperadmin = isCurrentAdminSuperadmin();
+$roleGovernanceDeniedMessage = 'Only superadmin can create or update borrower, librarian, and admin profiles.';
+try {
+  $superadminUser = UserRepository::getSuperadminUser($db);
+  if (is_array($superadminUser) && isset($superadminUser['id'])) {
+    $superadminUserId = (int)$superadminUser['id'];
+  }
+} catch (Exception $e) {
+  error_log('admin-users superadmin lookup error: ' . $e->getMessage());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $submittedToken = $_POST['csrf_token'] ?? '';
@@ -39,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $isActive = $status !== 'inactive';
 
       $errorMessage = null;
-      if ($firstName === '' || $lastName === '') {
+      if (!$isCurrentSuperadmin) {
+        $errorMessage = $roleGovernanceDeniedMessage;
+      } elseif ($firstName === '' || $lastName === '') {
         $errorMessage = 'First and last name are required.';
       } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errorMessage = 'A valid email address is required.';
@@ -68,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'is_active' => $isActive,
             'role' => $role,
             'role_information' => $roleInformation,
+            'actor_is_superadmin' => $isCurrentSuperadmin,
           ]);
 
           $page_alerts[] = [
@@ -95,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $isActive = $status !== 'inactive';
 
       $errorMessage = null;
-      if ($userId <= 0) {
+      if (!$isCurrentSuperadmin) {
+        $errorMessage = $roleGovernanceDeniedMessage;
+      } elseif ($userId <= 0) {
         $errorMessage = 'Invalid user selected.';
       } elseif ($firstName === '' || $lastName === '') {
         $errorMessage = 'First and last name are required.';
@@ -105,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorMessage = 'Unsupported role selected.';
       } elseif (UserRepository::emailExistsForOtherUser($db, $email, $userId)) {
         $errorMessage = 'This email is already assigned to another user.';
+      } elseif ($superadminUserId !== null && $userId === $superadminUserId && (!$isActive || $role !== 'admin')) {
+        $errorMessage = 'Superadmin account role and active status are protected.';
       }
 
       if ($errorMessage !== null) {
@@ -122,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'role' => $role,
             'is_active' => $isActive,
             'role_information' => $roleInformation,
+            'actor_is_superadmin' => $isCurrentSuperadmin,
           ]);
 
           if ($updated === null) {
@@ -157,6 +176,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           'title' => 'Status Update Failed',
           'message' => 'Invalid user selected.',
         ];
+      } elseif ($superadminUserId !== null && $userId === $superadminUserId && !$isActive) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Status Update Blocked',
+          'message' => 'Superadmin account cannot be deactivated.',
+        ];
       } else {
         try {
           $updated = UserRepository::setUserActiveState($db, $userId, $isActive);
@@ -178,7 +203,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $page_alerts[] = [
             'type' => 'error',
             'title' => 'Status Update Failed',
-            'message' => 'Unable to update user status right now.',
+            'message' => stripos($e->getMessage(), 'superadmin') !== false
+              ? $e->getMessage()
+              : 'Unable to update user status right now.',
+          ];
+        }
+      }
+    } elseif ($action === 'delete_user') {
+      $userId = (int)($_POST['user_id'] ?? 0);
+
+      if ($userId <= 0) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Delete Failed',
+          'message' => 'Invalid user selected.',
+        ];
+      } elseif ($superadminUserId !== null && $userId === $superadminUserId) {
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Delete Blocked',
+          'message' => 'Superadmin account cannot be deleted.',
+        ];
+      } else {
+        try {
+          $deleted = UserRepository::deleteManagedUser($db, $userId);
+          if ($deleted === null) {
+            $page_alerts[] = [
+              'type' => 'error',
+              'title' => 'Delete Failed',
+              'message' => 'User not found.',
+            ];
+          } else {
+            $page_alerts[] = [
+              'type' => 'success',
+              'title' => 'User Deleted',
+              'message' => 'User account was deleted successfully.',
+            ];
+          }
+        } catch (Exception $e) {
+          error_log('admin-users delete_user error: ' . $e->getMessage());
+          $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Delete Failed',
+            'message' => stripos($e->getMessage(), 'superadmin') !== false
+              ? $e->getMessage()
+              : 'Unable to delete user right now.',
           ];
         }
       }
@@ -196,6 +265,15 @@ try {
     'title' => 'User Listing Warning',
     'message' => 'User data could not be loaded. Run database setup to initialize required tables.',
   ];
+}
+
+try {
+  $superadminUser = UserRepository::getSuperadminUser($db);
+  if (is_array($superadminUser) && isset($superadminUser['id'])) {
+    $superadminUserId = (int)$superadminUser['id'];
+  }
+} catch (Exception $e) {
+  error_log('admin-users superadmin refresh error: ' . $e->getMessage());
 }
 
 $stats = [
@@ -290,13 +368,6 @@ function roleLabel($role)
           </svg>
           <span>User Management</span>
         </a>
-        <a class="admin-nav-item" href="admin-profile.php">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.6" />
-            <path d="M4.5 20C5.4 17.3 8.1 15.5 12 15.5C15.9 15.5 18.6 17.3 19.5 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-          </svg>
-          <span>Profile</span>
-        </a>
         <a class="admin-nav-item" href="admin-change-password.php">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 10V8C6 5.79 7.79 4 10 4H14C16.21 4 18 5.79 18 8V10" stroke="currentColor" stroke-width="1.6" />
@@ -327,6 +398,12 @@ function roleLabel($role)
         <h1>User Management</h1>
         <p>Create users, assign roles, and keep role details up to date.</p>
       </header>
+
+      <?php if (!$isCurrentSuperadmin): ?>
+        <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">
+          <strong>Restricted Mode:</strong> <?php echo htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+      <?php endif; ?>
 
       <section class="admin-card">
         <div class="admin-stats-row">
@@ -367,7 +444,12 @@ function roleLabel($role)
             <option value="admin">Admin</option>
           </select>
           <button class="admin-button admin-button-ghost" id="resetUserFilters" type="button">Reset</button>
-          <button class="admin-button admin-button-primary" type="button" data-open-modal="#addUserModal">
+          <button
+            class="admin-button admin-button-primary"
+            type="button"
+            data-open-modal="#addUserModal"
+            <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
+            title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Add user'; ?>">
             + Add User
           </button>
         </div>
@@ -391,6 +473,7 @@ function roleLabel($role)
                 $role = UserRepository::normalizeRole($user['role'] ?? 'borrower');
                 $roleInfo = (string)($user['role_information'] ?? '');
                 $isActive = !empty($user['is_active']);
+                $isSuperadmin = $superadminUserId !== null && (int)$user['id'] === $superadminUserId;
                 $fullName = trim(((string)$user['first_name']) . ' ' . ((string)$user['last_name']));
                 $lastLogin = $user['last_login'] ? date('M j, Y g:i A', strtotime((string)$user['last_login'])) : 'Never';
                 ?>
@@ -402,8 +485,8 @@ function roleLabel($role)
                   data-user-email="<?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?>"
                   data-user-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>"
                   data-user-status="<?php echo $isActive ? 'active' : 'inactive'; ?>"
-                  data-role-information="<?php echo htmlspecialchars($roleInfo, ENT_QUOTES, 'UTF-8'); ?>"
-                >
+                  data-user-superadmin="<?php echo $isSuperadmin ? '1' : '0'; ?>"
+                  data-role-information="<?php echo htmlspecialchars($roleInfo, ENT_QUOTES, 'UTF-8'); ?>">
                   <td>USR-<?php echo str_pad((string)$user['id'], 3, '0', STR_PAD_LEFT); ?></td>
                   <td><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></td>
                   <td><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></td>
@@ -412,7 +495,14 @@ function roleLabel($role)
                   <td><?php echo htmlspecialchars($lastLogin, ENT_QUOTES, 'UTF-8'); ?></td>
                   <td>
                     <div class="admin-actions">
-                      <button class="admin-action-btn" type="button" data-open-modal="#editUserModal" data-edit-user aria-label="Edit user">
+                      <button
+                        class="admin-action-btn"
+                        type="button"
+                        data-open-modal="#editUserModal"
+                        data-edit-user
+                        aria-label="Edit user"
+                        <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
+                        title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Edit user'; ?>">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                         </svg>
@@ -422,9 +512,31 @@ function roleLabel($role)
                         <input type="hidden" name="action" value="toggle_status">
                         <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
                         <input type="hidden" name="status" value="<?php echo $isActive ? 'inactive' : 'active'; ?>">
-                        <button class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>" type="submit" aria-label="Toggle user status">
+                        <button
+                          class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>"
+                          type="submit"
+                          aria-label="Toggle user status"
+                          <?php echo $isSuperadmin && $isActive ? 'disabled' : ''; ?>
+                          title="<?php echo $isSuperadmin && $isActive ? 'Superadmin account cannot be deactivated.' : 'Toggle user status'; ?>">
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
+                            <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                          </svg>
+                        </button>
+                      </form>
+                      <form method="POST" class="admin-inline-form" data-requires-confirm="true">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="delete_user">
+                        <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
+                        <button
+                          class="admin-action-btn admin-action-danger"
+                          type="submit"
+                          aria-label="Delete user"
+                          <?php echo $isSuperadmin ? 'disabled' : ''; ?>
+                          title="<?php echo $isSuperadmin ? 'Superadmin account cannot be deleted.' : 'Delete user permanently'; ?>">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 7H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                             <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
                             <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                           </svg>
@@ -490,7 +602,7 @@ function roleLabel($role)
         </div>
         <div class="admin-modal-actions">
           <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
-          <button class="admin-button admin-button-primary" type="submit">Add User</button>
+          <button class="admin-button admin-button-primary" type="submit" <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>>Add User</button>
         </div>
       </form>
     </div>
@@ -543,7 +655,7 @@ function roleLabel($role)
         </div>
         <div class="admin-modal-actions">
           <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
-          <button class="admin-button admin-button-primary" type="submit">Save Changes</button>
+          <button class="admin-button admin-button-primary" type="submit" <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>>Save Changes</button>
         </div>
       </form>
     </div>
@@ -668,6 +780,25 @@ function roleLabel($role)
 
     document.querySelectorAll('form[data-requires-confirm="true"]').forEach(function(form) {
       form.addEventListener('submit', function(event) {
+        var row = form.closest('tr[data-user-id]');
+        var isSuperadmin = row && row.dataset.userSuperadmin === '1';
+        var actionInput = form.querySelector('input[name="action"]');
+        var action = actionInput ? actionInput.value : '';
+
+        if (isSuperadmin && (action === 'toggle_status' || action === 'delete_user')) {
+          event.preventDefault();
+          window.alert('Superadmin account is protected and cannot be modified by this action.');
+          return;
+        }
+
+        if (action === 'delete_user') {
+          var deleteConfirmed = window.confirm('Delete this user permanently? This action cannot be undone.');
+          if (!deleteConfirmed) {
+            event.preventDefault();
+          }
+          return;
+        }
+
         var targetStatusInput = form.querySelector('input[name="status"]');
         var nextStatus = targetStatusInput ? targetStatusInput.value : 'inactive';
         var confirmed = window.confirm(nextStatus === 'inactive' ? 'Set this user to inactive?' : 'Reactivate this user?');

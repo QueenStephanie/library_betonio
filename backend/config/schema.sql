@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login DATETIME NULL,
     is_active BOOLEAN DEFAULT TRUE,
-    role ENUM('admin', 'librarian', 'borrower') NOT NULL DEFAULT 'borrower'
+    role ENUM('admin', 'librarian', 'borrower') NOT NULL DEFAULT 'borrower',
+    is_superadmin BOOLEAN DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Role-specific profile store (one active role profile per user)

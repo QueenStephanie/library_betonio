@@ -117,6 +117,14 @@ function ensureAdminDashboardSchema(PDO $pdo, $database)
     "ALTER TABLE users ADD COLUMN role ENUM('admin', 'librarian', 'borrower') NOT NULL DEFAULT 'borrower' AFTER is_active"
   );
 
+  ensureColumn(
+    $pdo,
+    $database,
+    'users',
+    'is_superadmin',
+    "ALTER TABLE users ADD COLUMN is_superadmin BOOLEAN NOT NULL DEFAULT FALSE AFTER role"
+  );
+
   $pdo->exec(
     "CREATE TABLE IF NOT EXISTS role_profiles (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -173,6 +181,158 @@ function ensureAdminDashboardSchema(PDO $pdo, $database)
     'idx_users_role',
     'CREATE INDEX idx_users_role ON users(role)'
   );
+
+  ensureIndex(
+    $pdo,
+    $database,
+    'users',
+    'idx_users_is_superadmin',
+    'CREATE INDEX idx_users_is_superadmin ON users(is_superadmin)'
+  );
+}
+
+/**
+ * Normalize configured superadmin username.
+ */
+function normalizeSuperadminUsername($username)
+{
+  $normalized = strtolower(trim((string)$username));
+  if ($normalized === '') {
+    return '';
+  }
+
+  return preg_replace('/[^a-z0-9._-]/', '', $normalized);
+}
+
+/**
+ * Build deterministic managed-user email from username.
+ */
+function buildGeneratedSuperadminEmail($username)
+{
+  return $username . '@local.admin';
+}
+
+/**
+ * Ensure one superadmin managed user exists and remains unique.
+ */
+function ensureSuperadminAccount(PDO $pdo, $username, $adminPassword)
+{
+  $username = normalizeSuperadminUsername($username);
+  if ($username === '') {
+    return [
+      'status' => 'skipped',
+      'reason' => 'missing_superadmin_username',
+    ];
+  }
+
+  $email = buildGeneratedSuperadminEmail($username);
+  $passwordSeed = trim((string)$adminPassword) !== '' ? (string)$adminPassword : bin2hex(random_bytes(16));
+  $passwordHash = password_hash($passwordSeed, PASSWORD_BCRYPT);
+
+  if ($passwordHash === false) {
+    throw new Exception('Failed to hash superadmin bootstrap password.');
+  }
+
+  $pdo->beginTransaction();
+  try {
+    $lookup = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+    $lookup->execute([':email' => $email]);
+    $existingId = $lookup->fetchColumn();
+
+    if ($existingId !== false) {
+      $targetUserId = (int)$existingId;
+
+      $update = $pdo->prepare(
+        'UPDATE users
+         SET role = :role,
+             is_verified = 1,
+             is_active = 1,
+             is_superadmin = 1,
+             updated_at = NOW()
+         WHERE id = :id
+         LIMIT 1'
+      );
+      $update->execute([
+        ':role' => 'admin',
+        ':id' => $targetUserId,
+      ]);
+
+      $status = 'updated';
+    } else {
+      $insert = $pdo->prepare(
+        'INSERT INTO users (
+          first_name,
+          last_name,
+          email,
+          password_hash,
+          is_verified,
+          created_at,
+          updated_at,
+          is_active,
+          role,
+          is_superadmin
+        ) VALUES (
+          :first_name,
+          :last_name,
+          :email,
+          :password_hash,
+          1,
+          NOW(),
+          NOW(),
+          1,
+          :role,
+          1
+        )'
+      );
+      $insert->execute([
+        ':first_name' => 'Super',
+        ':last_name' => 'Admin',
+        ':email' => $email,
+        ':password_hash' => $passwordHash,
+        ':role' => 'admin',
+      ]);
+
+      $targetUserId = (int)$pdo->lastInsertId();
+      $status = 'created';
+    }
+
+    $roleProfile = $pdo->prepare(
+      'INSERT INTO role_profiles (user_id, role, role_information, created_at, updated_at)
+       VALUES (:user_id, :role, :role_information, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE
+         role = VALUES(role),
+         role_information = VALUES(role_information),
+         updated_at = NOW()'
+    );
+    $roleProfile->execute([
+      ':user_id' => $targetUserId,
+      ':role' => 'admin',
+      ':role_information' => 'System superadmin account',
+    ]);
+
+    $clearOthers = $pdo->prepare(
+      'UPDATE users
+       SET is_superadmin = 0, updated_at = NOW()
+       WHERE is_superadmin = 1
+         AND id <> :id'
+    );
+    $clearOthers->execute([':id' => $targetUserId]);
+
+    $pdo->commit();
+
+    return [
+      'status' => $status,
+      'username' => $username,
+      'email' => $email,
+      'user_id' => $targetUserId,
+      'demoted_previous_count' => (int)$clearOthers->rowCount(),
+    ];
+  } catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+      $pdo->rollBack();
+    }
+    throw $e;
+  }
 }
 
 try {
@@ -253,6 +413,14 @@ try {
   ensureAdminSecuritySchema($pdo, $database);
   ensureAdminDashboardSchema($pdo, $database);
 
+  // Step 6: Ensure env-declared superadmin managed account exists and remains unique.
+  $superadminUsername = getenv('SUPERADMIN_USERNAME');
+  if ($superadminUsername === false || trim((string)$superadminUsername) === '') {
+    $superadminUsername = getenv('ADMIN_USERNAME') !== false ? getenv('ADMIN_USERNAME') : 'admin';
+  }
+  $superadminPassword = getenv('ADMIN_PASSWORD');
+  $superadminResult = ensureSuperadminAccount($pdo, (string)$superadminUsername, (string)$superadminPassword);
+
   http_response_code(200);
   echo json_encode([
     'success' => true,
@@ -269,7 +437,8 @@ try {
       'admin_profiles',
       'fine_collections'
     ],
-    'status' => 'All tables created or already exist'
+    'status' => 'All tables created or already exist',
+    'superadmin' => $superadminResult
   ], JSON_PRETTY_PRINT);
 } catch (Exception $e) {
   http_response_code(500);
