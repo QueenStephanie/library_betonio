@@ -26,9 +26,9 @@ AppBootstrap::loadEnvironment();
 // APPLICATION CONFIGURATION
 // ============================================
 
-$appUrl = getenv('APP_URL') ?: 'http://localhost';
-$basePath = getenv('APP_BASE_PATH');
-$basePath = $basePath !== false ? trim($basePath) : '';
+$appUrl = AppBootstrap::env('APP_URL', 'http://localhost');
+$basePath = AppBootstrap::env('APP_BASE_PATH');
+$basePath = $basePath !== null ? trim((string) $basePath) : '';
 
 if ($basePath === '' && isset($_SERVER['SCRIPT_NAME'])) {
     $detectedBasePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
@@ -37,10 +37,10 @@ if ($basePath === '' && isset($_SERVER['SCRIPT_NAME'])) {
     }
     $basePath = rtrim($detectedBasePath, '/');
 }
-$appName = getenv('APP_NAME') ?: 'QueenLib';
-$appEnv = getenv('APP_ENV') ?: 'development';
-$appDebug = getenv('APP_DEBUG') === 'true' || getenv('APP_ENV') === 'development';
-$timezone = getenv('APP_TIMEZONE') ?: 'UTC';
+$appName = AppBootstrap::env('APP_NAME', 'QueenLib');
+$appEnv = AppBootstrap::env('APP_ENV', 'development');
+$appDebug = AppBootstrap::env('APP_DEBUG') === 'true' || AppBootstrap::env('APP_ENV', 'development') === 'development';
+$timezone = AppBootstrap::env('APP_TIMEZONE', 'UTC');
 
 // ============================================
 // DATABASE CONFIGURATION
@@ -58,25 +58,25 @@ $dbCharset = $dbConfig['charset'];
 // EMAIL / SMTP CONFIGURATION
 // ============================================
 
-$mailHost = getenv('MAIL_HOST') ?: 'smtp.gmail.com';
-$mailPort = (int)(getenv('MAIL_PORT') ?: 587);
-$mailUser = getenv('MAIL_USER') ?: '';
-$mailPass = getenv('MAIL_PASS') ?: '';
-$mailFrom = getenv('MAIL_FROM') ?: '';
-$mailFromName = getenv('MAIL_FROM_NAME') ?: 'QueenLib';
+$mailHost = AppBootstrap::env('MAIL_HOST', 'smtp.gmail.com');
+$mailPort = (int)(AppBootstrap::env('MAIL_PORT', 587));
+$mailUser = AppBootstrap::env('MAIL_USER', '');
+$mailPass = AppBootstrap::env('MAIL_PASS', '');
+$mailFrom = AppBootstrap::env('MAIL_FROM', '');
+$mailFromName = AppBootstrap::env('MAIL_FROM_NAME', 'QueenLib');
 
 // ============================================
 // ADMIN CONFIGURATION
 // ============================================
 
-$adminUsername = getenv('ADMIN_USERNAME') ?: 'admin';
-$superadminUsername = getenv('SUPERADMIN_USERNAME');
-$superadminUsername = $superadminUsername !== false ? trim((string)$superadminUsername) : '';
+$adminUsername = AppBootstrap::env('ADMIN_USERNAME', 'admin');
+$superadminUsername = AppBootstrap::env('SUPERADMIN_USERNAME');
+$superadminUsername = $superadminUsername !== null ? trim((string)$superadminUsername) : '';
 if ($superadminUsername === '') {
     $superadminUsername = trim((string)$adminUsername);
 }
-$adminPassword = getenv('ADMIN_PASSWORD');
-if ($adminPassword === false || $adminPassword === '') {
+$adminPassword = AppBootstrap::env('ADMIN_PASSWORD');
+if ($adminPassword === null || $adminPassword === '') {
     $adminPassword = $appEnv === 'development' ? 'admin123' : '';
 }
 
@@ -91,9 +91,9 @@ $adminBootstrapAllowed = $adminBootstrapConfigured && !$adminBootstrapUnsafe;
 // SECURITY CONFIGURATION
 // ============================================
 
-$sessionTimeout = (int)(getenv('SESSION_TIMEOUT') ?: 3600);
-$bcryptCost = (int)(getenv('BCRYPT_COST') ?: 12);
-$otpExpiry = (int)(getenv('OTP_EXPIRY') ?: 600);
+$sessionTimeout = (int)(AppBootstrap::env('SESSION_TIMEOUT', 3600));
+$bcryptCost = (int)(AppBootstrap::env('BCRYPT_COST', 12));
+$otpExpiry = (int)(AppBootstrap::env('OTP_EXPIRY', 600));
 
 // ============================================
 // SET TIMEZONE
@@ -206,10 +206,10 @@ class Database
     public function connect()
     {
         $portsToTry = [DB_PORT];
-        $dbPortFromEnv = getenv('DB_PORT');
+        $dbPortFromEnv = AppBootstrap::env('DB_PORT');
         $hostIsLocal = in_array(strtolower(DB_HOST), ['localhost', '127.0.0.1', '::1'], true);
 
-        if ($dbPortFromEnv === false && $hostIsLocal) {
+        if (($dbPortFromEnv === null || $dbPortFromEnv === '') && $hostIsLocal) {
             if (!in_array(3306, $portsToTry, true)) {
                 $portsToTry[] = 3306;
             }

@@ -33,12 +33,16 @@ class MailHandler
 
     private function buildAppUrl($path, array $query = [])
     {
-        $appUrl = getenv('APP_URL');
+        $appUrl = class_exists('AppBootstrap')
+            ? AppBootstrap::env('APP_URL')
+            : getenv('APP_URL');
         if (!$appUrl && defined('APP_URL')) {
             $appUrl = APP_URL;
         }
 
-        $basePath = getenv('APP_BASE_PATH');
+        $basePath = class_exists('AppBootstrap')
+            ? AppBootstrap::env('APP_BASE_PATH')
+            : getenv('APP_BASE_PATH');
         if (!$basePath && defined('APP_BASE_PATH')) {
             $basePath = APP_BASE_PATH;
         }

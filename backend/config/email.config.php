@@ -5,11 +5,14 @@
  * Configure your SMTP settings for PHPMailer
  */
 
-$mailUser = trim((string) (getenv('MAIL_USER') ?: (getenv('MAIL_USERNAME') ?: '')));
-$mailPassRaw = trim((string) (getenv('MAIL_PASS') ?: (getenv('MAIL_PASSWORD') ?: '')));
+require_once __DIR__ . '/AppBootstrap.php';
+AppBootstrap::loadEnvironment();
+
+$mailUser = trim((string) (AppBootstrap::env('MAIL_USER') ?: (AppBootstrap::env('MAIL_USERNAME') ?: '')));
+$mailPassRaw = trim((string) (AppBootstrap::env('MAIL_PASS') ?: (AppBootstrap::env('MAIL_PASSWORD') ?: '')));
 $mailPass = str_replace(' ', '', $mailPassRaw);
-$mailFrom = trim((string) (getenv('MAIL_FROM') ?: ''));
-$mailEncryption = strtolower(trim((string) (getenv('MAIL_ENCRYPTION') ?: 'tls')));
+$mailFrom = trim((string) (AppBootstrap::env('MAIL_FROM') ?: ''));
+$mailEncryption = strtolower(trim((string) (AppBootstrap::env('MAIL_ENCRYPTION') ?: 'tls')));
 
 if ($mailFrom === '' && $mailUser !== '') {
   $mailFrom = $mailUser;
@@ -18,12 +21,12 @@ if ($mailFrom === '' && $mailUser !== '') {
 return [
   // SMTP Configuration
   'smtp' => [
-    'host' => getenv('MAIL_HOST') ?: 'smtp.gmail.com',
-    'port' => (int) (getenv('MAIL_PORT') ?: 587),
+    'host' => AppBootstrap::env('MAIL_HOST', 'smtp.gmail.com'),
+    'port' => (int) (AppBootstrap::env('MAIL_PORT', 587)),
     'username' => $mailUser,
     'password' => $mailPass,
     'from_email' => $mailFrom ?: 'noreply@example.com',
-    'from_name' => getenv('MAIL_FROM_NAME') ?: 'QueenLib',
+    'from_name' => AppBootstrap::env('MAIL_FROM_NAME', 'QueenLib'),
     'encryption' => in_array($mailEncryption, ['ssl', 'tls'], true) ? $mailEncryption : 'tls'
   ],
 
@@ -43,5 +46,5 @@ return [
   ],
 
   // Security
-  'enable_ssl_verification' => filter_var(getenv('MAIL_VERIFY_SSL') ?: true, FILTER_VALIDATE_BOOL)
+  'enable_ssl_verification' => filter_var(AppBootstrap::env('MAIL_VERIFY_SSL', true), FILTER_VALIDATE_BOOL)
 ];

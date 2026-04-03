@@ -37,10 +37,10 @@ class DatabaseConnection
   public function connect()
   {
     $portsToTry = [(int)$this->port];
-    $dbPortFromEnv = getenv('DB_PORT');
+    $dbPortFromEnv = AppBootstrap::env('DB_PORT');
     $hostIsLocal = in_array(strtolower($this->host), ['localhost', '127.0.0.1', '::1'], true);
 
-    if ($dbPortFromEnv === false && $hostIsLocal) {
+    if (($dbPortFromEnv === null || $dbPortFromEnv === '') && $hostIsLocal) {
       if (!in_array(3306, $portsToTry, true)) {
         $portsToTry[] = 3306;
       }

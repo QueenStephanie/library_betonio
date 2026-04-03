@@ -6,6 +6,7 @@
 class AppBootstrap
 {
   private static $envLoaded = false;
+  private static $envValues = [];
 
   /**
    * Load environment variables from project root .env files.
@@ -38,22 +39,38 @@ class AppBootstrap
   {
     self::loadEnvironment();
 
-    $password = getenv('DB_PASS');
-    if ($password === false) {
-      $password = getenv('DB_PASSWORD');
-    }
-    if ($password === false) {
-      $password = '';
+    $password = self::env('DB_PASS');
+    if ($password === null) {
+      $password = self::env('DB_PASSWORD', '');
     }
 
     return [
-      'host' => getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost',
-      'port' => (int) (getenv('DB_PORT') !== false ? getenv('DB_PORT') : 3307),
-      'name' => getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'library_betonio',
-      'user' => getenv('DB_USER') !== false ? getenv('DB_USER') : 'root',
+      'host' => self::env('DB_HOST', 'localhost'),
+      'port' => (int) self::env('DB_PORT', 3307),
+      'name' => self::env('DB_NAME', 'library_betonio'),
+      'user' => self::env('DB_USER', 'root'),
       'password' => $password,
-      'charset' => getenv('DB_CHARSET') !== false ? getenv('DB_CHARSET') : 'utf8mb4'
+      'charset' => self::env('DB_CHARSET', 'utf8mb4')
     ];
+  }
+
+  /**
+   * Read an environment value loaded from file or server env.
+   */
+  public static function env($key, $default = null)
+  {
+    self::loadEnvironment();
+
+    if (array_key_exists($key, self::$envValues)) {
+      return self::$envValues[$key];
+    }
+
+    $value = self::readNativeEnv($key);
+    if ($value !== null) {
+      return $value;
+    }
+
+    return $default;
   }
 
   private static function projectRoot()
@@ -79,6 +96,7 @@ class AppBootstrap
 
     foreach ($lines as $line) {
       $line = trim($line);
+      $line = ltrim($line, "\xEF\xBB\xBF");
       if ($line === '' || strpos($line, '#') === 0 || strpos($line, '=') === false) {
         continue;
       }
@@ -94,11 +112,40 @@ class AppBootstrap
         $value = substr($value, 1, -1);
       }
 
-      if (getenv($key) === false) {
-        putenv($key . '=' . $value);
+      $nativeValue = self::readNativeEnv($key);
+      $hasNativeValue = $nativeValue !== null;
+      if ($hasNativeValue) {
+        self::$envValues[$key] = (string) $nativeValue;
+        continue;
+      }
+
+      self::$envValues[$key] = $value;
+      $_ENV[$key] = $value;
+      $_SERVER[$key] = $value;
+
+      if (function_exists('putenv')) {
+        @putenv($key . '=' . $value);
       }
     }
 
     return true;
+  }
+
+  private static function readNativeEnv($key)
+  {
+    $value = getenv($key);
+    if ($value !== false) {
+      return $value;
+    }
+
+    if (isset($_ENV[$key])) {
+      return $_ENV[$key];
+    }
+
+    if (isset($_SERVER[$key])) {
+      return $_SERVER[$key];
+    }
+
+    return null;
   }
 }
