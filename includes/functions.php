@@ -238,6 +238,91 @@ function clearAdminCsrfToken()
 }
 
 /**
+ * Resolve a safe key for public CSRF token scopes.
+ */
+function normalizePublicCsrfScope($scope)
+{
+  $normalized = strtolower(trim((string)$scope));
+  if ($normalized === '') {
+    return 'default';
+  }
+
+  return preg_replace('/[^a-z0-9_\-]/', '_', $normalized);
+}
+
+/**
+ * Ensure a reusable session-scoped public CSRF token exists for a scope.
+ */
+function ensurePublicCsrfToken($scope = 'default')
+{
+  $scopeKey = normalizePublicCsrfScope($scope);
+
+  if (!isset($_SESSION['public_csrf_tokens']) || !is_array($_SESSION['public_csrf_tokens'])) {
+    $_SESSION['public_csrf_tokens'] = [];
+  }
+
+  if (!isset($_SESSION['public_csrf_issued_at']) || !is_array($_SESSION['public_csrf_issued_at'])) {
+    $_SESSION['public_csrf_issued_at'] = [];
+  }
+
+  $token = $_SESSION['public_csrf_tokens'][$scopeKey] ?? '';
+  if (!is_string($token) || $token === '') {
+    $_SESSION['public_csrf_tokens'][$scopeKey] = bin2hex(random_bytes(32));
+    $_SESSION['public_csrf_issued_at'][$scopeKey] = time();
+  }
+
+  return $_SESSION['public_csrf_tokens'][$scopeKey];
+}
+
+/**
+ * Get active public CSRF token for a scope.
+ */
+function getPublicCsrfToken($scope = 'default')
+{
+  return ensurePublicCsrfToken($scope);
+}
+
+/**
+ * Validate submitted public CSRF token against scoped session token.
+ */
+function validatePublicCsrfToken($submittedToken, $scope = 'default', $maxAgeSeconds = 7200)
+{
+  if (!is_string($submittedToken) || $submittedToken === '') {
+    return false;
+  }
+
+  $scopeKey = normalizePublicCsrfScope($scope);
+  $sessionTokens = $_SESSION['public_csrf_tokens'] ?? [];
+  $sessionIssued = $_SESSION['public_csrf_issued_at'] ?? [];
+  $sessionToken = $sessionTokens[$scopeKey] ?? null;
+  $issuedAt = (int)($sessionIssued[$scopeKey] ?? 0);
+
+  if (!is_string($sessionToken) || $sessionToken === '') {
+    return false;
+  }
+
+  if ($issuedAt > 0 && (time() - $issuedAt) > (int)$maxAgeSeconds) {
+    return false;
+  }
+
+  return hash_equals($sessionToken, $submittedToken);
+}
+
+/**
+ * Clear public CSRF tokens.
+ */
+function clearPublicCsrfToken($scope = null)
+{
+  if ($scope === null) {
+    unset($_SESSION['public_csrf_tokens'], $_SESSION['public_csrf_issued_at']);
+    return;
+  }
+
+  $scopeKey = normalizePublicCsrfScope($scope);
+  unset($_SESSION['public_csrf_tokens'][$scopeKey], $_SESSION['public_csrf_issued_at'][$scopeKey]);
+}
+
+/**
  * Sanitize user input
  */
 function sanitize($data)

@@ -10,15 +10,15 @@ const SweetAlerts = {
    * @param {string} message - Alert message
    * @param {function} callback - Callback when OK is clicked
    */
-  success: function(title, message, callback) {
+  success: function (title, message, callback) {
     Swal.fire({
-      icon: 'success',
+      icon: "success",
       title: title,
       text: message,
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#d24718',
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -32,13 +32,13 @@ const SweetAlerts = {
    * @param {string} message - Alert message
    * @param {function} callback - Callback when OK is clicked
    */
-  error: function(title, message, callback) {
+  error: function (title, message, callback) {
     Swal.fire({
-      icon: 'error',
+      icon: "error",
       title: title,
       text: message,
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#d24718'
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -55,16 +55,23 @@ const SweetAlerts = {
    * @param {function} onConfirm - Callback when confirmed
    * @param {function} onCancel - Callback when cancelled
    */
-  warning: function(title, message, confirmText, cancelText, onConfirm, onCancel) {
+  warning: function (
+    title,
+    message,
+    confirmText,
+    cancelText,
+    onConfirm,
+    onCancel,
+  ) {
     Swal.fire({
-      icon: 'warning',
+      icon: "warning",
       title: title,
       text: message,
       showCancelButton: true,
-      confirmButtonText: confirmText || 'Yes',
-      cancelButtonText: cancelText || 'Cancel',
-      confirmButtonColor: '#d24718',
-      cancelButtonColor: '#999'
+      confirmButtonText: confirmText || "Yes",
+      cancelButtonText: cancelText || "Cancel",
+      confirmButtonColor: "#d24718",
+      cancelButtonColor: "#999",
     }).then((result) => {
       if (result.isConfirmed) {
         if (onConfirm) onConfirm();
@@ -79,16 +86,16 @@ const SweetAlerts = {
    * @param {string} title - Alert title
    * @param {string} message - Alert message
    */
-  loading: function(title, message) {
+  loading: function (title, message) {
     Swal.fire({
-      icon: 'info',
+      icon: "info",
       title: title,
       text: message,
       allowOutsideClick: false,
       allowEscapeKey: false,
       didOpen: () => {
         Swal.showLoading();
-      }
+      },
     });
   },
 
@@ -98,13 +105,13 @@ const SweetAlerts = {
    * @param {string} message - Alert message
    * @param {function} callback - Callback when OK is clicked
    */
-  info: function(title, message, callback) {
+  info: function (title, message, callback) {
     Swal.fire({
-      icon: 'info',
+      icon: "info",
       title: title,
       text: message,
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#d24718'
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -116,18 +123,18 @@ const SweetAlerts = {
    * Logout Confirmation - Special logout alert
    * @param {function} onConfirm - Callback when logout is confirmed
    */
-  confirmLogout: function(onConfirm) {
+  confirmLogout: function (onConfirm) {
     Swal.fire({
-      icon: 'question',
-      title: 'Logout',
-      text: 'Are you sure you want to logout?',
+      icon: "question",
+      title: "Logout",
+      text: "Are you sure you want to logout?",
       showCancelButton: true,
-      confirmButtonText: 'Yes, Logout',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#d24718',
-      cancelButtonColor: '#999',
+      confirmButtonText: "Yes, Logout",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d24718",
+      cancelButtonColor: "#999",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed) {
         if (onConfirm) onConfirm();
@@ -139,15 +146,15 @@ const SweetAlerts = {
    * Registration Success Alert
    * @param {function} callback - Callback when OK is clicked
    */
-  registrationSuccess: function(callback) {
+  registrationSuccess: function (callback) {
     Swal.fire({
-      icon: 'success',
-      title: 'Account Created!',
-      text: 'Please check your email to verify your account before logging in.',
-      confirmButtonText: 'Go to Login',
-      confirmButtonColor: '#d24718',
+      icon: "success",
+      title: "Account Created!",
+      text: "Please verify your email to activate your account.",
+      confirmButtonText: "Go to Verification",
+      confirmButtonColor: "#d24718",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -159,15 +166,15 @@ const SweetAlerts = {
    * Email Verification Success Alert
    * @param {function} callback - Callback when OK is clicked
    */
-  verificationSuccess: function(callback) {
+  verificationSuccess: function (callback) {
     Swal.fire({
-      icon: 'success',
-      title: 'Email Verified!',
-      text: 'Your email has been verified successfully. You can now login.',
-      confirmButtonText: 'Go to Login',
-      confirmButtonColor: '#d24718',
+      icon: "success",
+      title: "Email Verified!",
+      text: "Your email has been verified successfully. You can now login.",
+      confirmButtonText: "Go to Login",
+      confirmButtonColor: "#d24718",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -179,15 +186,15 @@ const SweetAlerts = {
    * Password Reset Success Alert
    * @param {function} callback - Callback when OK is clicked
    */
-  passwordResetSuccess: function(callback) {
+  passwordResetSuccess: function (callback) {
     Swal.fire({
-      icon: 'success',
-      title: 'Password Reset Sent!',
-      text: 'Check your email for password reset instructions.',
-      confirmButtonText: 'Back to Login',
-      confirmButtonColor: '#d24718',
+      icon: "success",
+      title: "Password Reset Sent!",
+      text: "Check your email for password reset instructions.",
+      confirmButtonText: "Back to Login",
+      confirmButtonColor: "#d24718",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -199,13 +206,13 @@ const SweetAlerts = {
    * Password Changed Success Alert
    * @param {function} callback - Callback when OK is clicked
    */
-  passwordChangedSuccess: function(callback) {
+  passwordChangedSuccess: function (callback) {
     Swal.fire({
-      icon: 'success',
-      title: 'Password Updated!',
-      text: 'Your password has been changed successfully.',
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#d24718'
+      icon: "success",
+      title: "Password Updated!",
+      text: "Your password has been changed successfully.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -217,13 +224,13 @@ const SweetAlerts = {
    * Profile Updated Success Alert
    * @param {function} callback - Callback when OK is clicked
    */
-  profileUpdatedSuccess: function(callback) {
+  profileUpdatedSuccess: function (callback) {
     Swal.fire({
-      icon: 'success',
-      title: 'Profile Updated!',
-      text: 'Your profile has been updated successfully.',
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#d24718'
+      icon: "success",
+      title: "Profile Updated!",
+      text: "Your profile has been updated successfully.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
     }).then((result) => {
       if (result.isConfirmed && callback) {
         callback();
@@ -236,34 +243,35 @@ const SweetAlerts = {
    * Shown when a user tries to login without verifying their email
    * @param {function} callback - Callback when "Back to Login" is clicked
    */
-  unverifiedLoginAttempt: function(callback) {
+  unverifiedLoginAttempt: function (callback) {
     Swal.fire({
-      icon: 'warning',
-      title: 'Email Not Verified',
-      html: 'Your email address has not been verified yet.<br>Please check your inbox and click the verification link to activate your account.',
+      icon: "warning",
+      title: "Email Not Verified",
+      html: "Your email address has not been verified yet.<br>Please check your inbox and click the verification link to activate your account.",
       showDenyButton: true,
       showCancelButton: true,
-      confirmButtonText: 'Resend Email',
-      denyButtonText: 'Go to Verification Page',
-      cancelButtonText: 'Back to Login',
-      confirmButtonColor: '#d24718',
-      denyButtonColor: '#3498db',
-      cancelButtonColor: '#999',
+      confirmButtonText: "Resend Email",
+      denyButtonText: "Go to Verification Page",
+      cancelButtonText: "Back to Login",
+      confirmButtonColor: "#d24718",
+      denyButtonColor: "#3498db",
+      cancelButtonColor: "#999",
       allowOutsideClick: false,
-      allowEscapeKey: false
+      allowEscapeKey: false,
     }).then((result) => {
       if (result.isConfirmed) {
         // Resend: submit hidden form on the page
-        var form = document.getElementById('resend-verification-form');
+        var form = document.getElementById("resend-verification-form");
         if (form) {
           form.submit();
         }
       } else if (result.isDenied) {
         // Go to verification page with current email
-        var emailInput = document.getElementById('verify-email-hidden');
-        var email = emailInput ? emailInput.value : '';
+        var emailInput = document.getElementById("verify-email-hidden");
+        var email = emailInput ? emailInput.value : "";
         if (email) {
-          window.location.href = 'verify-otp.php?email=' + encodeURIComponent(email);
+          window.location.href =
+            "verify-otp.php?email=" + encodeURIComponent(email);
         }
       } else if (result.isDismissed && callback) {
         callback();
@@ -274,7 +282,7 @@ const SweetAlerts = {
   /**
    * Close any open alert
    */
-  close: function() {
+  close: function () {
     Swal.close();
-  }
+  },
 };

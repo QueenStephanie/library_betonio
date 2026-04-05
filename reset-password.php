@@ -15,29 +15,38 @@ $error = '';
 $success = '';
 $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : ''; // Don't sanitize token - it's hex
+$csrf_scope = 'reset_password';
+$csrf_token = getPublicCsrfToken($csrf_scope);
+$password_recovery = new PasswordRecovery($db);
 
 if (empty($email) || empty($token)) {
   $error = 'Invalid reset link';
+} elseif ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  $token_check = $password_recovery->verifyResetToken($email, $token);
+  if (empty($token_check['success'])) {
+    $error = 'Reset link is invalid or expired. Please request a new password reset link.';
+  }
 }
 
 // Handle password reset
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = sanitize(getPost('email'));
-  $reset_token = trim(getPost('reset_token')); // Don't sanitize token - keep it as plain hex
-  $password = getPost('password');
-  $password_confirm = getPost('password_confirm');
-
-  // Initialize PasswordRecovery with database
-  // $db is already initialized in includes/config.php
-  $password_recovery = new PasswordRecovery($db);
-  
-  $result = $password_recovery->resetPassword($email, $reset_token, $password, $password_confirm);
-
-  if ($result['success']) {
-    setFlash('success', 'Password reset successfully! You can now log in with your new password.');
-    redirect('login.php');
+  $submittedToken = (string)($_POST['csrf_token'] ?? '');
+  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $error = $result['error'];
+    $email = sanitize(getPost('email'));
+    $reset_token = trim(getPost('reset_token')); // Don't sanitize token - keep it as plain hex
+    $password = getPost('password');
+    $password_confirm = getPost('password_confirm');
+
+    $result = $password_recovery->resetPassword($email, $reset_token, $password, $password_confirm);
+
+    if ($result['success']) {
+      setFlash('success', 'Password reset successfully! You can now log in with your new password.');
+      redirect('login.php');
+    } else {
+      $error = $result['error'];
+    }
   }
 }
 
@@ -79,42 +88,48 @@ if ($error) {
         <h1>Create New Password</h1>
         <p class="subtitle">Enter your new password to reset your account.</p>
 
-        <?php if ($error): ?>
-          <div class="alert alert-error" role="alert">❌ <?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
         <?php if (!$error): ?>
           <form class="auth-form" method="POST" action="reset-password.php">
             <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
             <input type="hidden" name="reset_token" value="<?php echo htmlspecialchars($token); ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
 
             <label for="password">New Password</label>
             <div class="password-field">
               <input id="password" name="password" type="password" placeholder="At least 8 characters"
-                autocomplete="new-password" required>
+                autocomplete="new-password" minlength="8" data-password-primary required>
               <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
                 </svg>
               </button>
+            </div>
+            <div class="password-strength" data-password-strength aria-live="polite">
+              <span class="password-strength-label">Password strength: <strong data-password-strength-text>Too weak</strong></span>
+              <span class="password-strength-track"><span class="password-strength-fill" data-password-strength-fill></span></span>
+              <span class="password-strength-hint">Use 8+ characters with uppercase, lowercase, number, and symbol.</span>
             </div>
 
             <label for="password_confirm">Confirm Password</label>
             <div class="password-field">
               <input id="password_confirm" name="password_confirm" type="password" placeholder="Repeat your password"
-                autocomplete="new-password" required>
+                autocomplete="new-password" minlength="8" data-password-confirm required>
               <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
                 </svg>
               </button>
             </div>
+            <p class="field-error" data-confirm-error hidden>Passwords do not match.</p>
 
             <button class="submit-button" type="submit">Reset Password</button>
           </form>
         <?php endif; ?>
 
         <div class="auth-links">
+          <?php if ($error): ?>
+            <p><a href="forgot-password.php">Request a new reset link</a></p>
+          <?php endif; ?>
           <p><a href="login.php">← Back to Login</a></p>
         </div>
       </div>

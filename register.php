@@ -11,6 +11,8 @@ require_once 'includes/functions.php';
 
 $error = '';
 $success = '';
+$csrf_scope = 'register';
+$csrf_token = getPublicCsrfToken($csrf_scope);
 
 // Check if already logged in
 if (isset($_SESSION['user_id'])) {
@@ -19,44 +21,49 @@ if (isset($_SESSION['user_id'])) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $first_name = sanitize(getPost('first_name'));
-  $last_name = sanitize(getPost('last_name'));
-  $email = sanitize(getPost('email'));
-  $password = getPost('password');
-  $password_confirm = getPost('password_confirm');
-
-  $auth = new AuthManager($db);
-  $result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
-
-  if ($result['success']) {
-    $mail_result = sendVerificationEmail(
-      $email,
-      $first_name,
-      $result['verification_token']
-    );
-
-    if (empty($mail_result['success'])) {
-      try {
-        $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-        $rollback->execute([':id' => $result['user_id']]);
-      } catch (Exception $rollback_error) {
-        error_log('Registration rollback failed: ' . $rollback_error->getMessage());
-      }
-
-      $error = $mail_result['error'] ?? 'Registration failed because verification email could not be sent.';
-      $error .= ' Please update MAIL_USER / MAIL_PASS in .env and try again.';
-      $page_alerts = [];
-    } else {
-      // Store email in session for verification page
-      $_SESSION['verify_email'] = $email;
-      $_SESSION['verify_user_id'] = $result['user_id'];
-
-      // Set flag to show SweetAlert on page load
-      $_SESSION['show_registration_alert'] = true;
-      redirect(appPath('register.php', ['success' => 1]));
-    }
+  $submittedToken = (string)($_POST['csrf_token'] ?? '');
+  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $error = $result['error'];
+    $first_name = sanitize(getPost('first_name'));
+    $last_name = sanitize(getPost('last_name'));
+    $email = sanitize(getPost('email'));
+    $password = getPost('password');
+    $password_confirm = getPost('password_confirm');
+
+    $auth = new AuthManager($db);
+    $result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
+
+    if ($result['success']) {
+      $mail_result = sendVerificationEmail(
+        $email,
+        $first_name,
+        $result['verification_token']
+      );
+
+      if (empty($mail_result['success'])) {
+        try {
+          $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
+          $rollback->execute([':id' => $result['user_id']]);
+        } catch (Exception $rollback_error) {
+          error_log('Registration rollback failed: ' . $rollback_error->getMessage());
+        }
+
+        $error = $mail_result['error'] ?? 'Registration failed because verification email could not be sent.';
+        $error .= ' Please update MAIL_USER / MAIL_PASS in .env and try again.';
+        $page_alerts = [];
+      } else {
+        // Store email in session for verification page
+        $_SESSION['verify_email'] = $email;
+        $_SESSION['verify_user_id'] = $result['user_id'];
+
+        // Set flag to show SweetAlert on page load
+        $_SESSION['show_registration_alert'] = true;
+        redirect(appPath('register.php', ['success' => 1]));
+      }
+    } else {
+      $error = $result['error'];
+    }
   }
 }
 
@@ -113,11 +120,8 @@ if ($error) {
         <h1>Create your account</h1>
         <p class="subtitle">Join QueenLib and start exploring your library.</p>
 
-        <?php if ($error): ?>
-          <div class="alert alert-error" role="alert">❌ <?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
         <form class="auth-form" method="POST" action="register.php">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
           <label for="first_name">First Name</label>
           <input id="first_name" name="first_name" type="text" placeholder="Jane" autocomplete="given-name"
             required value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
@@ -133,24 +137,30 @@ if ($error) {
           <label for="password">Password</label>
           <div class="password-field">
             <input id="password" name="password" type="password" placeholder="At least 8 characters"
-              autocomplete="new-password" required>
+              autocomplete="new-password" minlength="8" data-password-primary required>
             <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
               </svg>
             </button>
+          </div>
+          <div class="password-strength" data-password-strength aria-live="polite">
+            <span class="password-strength-label">Password strength: <strong data-password-strength-text>Too weak</strong></span>
+            <span class="password-strength-track"><span class="password-strength-fill" data-password-strength-fill></span></span>
+            <span class="password-strength-hint">Use 8+ characters with uppercase, lowercase, number, and symbol.</span>
           </div>
 
           <label for="password_confirm">Confirm Password</label>
           <div class="password-field">
             <input id="password_confirm" name="password_confirm" type="password" placeholder="Repeat your password"
-              autocomplete="new-password" required>
+              autocomplete="new-password" minlength="8" data-password-confirm required>
             <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
               </svg>
             </button>
           </div>
+          <p class="field-error" data-confirm-error hidden>Passwords do not match.</p>
 
           <button class="submit-button" type="submit">Create Account</button>
         </form>

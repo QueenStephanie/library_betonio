@@ -14,23 +14,30 @@ require_once 'backend/mail/MailHandler.php';
 
 $error = '';
 $success = '';
+$csrf_scope = 'forgot_password';
+$csrf_token = getPublicCsrfToken($csrf_scope);
 
 // Handle forget password request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = sanitize(getPost('email'));
-
-  // Initialize PasswordRecovery with database and mail handler
-  // $db is already initialized in includes/config.php
-  $mail_handler = new MailHandler($db);
-  $password_recovery = new PasswordRecovery($db, $mail_handler);
-  
-  $result = $password_recovery->requestPasswordReset($email);
-
-  if ($result['success']) {
-    $_SESSION['show_password_reset_alert'] = true;
-    redirect(appPath('forgot-password.php', ['success' => 1]));
+  $submittedToken = (string)($_POST['csrf_token'] ?? '');
+  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $error = $result['error'];
+    $email = sanitize(getPost('email'));
+
+    // Initialize PasswordRecovery with database and mail handler
+    // $db is already initialized in includes/config.php
+    $mail_handler = new MailHandler($db);
+    $password_recovery = new PasswordRecovery($db, $mail_handler);
+
+    $result = $password_recovery->requestPasswordReset($email);
+
+    if ($result['success']) {
+      $_SESSION['show_password_reset_alert'] = true;
+      redirect(appPath('forgot-password.php', ['success' => 1]));
+    } else {
+      $error = $result['error'];
+    }
   }
 }
 
@@ -86,11 +93,8 @@ if ($error) {
         <h1>Reset Your Password</h1>
         <p class="subtitle">Enter your email address and we'll send you instructions to reset your password.</p>
 
-        <?php if ($error): ?>
-          <div class="alert alert-error" role="alert">❌ <?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
         <form class="auth-form" method="POST" action="forgot-password.php">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
           <label for="email">Email Address</label>
           <input id="email" name="email" type="email" placeholder="jane@example.com" autocomplete="email"
             required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">

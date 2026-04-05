@@ -14,6 +14,11 @@ $success = '';
 $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 $fromLogin = isset($_GET['from_login']) && $_GET['from_login'] === '1';
+$csrf_scope = 'verify_resend';
+$csrf_token = getPublicCsrfToken($csrf_scope);
+$resendCooldownWindow = 45;
+$resendCooldownUntil = (int)($_SESSION['verify_resend_available_at'] ?? 0);
+$resendCooldownRemaining = max(0, $resendCooldownUntil - time());
 
 if (empty($email)) {
   redirect('register.php');
@@ -24,9 +29,14 @@ $auth = new AuthManager($db);
 // Handle resend verification request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification'])) {
   try {
+    $submittedToken = (string)($_POST['csrf_token'] ?? '');
     $resend_email = sanitize(getPost('email'));
 
-    if (empty($resend_email) || !filter_var($resend_email, FILTER_VALIDATE_EMAIL)) {
+    if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+      $error = 'Security check failed. Please refresh and try again.';
+    } elseif ($resendCooldownRemaining > 0) {
+      $error = 'Please wait ' . $resendCooldownRemaining . ' seconds before requesting another verification email.';
+    } elseif (empty($resend_email) || !filter_var($resend_email, FILTER_VALIDATE_EMAIL)) {
       $error = 'A valid email is required.';
     } else {
       $stmt = $db->prepare('SELECT id, first_name, is_verified, verification_token FROM users WHERE email = :email LIMIT 1');
@@ -54,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification']
         $mailResult = sendVerificationEmail($resend_email, $user['first_name'] ?: 'User', $verificationToken);
 
         if (!empty($mailResult['success'])) {
+          $_SESSION['verify_resend_available_at'] = time() + $resendCooldownWindow;
           $success = 'Verification email resent. Please check Inbox/Spam/Promotions.';
         } else {
           $error = $mailResult['error'] ?? 'Failed to resend verification email.';
@@ -65,6 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification']
     error_log('Resend verification failed: ' . $e->getMessage());
   }
 }
+
+$resendCooldownUntil = (int)($_SESSION['verify_resend_available_at'] ?? 0);
+$resendCooldownRemaining = max(0, $resendCooldownUntil - time());
 
 // If token is provided in URL, verify it automatically
 if (!empty($token)) {
@@ -144,8 +158,8 @@ if ($fromLogin) {
         <?php else: ?>
           <div style="text-align: center; padding: 30px 0;">
             <svg style="width: 80px; height: 80px; margin: 0 auto 20px; display: block;" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="4" width="20" height="16" rx="2"/>
-              <polyline points="22,4 12,13 2,4"/>
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <polyline points="22,4 12,13 2,4" />
             </svg>
             <p style="font-size: 16px; color: #555; margin-bottom: 8px;">
               A verification email has been sent to
@@ -158,9 +172,22 @@ if ($fromLogin) {
             </p>
 
             <form id="resend-verification-form" method="POST" action="<?php echo appPath('verify-otp.php', ['email' => $email]); ?>" style="margin: 20px 0;">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
               <input id="verify-email-hidden" type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
-              <button type="submit" name="resend_verification" class="submit-button" style="display: inline-block;">Resend Verification Email</button>
+              <button
+                type="submit"
+                id="resend-verification-button"
+                name="resend_verification"
+                class="submit-button"
+                style="display: inline-block;"
+                data-resend-button
+                data-default-label="Resend Verification Email"
+                data-cooldown-seconds="<?php echo (int)$resendCooldownRemaining; ?>"
+                <?php echo $resendCooldownRemaining > 0 ? 'disabled' : ''; ?>>
+                Resend Verification Email
+              </button>
             </form>
+            <p class="auth-helper-text" data-resend-status <?php echo $resendCooldownRemaining > 0 ? '' : 'hidden'; ?>></p>
 
             <p style="color: #999; margin-top: 20px;">
               <a href="<?php echo appPath('login.php'); ?>">Go to Login</a> | <a href="<?php echo appPath('register.php'); ?>">Back to Registration</a>

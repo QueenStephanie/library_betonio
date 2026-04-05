@@ -11,6 +11,8 @@ require_once 'includes/functions.php';
 
 $error = '';
 $success = '';
+$csrf_scope = 'login';
+$csrf_token = getPublicCsrfToken($csrf_scope);
 
 $forceLogin = isset($_GET['force']) && $_GET['force'] === '1';
 
@@ -26,20 +28,25 @@ if (isset($_SESSION['user_id']) && !$forceLogin) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = sanitize(getPost('email'));
-  $password = getPost('password');
-
-  $auth = new AuthManager($db);
-  $result = $auth->login($email, $password);
-
-  if ($result['success']) {
-    setFlash('success', $result['message']);
-    redirect('index.php');
+  $submittedToken = (string)($_POST['csrf_token'] ?? '');
+  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    $error = 'Security check failed. Please refresh and try again.';
   } else {
-    if (isset($result['unverified']) && $result['unverified']) {
-      redirect(appPath('verify-otp.php', ['email' => $result['email'], 'from_login' => '1']));
+    $email = sanitize(getPost('email'));
+    $password = getPost('password');
+
+    $auth = new AuthManager($db);
+    $result = $auth->login($email, $password);
+
+    if ($result['success']) {
+      setFlash('success', $result['message']);
+      redirect('index.php');
+    } else {
+      if (isset($result['unverified']) && $result['unverified']) {
+        redirect(appPath('verify-otp.php', ['email' => $result['email'], 'from_login' => '1']));
+      }
+      $error = $result['error'];
     }
-    $error = $result['error'];
   }
 }
 
@@ -98,11 +105,8 @@ if (isset($_SESSION['show_timeout_alert'])) {
         <h1>Welcome back</h1>
         <p class="subtitle">Sign in to your QueenLib account.</p>
 
-        <?php if ($error): ?>
-          <div class="alert alert-error" role="alert">❌ <?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
         <form class="auth-form" method="POST" action="login.php">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
           <label for="email">Email Address</label>
           <input id="email" name="email" type="email" placeholder="jane@example.com"
             autocomplete="email" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">

@@ -321,6 +321,70 @@ a {
   color: var(--accent);
 }
 
+.password-strength {
+  display: grid;
+  gap: 6px;
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
+
+.password-strength-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.password-strength-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #eee4d8;
+  overflow: hidden;
+}
+
+.password-strength-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #c46a4a;
+  transition:
+    width 180ms ease,
+    background 180ms ease;
+}
+
+.password-strength[data-strength-level="weak"] .password-strength-fill {
+  background: #c74822;
+}
+
+.password-strength[data-strength-level="fair"] .password-strength-fill {
+  background: #d07c28;
+}
+
+.password-strength[data-strength-level="good"] .password-strength-fill {
+  background: #bd9234;
+}
+
+.password-strength[data-strength-level="strong"] .password-strength-fill {
+  background: #71953d;
+}
+
+.password-strength[data-strength-level="very-strong"] .password-strength-fill {
+  background: #2f8a55;
+}
+
+.password-strength-hint {
+  font-size: 0.76rem;
+  color: #8f8173;
+  line-height: 1.3;
+}
+
+.field-error {
+  margin: -2px 0 0;
+  color: #b33b17;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .submit-button {
   display: inline-flex;
   align-items: center;
@@ -346,6 +410,36 @@ a {
   transform: translateY(-1px);
 }
 
+.submit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: none;
+}
+
+.submit-button.is-loading {
+  gap: 8px;
+}
+
+.submit-button.is-cooldown {
+  opacity: 0.86;
+}
+
+.submit-button.is-loading::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: auth-button-spin 0.8s linear infinite;
+}
+
+@keyframes auth-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .auth-links {
   margin-top: 14px;
   text-align: center;
@@ -355,6 +449,13 @@ a {
   margin: 10px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.auth-helper-text {
+  margin: 8px 0 0;
+  font-size: 0.84rem;
+  color: #7b6f64;
+  text-align: center;
 }
 
 .forgot-link,
