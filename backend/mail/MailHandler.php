@@ -106,41 +106,6 @@ class MailHandler
     }
 
     /**
-     * Send OTP verification email
-     */
-    public function sendOTPEmail($email, $otp_code, $user_name, $verification_token = '')
-    {
-        try {
-            $this->mail->addAddress($email);
-            $this->mail->isHTML(true);
-            $this->mail->Subject = 'Email Verification - OTP Code';
-
-            // Generate verification page link WITH token
-            $query = ['email' => $email];
-            if (!empty($verification_token)) {
-                $query['token'] = $verification_token;
-            }
-            $verification_link = $this->buildAppUrl('verify-otp.php', $query);
-
-            // HTML Email Body
-            $body = $this->getOTPEmailTemplate($user_name, $otp_code, $verification_link);
-
-            $this->mail->Body = $body;
-            $this->mail->AltBody = "Your OTP code is: $otp_code. This code expires in 10 minutes.";
-
-            $result = $this->mail->send();
-
-            // Clear recipients for next email
-            $this->mail->clearAddresses();
-
-            return ['success' => true, 'message' => 'OTP email sent successfully'];
-        } catch (Exception $e) {
-            error_log("Error sending OTP email: " . $e->getMessage());
-            return $this->errorResponse('Failed to send OTP email', $e);
-        }
-    }
-
-    /**
      * Send email verification link (token-based)
      */
     public function sendVerificationEmail($email, $user_name, $verification_token = '')
@@ -272,62 +237,6 @@ class MailHandler
                     <p style="color: #e74c3c; font-weight: bold;">This link expires in 24 hours.</p>
                     
                     <p style="color: #7f8c8d; font-size: 13px;">If you didn't create this account or didn't request to verify this email, please ignore this message.</p>
-                </div>
-                <div class="footer">
-                    <p>&copy; 2026 Library Betonio. All rights reserved.</p>
-                    <p>This is an automated email. Please do not reply.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        HTML;
-    }
-
-    /**
-     * OTP Email HTML Template
-     */
-    private function getOTPEmailTemplate($name, $otp_code, $verification_link)
-    {
-        return <<<HTML
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
-                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background-color: white; padding: 30px; }
-                .otp-box { background-color: #e8f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
-                .otp-code { font-size: 36px; font-weight: bold; color: #2c3e50; letter-spacing: 8px; }
-                .button { display: inline-block; padding: 12px 30px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Library Betonio</h1>
-                    <p>Email Verification</p>
-                </div>
-                <div class="content">
-                    <h2>Hello $name,</h2>
-                    <p>Thank you for signing up! Open the verification page below, then enter the following OTP code to complete your email verification:</p>
-                    
-                    <div class="otp-box">
-                        <p>Your OTP Code:</p>
-                        <div class="otp-code">$otp_code</div>
-                        <p style="color: #e74c3c; font-weight: bold;">This code expires in 10 minutes</p>
-                    </div>
-                    
-                    <p>Open the verification page here:</p>
-                    <center>
-                        <a href="$verification_link" class="button">Open Verification Page</a>
-                    </center>
-                    
-                    <p style="color: #7f8c8d; font-size: 14px;">
-                        If you didn't create this account, please ignore this email.
-                    </p>
                 </div>
                 <div class="footer">
                     <p>&copy; 2026 Library Betonio. All rights reserved.</p>

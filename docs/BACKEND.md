@@ -46,15 +46,11 @@ library_betonio/
 │   │   ├── register.php
 │   │   ├── login.php
 │   │   ├── logout.php
-│   │   ├── request-otp.php
-│   │   ├── verify-otp.php
-│   │   ├── resend-otp.php
 │   │   ├── forgot-password.php
 │   │   ├── reset-password.php
 │   │   └── verify-reset-token.php
 │   ├── classes/                # Core classes
 │   │   ├── Auth.php
-│   │   ├── EmailVerification.php
 │   │   └── PasswordRecovery.php
 │   ├── config/                 # Configuration files
 │   │   ├── Database.php
@@ -90,7 +86,7 @@ composer require phpmailer/phpmailer
 2. The script will create:
    - Database: `library_betonio`
 
-- Tables: users, otp_codes, verification_attempts, login_history, admin_credentials, admin_session_registry
+- Tables: users, verification_attempts, login_history, admin_credentials, admin_session_registry
 
 ### Step 2: Verify Database Setup
 
@@ -110,14 +106,9 @@ SHOW TABLES;
 - Stores user registration and authentication data
 - Fields: id, first_name, last_name, email, password_hash, is_verified, etc.
 
-#### otp_codes
-
-- Stores OTP codes for email verification and password reset
-- Auto-expires after configured time (default: 10 minutes)
-
 #### verification_attempts
 
-- Tracks verification attempts for security and rate limiting
+- Tracks password reset attempts for security and rate limiting
 - Prevents brute force attacks
 
 #### login_history
@@ -245,63 +236,33 @@ Response:
 }
 ```
 
-### Email Verification Endpoints
+### Email Verification
 
-#### 4. **Request OTP**
+Email verification uses a **token-based link** sent via PHPMailer. When a user registers, a unique verification token is generated and stored in the `users` table. The user clicks the link in their email, which directs them to `verify-otp.php?email=...&token=...`. The token is validated and the account is marked as verified.
+
+If an unverified user attempts to login, they are redirected to the verification page with a prompt to resend the verification email.
+
+#### Token Verification (via email link)
 
 ```
-POST /backend/api/request-otp.php
-Content-Type: application/json
+GET /verify-otp.php?email=user@example.com&token=abc123...
+
+Response: Redirects to login.php on success
+```
+
+#### Resend Verification Email
+
+```
+POST /verify-otp.php
+Content-Type: application/x-www-form-urlencoded
 
 Body:
 {
-    "email": "john@example.com"
+    "email": "user@example.com",
+    "resend_verification": "1"
 }
 
-Response (200):
-{
-    "success": true,
-    "message": "OTP sent to your email",
-    "otp_validity_seconds": 600
-}
-```
-
-#### 5. **Verify OTP**
-
-```
-POST /backend/api/verify-otp.php
-Content-Type: application/json
-
-Body:
-{
-    "email": "john@example.com",
-    "otp_code": "123456"
-}
-
-Response (200):
-{
-    "success": true,
-    "message": "Email verified successfully",
-    "user_id": 1
-}
-```
-
-#### 6. **Resend OTP**
-
-```
-POST /backend/api/resend-otp.php
-Content-Type: application/json
-
-Body:
-{
-    "email": "john@example.com"
-}
-
-Response (200):
-{
-    "success": true,
-    "message": "OTP resent successfully"
-}
+Response: Redirects back to verify-otp.php with success/error message
 ```
 
 ### Password Recovery Endpoints
@@ -379,17 +340,15 @@ Response:
   - Must contain number
   - Must contain special character
 
-### 2. **OTP Security**
+### 2. **Email Verification Security**
 
-- 6-digit random codes
-- 10-minute expiration (configurable)
-- Rate limiting: 3 requests per hour
-- Auto-invalidation of old OTPs
+- Cryptographically secure tokens (random_bytes 32)
+- 24-hour token expiration
+- Token invalidated after successful verification
+- Automatic rollback if verification email fails to send
 
 ### 3. **Rate Limiting**
 
-- OTP requests: 3 per hour
-- OTP verification: 5 attempts per hour
 - Password reset: 3 requests per hour
 - Prevents brute force and spam attacks
 
@@ -457,19 +416,16 @@ curl -X POST http://localhost/library_betonio/backend/api/register.php \
 
 #### 2. **Test Email Verification**
 
-```bash
-# Request OTP
-curl -X POST http://localhost/library_betonio/backend/api/request-otp.php \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com"}'
+After registration, check the email inbox for a verification link. Click the link to verify the account. The link format is:
+```
+http://localhost/library_betonio/verify-otp.php?email=test@example.com&token=abc123...
+```
 
-# Verify OTP (check email for code)
-curl -X POST http://localhost/library_betonio/backend/api/verify-otp.php \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "otp_code": "123456"
-  }'
+To resend a verification email:
+```bash
+curl -X POST http://localhost/library_betonio/verify-otp.php \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'email=test@example.com&resend_verification=1'
 ```
 
 #### 3. **Test Login**
@@ -496,12 +452,12 @@ curl -X POST http://localhost/library_betonio/backend/api/forgot-password.php \
 
 ### Frontend Testing
 
-1. Navigate to: `http://localhost/library_betonio/register.html`
+1. Navigate to: `http://localhost/library_betonio/register.php`
 2. Fill in registration form
-3. Submit - should send OTP email
-4. Go to: `http://localhost/library_betonio/pages/auth/verify-email.html?email=test@example.com`
-5. Enter OTP from email
-6. Should redirect to login page
+3. Submit — should send verification email with token link
+4. Open the email and click the verification link
+5. Should redirect to login page with success message
+6. Try logging in with unverified account — should redirect to verification page with resend prompt
 
 ---
 
@@ -541,11 +497,18 @@ Modify `Database.php` and `email.config.php` to read from `.env`
 - Check email configuration and test SMTP connection
 - Review PHP error logs
 
-### OTP Not Working
+### Verification Email Not Sending
+
+- Check SMTP credentials in `email.config.php`
+- Verify Gmail App Password is correct
+- Check email configuration and test SMTP connection
+- Review PHP error logs
+
+### Verification Link Not Working
 
 - Clear browser cache
 - Verify database tables exist
-- Check OTP expiration time
+- Check token expiration time (24 hours)
 - Verify email sending works first
 
 ### Session Issues
@@ -571,7 +534,7 @@ Modify `Database.php` and `email.config.php` to read from `.env`
 - [ ] SMTP credentials configured
 - [ ] PHPMailer installed
 - [ ] SSL/TLS enabled for SMTP
-- [ ] Test registration, OTP, and login
+- [ ] Test registration, email verification, and login
 - [ ] Test password recovery
 - [ ] Delete or rename `init-db.php`
 - [ ] Review security logs

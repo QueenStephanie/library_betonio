@@ -2,7 +2,7 @@
 
 /**
  * User Authentication Class
- * Handles login, registration, OTP generation, password reset
+ * Handles login, registration, email verification, password reset
  */
 
 require_once __DIR__ . '/AuthSupport.php';
@@ -12,7 +12,6 @@ class Auth
 {
   private $db;
   private $table = 'users';
-  private $otp_table = 'otp_codes';
   private $attempts_table = 'verification_attempts';
   private $login_history_table = 'login_history';
 

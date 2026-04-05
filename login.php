@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('index.php');
   } else {
     if (isset($result['unverified']) && $result['unverified']) {
-      redirect(appPath('verify-otp.php', ['email' => $result['email']]));
+      redirect(appPath('verify-otp.php', ['email' => $result['email'], 'from_login' => '1']));
     }
     $error = $result['error'];
   }

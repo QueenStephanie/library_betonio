@@ -93,7 +93,6 @@ $adminBootstrapAllowed = $adminBootstrapConfigured && !$adminBootstrapUnsafe;
 
 $sessionTimeout = (int)(AppBootstrap::env('SESSION_TIMEOUT', 3600));
 $bcryptCost = (int)(AppBootstrap::env('BCRYPT_COST', 12));
-$otpExpiry = (int)(AppBootstrap::env('OTP_EXPIRY', 600));
 
 // ============================================
 // SET TIMEZONE
@@ -176,8 +175,6 @@ define('APP_DEBUG', $appDebug);
 define('PASSWORD_HASH_ALGO', PASSWORD_BCRYPT);
 define('PASSWORD_HASH_OPTIONS', ['cost' => $bcryptCost]);
 define('SESSION_TIMEOUT', $sessionTimeout);
-define('OTP_EXPIRY', $otpExpiry);
-define('OTP_LENGTH', 6);
 
 define('ADMIN_USERNAME', $adminUsername);
 define('SUPERADMIN_USERNAME', $superadminUsername);

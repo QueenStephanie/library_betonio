@@ -454,18 +454,14 @@ library_betonio/
 │   │
 │   ├── classes/
 │   │   ├── Auth.php           ✗ (Use includes/auth.php instead)
-│   │   ├── EmailVerification.php
 │   │   └── PasswordRecovery.php
 │   │
 │   ├── api/
 │   │   ├── register.php       ✓ JSON API
 │   │   ├── login.php          ✓ JSON API
 │   │   ├── logout.php         ✓ JSON API
-│   │   ├── verify-otp.php     ✓ JSON API
 │   │   ├── forgot-password.php ✓ JSON API
 │   │   ├── reset-password.php ✓ JSON API
-│   │   ├── request-otp.php    ✓ JSON API
-│   │   ├── resend-otp.php     ✓ JSON API
 │   │   └── verify-reset-token.php ✓ JSON API
 │   │
 │   ├── mail/

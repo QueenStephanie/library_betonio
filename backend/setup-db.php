@@ -428,7 +428,6 @@ try {
     'database' => $database,
     'tables_ready' => [
       'users',
-      'otp_codes',
       'verification_attempts',
       'login_history',
       'admin_credentials',

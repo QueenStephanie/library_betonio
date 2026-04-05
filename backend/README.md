@@ -46,15 +46,11 @@ library_betonio/
 │   │   ├── register.php
 │   │   ├── login.php
 │   │   ├── logout.php
-│   │   ├── request-otp.php
-│   │   ├── verify-otp.php
-│   │   ├── resend-otp.php
 │   │   ├── forgot-password.php
 │   │   ├── reset-password.php
 │   │   └── verify-reset-token.php
 │   ├── classes/                # Core classes
 │   │   ├── Auth.php
-│   │   ├── EmailVerification.php
 │   │   └── PasswordRecovery.php
 │   ├── config/                 # Configuration files
 │   │   ├── Database.php
@@ -89,7 +85,7 @@ composer require phpmailer/phpmailer
    ```
 2. The script will create:
    - Database: `library_betonio`
-   - Tables: users, otp_codes, verification_attempts, login_history
+    - Tables: users, verification_attempts, login_history
 
 ### Step 2: Verify Database Setup
 
@@ -109,14 +105,9 @@ SHOW TABLES;
 - Stores user registration and authentication data
 - Fields: id, first_name, last_name, email, password_hash, is_verified, etc.
 
-#### otp_codes
-
-- Stores OTP codes for email verification and password reset
-- Auto-expires after configured time (default: 10 minutes)
-
 #### verification_attempts
 
-- Tracks verification attempts for security and rate limiting
+- Tracks password reset attempts for security and rate limiting
 - Prevents brute force attacks
 
 #### login_history

@@ -15,7 +15,6 @@ try {
   require_once __DIR__ . '/../vendor/autoload.php';
   require_once __DIR__ . '/../config/Database.php';
   require_once __DIR__ . '/../classes/Auth.php';
-  require_once __DIR__ . '/../classes/EmailVerification.php';
   require_once __DIR__ . '/../mail/MailHandler.php';
 
   // Get POST data

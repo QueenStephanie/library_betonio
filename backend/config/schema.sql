@@ -36,26 +36,11 @@ CREATE TABLE IF NOT EXISTS role_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- OTP Verification Table
-CREATE TABLE IF NOT EXISTS otp_codes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    otp_code VARCHAR(6) NOT NULL,
-    purpose ENUM('email_verification', 'password_reset') DEFAULT 'email_verification',
-    is_used BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
-    used_at DATETIME NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_otp (user_id, is_used),
-    INDEX idx_otp_expires (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Email Verification Attempts Table (for rate limiting)
 CREATE TABLE IF NOT EXISTS verification_attempts (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL,
-    attempt_type ENUM('otp_request', 'otp_verify', 'password_reset') NOT NULL,
+    attempt_type ENUM('password_reset') NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     is_successful BOOLEAN DEFAULT FALSE,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

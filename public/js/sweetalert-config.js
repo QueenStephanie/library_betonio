@@ -232,6 +232,46 @@ const SweetAlerts = {
   },
 
   /**
+   * Unverified Login Attempt Alert
+   * Shown when a user tries to login without verifying their email
+   * @param {function} callback - Callback when "Back to Login" is clicked
+   */
+  unverifiedLoginAttempt: function(callback) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Email Not Verified',
+      html: 'Your email address has not been verified yet.<br>Please check your inbox and click the verification link to activate your account.',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Resend Email',
+      denyButtonText: 'Go to Verification Page',
+      cancelButtonText: 'Back to Login',
+      confirmButtonColor: '#d24718',
+      denyButtonColor: '#3498db',
+      cancelButtonColor: '#999',
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Resend: submit hidden form on the page
+        var form = document.getElementById('resend-verification-form');
+        if (form) {
+          form.submit();
+        }
+      } else if (result.isDenied) {
+        // Go to verification page with current email
+        var emailInput = document.getElementById('verify-email-hidden');
+        var email = emailInput ? emailInput.value : '';
+        if (email) {
+          window.location.href = 'verify-otp.php?email=' + encodeURIComponent(email);
+        }
+      } else if (result.isDismissed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
    * Close any open alert
    */
   close: function() {

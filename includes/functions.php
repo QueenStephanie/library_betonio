@@ -347,22 +347,6 @@ function sendVerificationEmail($email, $name = '', $verification_token = '')
 }
 
 /**
- * Send OTP Email using PHPMailer (DEPRECATED - Use sendVerificationEmail instead)
- */
-function sendOTPEmail($email, $otp, $name = '', $verification_token = '')
-{
-  try {
-    $result = getMailHandler()->sendOTPEmail($email, $otp, $name, $verification_token);
-    return !empty($result['success']);
-  } catch (Exception $e) {
-    error_log("Email sending error: " . $e->getMessage());
-    return false;
-  }
-
-  return false;
-}
-
-/**
  * Send password reset email using PHPMailer
  */
 function sendPasswordResetEmail($email, $reset_link, $name = '')

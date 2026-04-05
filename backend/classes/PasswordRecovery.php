@@ -9,7 +9,6 @@ class PasswordRecovery
 {
   private $db;
   private $table = 'users';
-  private $otp_table = 'otp_codes';
   private $attempts_table = 'verification_attempts';
   private $mail_handler;
   private $config;

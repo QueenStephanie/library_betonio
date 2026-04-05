@@ -18,10 +18,10 @@ class AppBootstrap
     }
 
     $projectRoot = self::projectRoot();
-    $envFiles = [
-      $projectRoot . '/.env.production',
-      $projectRoot . '/.env'
-    ];
+    $preferLocalEnv = self::isLocalRuntime();
+    $envFiles = $preferLocalEnv
+      ? [$projectRoot . '/.env', $projectRoot . '/.env.production']
+      : [$projectRoot . '/.env.production', $projectRoot . '/.env'];
 
     foreach ($envFiles as $envFile) {
       if (self::loadEnvFile($envFile)) {
@@ -81,6 +81,43 @@ class AppBootstrap
     }
 
     return dirname(__DIR__, 2);
+  }
+
+  /**
+   * Detect local/dev runtime so localhost uses local .env settings first.
+   */
+  private static function isLocalRuntime()
+  {
+    if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+      return true;
+    }
+
+    $hostCandidates = [];
+    if (isset($_SERVER['HTTP_HOST'])) {
+      $hostCandidates[] = (string) $_SERVER['HTTP_HOST'];
+    }
+    if (isset($_SERVER['SERVER_NAME'])) {
+      $hostCandidates[] = (string) $_SERVER['SERVER_NAME'];
+    }
+
+    foreach ($hostCandidates as $hostCandidate) {
+      $host = strtolower(trim($hostCandidate));
+      $host = preg_replace('/:\d+$/', '', $host);
+      if ($host === '[::1]') {
+        $host = '::1';
+      }
+
+      if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+        return true;
+      }
+    }
+
+    $appEnv = self::readNativeEnv('APP_ENV');
+    if (is_string($appEnv) && in_array(strtolower(trim($appEnv)), ['development', 'dev', 'local'], true)) {
+      return true;
+    }
+
+    return false;
   }
 
   private static function loadEnvFile($filePath)

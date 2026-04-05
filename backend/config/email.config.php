@@ -34,17 +34,6 @@ return [
   // Uncomment to use instead of SMTP
   // 'use_sendmail' => true,
 
-  // Email Templates Settings
-  'otp_validity' => 600,      // OTP valid for 10 minutes (600 seconds)
-  'max_otp_attempts' => 3,    // Maximum OTP verification attempts
-  'otp_resend_delay' => 60,   // Wait 1 minute before resend
-
-  // Rate Limiting
-  'rate_limit' => [
-    'otp_requests' => 3,     // 3 OTP requests per hour
-    'otp_verifications' => 5 // 5 verification attempts per hour
-  ],
-
   // Security
   'enable_ssl_verification' => filter_var(AppBootstrap::env('MAIL_VERIFY_SSL', true), FILTER_VALIDATE_BOOL)
 ];
