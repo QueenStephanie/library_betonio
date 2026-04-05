@@ -494,55 +494,57 @@ function roleLabel($role)
                   <td><span class="admin-badge <?php echo $isActive ? 'is-active' : 'is-inactive'; ?>"><?php echo $isActive ? 'Active' : 'Inactive'; ?></span></td>
                   <td><?php echo htmlspecialchars($lastLogin, ENT_QUOTES, 'UTF-8'); ?></td>
                   <td>
-                    <div class="admin-actions">
-                      <button
-                        class="admin-action-btn"
-                        type="button"
-                        data-open-modal="#editUserModal"
-                        data-edit-user
-                        aria-label="Edit user"
-                        <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
-                        title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Edit user'; ?>">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                        </svg>
-                      </button>
-                      <form method="POST" class="admin-inline-form" data-requires-confirm="true">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="action" value="toggle_status">
-                        <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
-                        <input type="hidden" name="status" value="<?php echo $isActive ? 'inactive' : 'active'; ?>">
+                    <?php if ($isSuperadmin): ?>
+                      <span class="admin-action-protected" title="Superadmin account is protected.">Protected</span>
+                    <?php else: ?>
+                      <div class="admin-actions">
                         <button
-                          class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>"
-                          type="submit"
-                          aria-label="Toggle user status"
-                          <?php echo $isSuperadmin && $isActive ? 'disabled' : ''; ?>
-                          title="<?php echo $isSuperadmin && $isActive ? 'Superadmin account cannot be deactivated.' : 'Toggle user status'; ?>">
+                          class="admin-action-btn"
+                          type="button"
+                          data-open-modal="#editUserModal"
+                          data-edit-user
+                          aria-label="Edit user"
+                          <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
+                          title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Edit user'; ?>">
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                            <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                            <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                           </svg>
                         </button>
-                      </form>
-                      <form method="POST" class="admin-inline-form" data-requires-confirm="true">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="action" value="delete_user">
-                        <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
-                        <button
-                          class="admin-action-btn admin-action-danger"
-                          type="submit"
-                          aria-label="Delete user"
-                          <?php echo $isSuperadmin ? 'disabled' : ''; ?>
-                          title="<?php echo $isSuperadmin ? 'Superadmin account cannot be deleted.' : 'Delete user permanently'; ?>">
-                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 7H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                            <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                            <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                          </svg>
-                        </button>
-                      </form>
-                    </div>
+                        <form method="POST" class="admin-inline-form" data-requires-confirm="true">
+                          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                          <input type="hidden" name="action" value="toggle_status">
+                          <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
+                          <input type="hidden" name="status" value="<?php echo $isActive ? 'inactive' : 'active'; ?>">
+                          <button
+                            class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>"
+                            type="submit"
+                            aria-label="Toggle user status"
+                            title="Toggle user status">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                              <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
+                              <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            </svg>
+                          </button>
+                        </form>
+                        <form method="POST" class="admin-inline-form" data-requires-confirm="true">
+                          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                          <input type="hidden" name="action" value="delete_user">
+                          <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
+                          <button
+                            class="admin-action-btn admin-action-danger"
+                            type="submit"
+                            aria-label="Delete user"
+                            title="Delete user permanently">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M4 7H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                              <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
+                              <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                    <?php endif; ?>
                   </td>
                 </tr>
               <?php endforeach; ?>

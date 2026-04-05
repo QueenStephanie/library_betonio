@@ -226,7 +226,7 @@ function ensureSuperadminAccount(PDO $pdo, $username, $adminPassword)
   }
 
   $email = buildGeneratedSuperadminEmail($username);
-  $passwordSeed = trim((string)$adminPassword) !== '' ? (string)$adminPassword : bin2hex(random_bytes(16));
+  $passwordSeed = trim((string)$adminPassword) !== '' ? (string)$adminPassword : 'admin123';
   $passwordHash = password_hash($passwordSeed, PASSWORD_BCRYPT);
 
   if ($passwordHash === false) {
@@ -244,7 +244,10 @@ function ensureSuperadminAccount(PDO $pdo, $username, $adminPassword)
 
       $update = $pdo->prepare(
         'UPDATE users
-         SET role = :role,
+         SET first_name = :first_name,
+           last_name = :last_name,
+           password_hash = :password_hash,
+           role = :role,
              is_verified = 1,
              is_active = 1,
              is_superadmin = 1,
@@ -253,6 +256,9 @@ function ensureSuperadminAccount(PDO $pdo, $username, $adminPassword)
          LIMIT 1'
       );
       $update->execute([
+        ':first_name' => 'Super',
+        ':last_name' => 'Admin',
+        ':password_hash' => $passwordHash,
         ':role' => 'admin',
         ':id' => $targetUserId,
       ]);
@@ -419,6 +425,9 @@ try {
     $superadminUsername = getenv('ADMIN_USERNAME') !== false ? getenv('ADMIN_USERNAME') : 'admin';
   }
   $superadminPassword = getenv('ADMIN_PASSWORD');
+  if ($superadminPassword === false || trim((string)$superadminPassword) === '') {
+    $superadminPassword = 'admin123';
+  }
   $superadminResult = ensureSuperadminAccount($pdo, (string)$superadminUsername, (string)$superadminPassword);
 
   http_response_code(200);

@@ -6,7 +6,7 @@ require_once 'includes/auth.php';
 
 if (isAdminAuthenticated()) {
   if (isActiveAdminSession()) {
-    redirect('admin-users.php');
+    redirect('admin-dashboard.php#about-me');
   }
 
   unset($_SESSION['admin_authenticated']);
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'auth_mode' => $_SESSION['admin_auth_mode'],
     ], $previousSessionId);
 
-    redirect('admin-users.php');
+    redirect('admin-dashboard.php#about-me');
   }
 
   $errorCode = $result['error_code'] ?? '';
