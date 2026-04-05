@@ -201,6 +201,10 @@ function normalizeSuperadminUsername($username)
     return '';
   }
 
+  if (filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+    return $normalized;
+  }
+
   return preg_replace('/[^a-z0-9._-]/', '', $normalized);
 }
 
@@ -209,6 +213,10 @@ function normalizeSuperadminUsername($username)
  */
 function buildGeneratedSuperadminEmail($username)
 {
+  if (filter_var($username, FILTER_VALIDATE_EMAIL)) {
+    return strtolower((string)$username);
+  }
+
   return $username . '@local.admin';
 }
 
@@ -420,12 +428,12 @@ try {
   ensureAdminDashboardSchema($pdo, $database);
 
   // Step 6: Ensure env-declared superadmin managed account exists and remains unique.
-  $superadminUsername = getenv('SUPERADMIN_USERNAME');
-  if ($superadminUsername === false || trim((string)$superadminUsername) === '') {
-    $superadminUsername = getenv('ADMIN_USERNAME') !== false ? getenv('ADMIN_USERNAME') : 'admin';
+  $superadminUsername = AppBootstrap::env('SUPERADMIN_USERNAME');
+  if ($superadminUsername === null || trim((string)$superadminUsername) === '') {
+    $superadminUsername = AppBootstrap::env('ADMIN_USERNAME', 'admin');
   }
-  $superadminPassword = getenv('ADMIN_PASSWORD');
-  if ($superadminPassword === false || trim((string)$superadminPassword) === '') {
+  $superadminPassword = AppBootstrap::env('ADMIN_PASSWORD');
+  if ($superadminPassword === null || trim((string)$superadminPassword) === '') {
     $superadminPassword = 'admin123';
   }
   $superadminResult = ensureSuperadminAccount($pdo, (string)$superadminUsername, (string)$superadminPassword);

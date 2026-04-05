@@ -129,3 +129,101 @@ CREATE INDEX idx_users_verification_token ON users(verification_token);
 CREATE INDEX idx_users_reset_token ON users(reset_token);
 CREATE INDEX idx_users_is_verified ON users(is_verified);
 CREATE INDEX idx_users_role ON users(role);
+
+-- ---------------------------------------------------------------------------
+-- Superadmin seed (safe for first import)
+-- ---------------------------------------------------------------------------
+-- Seed password (user account): admin123
+-- Change this password after first login if you use this account.
+INSERT INTO users (
+    first_name,
+    last_name,
+    email,
+    password_hash,
+    is_verified,
+    verification_token,
+    verification_token_expires,
+    reset_token,
+    reset_token_expires,
+    created_at,
+    updated_at,
+    last_login,
+    is_active,
+    role,
+    is_superadmin
+)
+SELECT
+    'Super',
+    'Admin',
+    'admin@local.admin',
+    '$2y$12$zMvTVCopOtJa/KGE15xWG.wuGEndjpdR48k3zWCv56mlsB501OXba',
+    1,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NOW(),
+    NOW(),
+    NULL,
+    1,
+    'admin',
+    1
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM users
+    WHERE is_superadmin = 1
+    LIMIT 1
+)
+ON DUPLICATE KEY UPDATE
+    role = 'admin',
+    is_verified = 1,
+    is_active = 1,
+    is_superadmin = 1,
+    updated_at = NOW();
+
+-- Seed admin portal DB credential to match superadmin login.
+INSERT INTO admin_credentials (
+    username,
+    password_hash,
+    is_active,
+    created_at,
+    updated_at,
+    password_changed_at
+)
+VALUES (
+    'admin@local.admin',
+    '$2y$12$zMvTVCopOtJa/KGE15xWG.wuGEndjpdR48k3zWCv56mlsB501OXba',
+    1,
+    NOW(),
+    NOW(),
+    NOW()
+)
+ON DUPLICATE KEY UPDATE
+    password_hash = VALUES(password_hash),
+    is_active = 1,
+    updated_at = NOW(),
+    password_changed_at = NOW();
+
+-- Ensure superadmin has a role profile for admin dashboard role governance.
+INSERT INTO role_profiles (
+    user_id,
+    role,
+    role_information,
+    created_at,
+    updated_at
+)
+SELECT
+    u.id,
+    'admin',
+    'System superadmin account',
+    NOW(),
+    NOW()
+FROM users u
+WHERE u.is_superadmin = 1
+ORDER BY u.id ASC
+LIMIT 1
+ON DUPLICATE KEY UPDATE
+    role = VALUES(role),
+    role_information = VALUES(role_information),
+    updated_at = NOW();
