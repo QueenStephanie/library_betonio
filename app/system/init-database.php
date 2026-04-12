@@ -14,11 +14,19 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
  * Access: http://localhost/library_betonio/init-database.php
  */
 
+$remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+$isLocalRequest = in_array($remoteAddr, ['127.0.0.1', '::1', '::ffff:127.0.0.1'], true);
+
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', $isLocalRequest ? '1' : '0');
 
 // Load configuration
 require_once 'includes/config.php';
+
+if (defined('APP_ENV') && APP_ENV === 'production') {
+    http_response_code(403);
+    exit('Forbidden');
+}
 
 ?>
 <!DOCTYPE html>

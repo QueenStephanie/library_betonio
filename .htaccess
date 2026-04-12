@@ -15,7 +15,12 @@ RewriteRule (^|/)\.(?!well-known/) - [F,L]
 # Block sensitive directories
 RewriteRule ^(?:includes|docs|_legacy)/ - [F,L]
 RewriteRule ^backend/(?:config|classes|mail|vendor)/ - [F,L]
+RewriteRule ^backend/(?:migrations|mcp)/ - [F,L]
 RewriteRule ^app/ - [F,L]
+
+# Block setup and maintenance entry points outside localhost
+RewriteCond %{REMOTE_ADDR} !^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$
+RewriteRule ^(?:init-database\.php|backend/setup-db\.php)$ - [F,L]
 
 # Deny direct access to configuration files
 RewriteRule ^\.env(?:\.production)?$ - [F,L]
@@ -25,6 +30,7 @@ RewriteRule ^\.env\.example$ - [F,L]
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set X-Frame-Options "SAMEORIGIN"
 
     <FilesMatch "\.(?:css|js|jpg|jpeg|png|gif|svg|woff|woff2)$">
         Header set Cache-Control "public, max-age=31536000"
