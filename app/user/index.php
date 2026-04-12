@@ -36,6 +36,7 @@ $circulationOverview = [
   'loan_history_count' => 0,
 ];
 $circulationDataAvailable = false;
+$circulationUnavailableMessage = 'Circulation widgets are temporarily unavailable. Please try again later.';
 
 if ($is_logged_in && $user && isset($user['id'])) {
   try {
@@ -43,6 +44,11 @@ if ($is_logged_in && $user && isset($user['id'])) {
     $circulationDataAvailable = true;
   } catch (Exception $e) {
     error_log('user dashboard circulation summary error: ' . $e->getMessage());
+
+    $errorMessage = strtolower($e->getMessage());
+    if (strpos($errorMessage, 'doesn\'t exist') !== false || strpos($errorMessage, 'unknown table') !== false) {
+      $circulationUnavailableMessage = 'Circulation widgets are integrated, but circulation tables are not available yet. Run the circulation migration to activate live borrower metrics.';
+    }
   }
 }
 $flash = getFlash();
@@ -422,7 +428,7 @@ $flash = getFlash();
           <article class="stat-card">
             <div class="stat-icon">💳</div>
             <strong>₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></strong>
-            <span>Outstanding Fines</span>
+            <span>Active Loan Fines</span>
           </article>
         </section>
 
@@ -486,7 +492,7 @@ $flash = getFlash();
               </a>
             </div>
             <?php if (!$circulationDataAvailable): ?>
-              <p class="overview-note">Circulation widgets are now integrated, but your database migration has not been applied yet. Run the circulation migration to activate live borrower metrics.</p>
+              <p class="overview-note"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
             <?php endif; ?>
           </div>
         </section>

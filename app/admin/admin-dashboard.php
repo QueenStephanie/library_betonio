@@ -60,12 +60,18 @@ $circulationOverview = [
   'active_reservations' => 0,
 ];
 $circulationDataAvailable = false;
+$circulationUnavailableMessage = 'Circulation metrics are temporarily unavailable. Please try again later.';
 
 try {
   $circulationOverview = CirculationRepository::getAdminOverview($db);
   $circulationDataAvailable = true;
 } catch (Exception $e) {
   error_log('admin dashboard circulation summary error: ' . $e->getMessage());
+
+  $errorMessage = strtolower($e->getMessage());
+  if (strpos($errorMessage, 'doesn\'t exist') !== false || strpos($errorMessage, 'unknown table') !== false) {
+    $circulationUnavailableMessage = 'Circulation module is scaffolded, but circulation tables are not available yet. Run the circulation migration to enable live metrics.';
+  }
 }
 ?>
 <!DOCTYPE html>
@@ -251,7 +257,7 @@ try {
         </div>
 
         <?php if (!$circulationDataAvailable): ?>
-          <p class="admin-demo-note" style="margin-top: 12px;">Circulation module is scaffolded. Run circulation migration to enable live metrics.</p>
+          <p class="admin-demo-note" style="margin-top: 12px;"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
       </section>
     </main>
