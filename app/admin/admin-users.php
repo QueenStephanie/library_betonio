@@ -45,8 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
   } else {
     $action = trim((string)($_POST['action'] ?? ''));
+    $superadminOnlyActions = ['create_user', 'update_user', 'toggle_status', 'delete_user'];
 
-    if ($action === 'create_user') {
+    if (!$isCurrentSuperadmin && in_array($action, $superadminOnlyActions, true)) {
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Permission Denied',
+        'message' => $roleGovernanceDeniedMessage,
+      ];
+    } elseif ($action === 'create_user') {
       $firstName = trim((string)($_POST['first_name'] ?? ''));
       $lastName = trim((string)($_POST['last_name'] ?? ''));
       $email = strtolower(trim((string)($_POST['email'] ?? '')));
@@ -57,9 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $isActive = $status !== 'inactive';
 
       $errorMessage = null;
-      if (!$isCurrentSuperadmin) {
-        $errorMessage = $roleGovernanceDeniedMessage;
-      } elseif ($firstName === '' || $lastName === '') {
+      if ($firstName === '' || $lastName === '') {
         $errorMessage = 'First and last name are required.';
       } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errorMessage = 'A valid email address is required.';
@@ -116,9 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $isActive = $status !== 'inactive';
 
       $errorMessage = null;
-      if (!$isCurrentSuperadmin) {
-        $errorMessage = $roleGovernanceDeniedMessage;
-      } elseif ($userId <= 0) {
+      if ($userId <= 0) {
         $errorMessage = 'Invalid user selected.';
       } elseif ($firstName === '' || $lastName === '') {
         $errorMessage = 'First and last name are required.';
@@ -525,8 +528,9 @@ function roleLabel($role)
                           <button
                             class="admin-action-btn admin-action-toggle <?php echo $isActive ? 'is-active' : 'is-inactive'; ?>"
                             type="submit"
+                            <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
                             aria-label="<?php echo $isActive ? 'Set user inactive' : 'Set user active'; ?>"
-                            title="<?php echo $isActive ? 'Set user inactive' : 'Set user active'; ?>">
+                            title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : ($isActive ? 'Set user inactive' : 'Set user active'); ?>">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <rect x="3" y="7" width="18" height="10" rx="5" stroke="currentColor" stroke-width="1.6" />
                               <circle cx="<?php echo $isActive ? '16' : '8'; ?>" cy="12" r="3" fill="currentColor" />
@@ -540,8 +544,9 @@ function roleLabel($role)
                           <button
                             class="admin-action-btn admin-action-danger"
                             type="submit"
+                            <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>
                             aria-label="Delete user"
-                            title="Delete user permanently">
+                            title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Delete user permanently'; ?>">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M4 7H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                               <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />

@@ -22,71 +22,80 @@ $auth = new AuthManager($db);
 $user = $auth->getCurrentUser();
 $error = '';
 $success = '';
+$accountCsrfScope = 'account_settings';
+$accountCsrfToken = getPublicCsrfToken($accountCsrfScope);
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $action = getPost('action');
+  $submittedToken = getPost('csrf_token');
+  if (!validatePublicCsrfToken($submittedToken, $accountCsrfScope)) {
+    clearPublicCsrfToken($accountCsrfScope);
+    $accountCsrfToken = getPublicCsrfToken($accountCsrfScope);
+    $error = 'Invalid or missing security token. Please refresh the page and try again.';
+  } else {
+    $action = getPost('action');
 
-  if ($action === 'update_profile') {
-    $first_name = sanitize(getPost('first_name'));
-    $last_name = sanitize(getPost('last_name'));
+    if ($action === 'update_profile') {
+      $first_name = sanitize(getPost('first_name'));
+      $last_name = sanitize(getPost('last_name'));
 
-    try {
-      $query = "UPDATE users SET first_name = :first_name, last_name = :last_name WHERE id = :id";
-      $stmt = $db->prepare($query);
-      $stmt->execute([
-        ':first_name' => $first_name,
-        ':last_name' => $last_name,
-        ':id' => $_SESSION['user_id']
-      ]);
-
-      // Update session
-      $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-
-      $_SESSION['show_profile_success'] = true;
-      $auth = new AuthManager($db);
-      $user = $auth->getCurrentUser();
-    } catch (Exception $e) {
-      $error = 'Failed to update profile';
-    }
-  }
-
-  if ($action === 'change_password') {
-    $current_password = getPost('current_password');
-    $new_password = getPost('new_password');
-    $new_password_confirm = getPost('new_password_confirm');
-
-    if (empty($current_password) || empty($new_password)) {
-      $error = 'All password fields are required';
-    } elseif ($new_password !== $new_password_confirm) {
-      $error = 'New passwords do not match';
-    } elseif (strlen($new_password) < 8) {
-      $error = 'New password must be at least 8 characters';
-    } else {
       try {
-        // Get current password hash
-        $query = "SELECT password_hash FROM users WHERE id = :id";
+        $query = "UPDATE users SET first_name = :first_name, last_name = :last_name WHERE id = :id";
         $stmt = $db->prepare($query);
-        $stmt->execute([':id' => $_SESSION['user_id']]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([
+          ':first_name' => $first_name,
+          ':last_name' => $last_name,
+          ':id' => $_SESSION['user_id']
+        ]);
 
-        // Verify current password
-        if (!password_verify($current_password, $result['password_hash'])) {
-          $error = 'Current password is incorrect';
-        } else {
-          // Update password
-          $new_hash = password_hash($new_password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
-          $query = "UPDATE users SET password_hash = :password WHERE id = :id";
-          $stmt = $db->prepare($query);
-          $stmt->execute([
-            ':password' => $new_hash,
-            ':id' => $_SESSION['user_id']
-          ]);
+        // Update session
+        $_SESSION['user_name'] = $first_name . ' ' . $last_name;
 
-          $_SESSION['show_password_success'] = true;
-        }
+        $_SESSION['show_profile_success'] = true;
+        $auth = new AuthManager($db);
+        $user = $auth->getCurrentUser();
       } catch (Exception $e) {
-        $error = 'Failed to change password';
+        $error = 'Failed to update profile';
+      }
+    }
+
+    if ($action === 'change_password') {
+      $current_password = getPost('current_password');
+      $new_password = getPost('new_password');
+      $new_password_confirm = getPost('new_password_confirm');
+
+      if (empty($current_password) || empty($new_password)) {
+        $error = 'All password fields are required';
+      } elseif ($new_password !== $new_password_confirm) {
+        $error = 'New passwords do not match';
+      } elseif (strlen($new_password) < 8) {
+        $error = 'New password must be at least 8 characters';
+      } else {
+        try {
+          // Get current password hash
+          $query = "SELECT password_hash FROM users WHERE id = :id";
+          $stmt = $db->prepare($query);
+          $stmt->execute([':id' => $_SESSION['user_id']]);
+          $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+          // Verify current password
+          if (!password_verify($current_password, $result['password_hash'])) {
+            $error = 'Current password is incorrect';
+          } else {
+            // Update password
+            $new_hash = password_hash($new_password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
+            $query = "UPDATE users SET password_hash = :password WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->execute([
+              ':password' => $new_hash,
+              ':id' => $_SESSION['user_id']
+            ]);
+
+            $_SESSION['show_password_success'] = true;
+          }
+        } catch (Exception $e) {
+          $error = 'Failed to change password';
+        }
       }
     }
   }
@@ -410,6 +419,7 @@ if (isset($_SESSION['show_password_success'])) {
         <h2>Profile Information</h2>
         <form method="POST" action="account.php">
           <input type="hidden" name="action" value="update_profile">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
           <div class="form-group">
             <label for="first_name">First Name</label>
@@ -441,6 +451,7 @@ if (isset($_SESSION['show_password_success'])) {
         <h2>Change Password</h2>
         <form method="POST" action="account.php">
           <input type="hidden" name="action" value="change_password">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
           <div class="form-group">
             <label for="current_password">Current Password</label>

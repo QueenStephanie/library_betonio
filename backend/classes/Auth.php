@@ -78,7 +78,8 @@ class Auth
           'success' => true,
           'message' => 'Registration successful. Please verify your email.',
           'user_id' => $user_id,
-          'email' => $email
+          'email' => $email,
+          'verification_token' => $verification_token
         ];
       }
     } catch (PDOException $e) {
