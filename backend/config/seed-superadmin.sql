@@ -1,8 +1,8 @@
   -- QueenLib Superadmin Seed
   -- Import this AFTER importing backend/config/schema.sql
-  -- Admin portal login target:
-  --   username: admin@local.admin
-  --   password: admin123
+    -- Unified login target:
+    --   email: admin@local.admin
+    --   password: admin123
 
   START TRANSACTION;
 
@@ -86,30 +86,7 @@
       role_information = VALUES(role_information),
       updated_at = NOW();
 
-  -- 4) Ensure DB-primary admin login credential exists
-  INSERT INTO admin_credentials (
-      username,
-      password_hash,
-      is_active,
-      created_at,
-      updated_at,
-      password_changed_at
-  )
-  VALUES (
-      'admin@local.admin',
-      '$2y$12$zMvTVCopOtJa/KGE15xWG.wuGEndjpdR48k3zWCv56mlsB501OXba',
-      1,
-      NOW(),
-      NOW(),
-      NOW()
-  )
-  ON DUPLICATE KEY UPDATE
-      password_hash = VALUES(password_hash),
-      is_active = 1,
-      updated_at = NOW(),
-      password_changed_at = NOW();
-
-  -- 5) Ensure admin profile exists
+  -- 4) Ensure admin profile exists
   INSERT INTO admin_profiles (
       admin_username,
       full_name,

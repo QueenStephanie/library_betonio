@@ -8,15 +8,13 @@ requireAdminAuth();
 
 $adminUsername = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
 $isSuperadmin = isCurrentAdminSuperadmin();
-$adminRoleLabel = $isSuperadmin ? 'Super Administrator' : 'Administrator';
+$adminRoleLabel = $isSuperadmin ? 'System Administrator / Developer' : 'Administrator / Developer';
 $admin_profile = [
   'name' => 'System Administrator',
-  'email' => filter_var($adminUsername, FILTER_VALIDATE_EMAIL)
-    ? strtolower((string)$adminUsername)
-    : strtolower((string)$adminUsername) . '@libris.com',
+  'email' => 'queenstephanie.betonio@nmsc.edu.ph',
   'phone' => '(555) 123-4567',
-  'admin_id' => 'ADM-BOOTSTRAP',
-  'address' => '456 Admin Boulevard, Central City',
+  'admin_id' => 'ADM-0045',
+  'address' => 'Administrator Office',
   'appointment_date' => date('F j, Y'),
   'appointment_date_value' => date('Y-m-d'),
   'access_level' => 'Full Access - Super Administrator',
@@ -27,6 +25,12 @@ try {
 } catch (Exception $e) {
   error_log('admin-dashboard profile load error: ' . $e->getMessage());
 }
+
+// Enforce requested profile values for dashboard presentation.
+$admin_profile['email'] = 'queenstephanie.betonio@nmsc.edu.ph';
+$admin_profile['phone'] = '(555) 123-4567';
+$admin_profile['admin_id'] = 'ADM-0045';
+$admin_profile['address'] = 'Administrator Office';
 
 // Check for admin welcome alert
 $show_admin_welcome = isset($_SESSION['show_admin_welcome']);
@@ -62,7 +66,7 @@ if ($show_admin_welcome) {
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-brand-wrap">
-        <div class="admin-brand">Libris</div>
+        <div class="admin-brand">QueenLib</div>
         <div class="admin-brand-sub">Admin Portal</div>
       </div>
 
@@ -186,16 +190,16 @@ if ($show_admin_welcome) {
 
         <div class="admin-stats-row">
           <article class="admin-stat-tile">
-            <strong>Identity</strong>
-            <span>Admin portfolio data is sourced from persistent profile records.</span>
+            <strong>Full Stack Developer</strong>
+            <span>Skilled in end-to-end development across frontend and backend systems.</span>
           </article>
           <article class="admin-stat-tile">
-            <strong>Protection</strong>
-            <span>Privileged account state is guarded by role and session controls.</span>
+            <strong>Frontend Skills</strong>
+            <span>HTML and CSS for responsive, modern, and user-friendly interfaces.</span>
           </article>
           <article class="admin-stat-tile">
-            <strong>Continuity</strong>
-            <span>Legacy profile route redirects here to keep bookmarks working.</span>
+            <strong>Backend Skills</strong>
+            <span>PHP and MySQL for robust server-side logic and database management.</span>
           </article>
         </div>
       </section>

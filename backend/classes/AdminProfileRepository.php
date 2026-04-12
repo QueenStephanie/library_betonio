@@ -23,8 +23,7 @@ class AdminProfileRepository
 
     return $profile ?: self::mapForView($defaults + [
       'admin_username' => $adminUsername,
-      'admin_credential_id' => null,
-      'credential_created_at' => null,
+      'user_id' => null,
     ]);
   }
 
@@ -39,10 +38,9 @@ class AdminProfileRepository
         ap.address,
         ap.appointment_date,
         ap.access_level,
-        ac.id AS admin_credential_id,
-        ac.created_at AS credential_created_at
+        u.id AS user_id
       FROM admin_profiles ap
-      LEFT JOIN admin_credentials ac ON ac.username = ap.admin_username
+      LEFT JOIN users u ON LOWER(u.email) = LOWER(ap.admin_username)
       WHERE ap.admin_username = :admin_username
       LIMIT 1'
     );
@@ -115,8 +113,8 @@ class AdminProfileRepository
       $appointmentDateDisplay = date('F j, Y', $timestamp);
     }
 
-    $credentialId = isset($row['admin_credential_id']) ? (int)$row['admin_credential_id'] : 0;
-    $adminId = $credentialId > 0 ? sprintf('ADM-%04d', $credentialId) : 'ADM-BOOTSTRAP';
+    $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+    $adminId = $userId > 0 ? sprintf('ADM-%04d', $userId) : 'ADM-BOOTSTRAP';
 
     return [
       'admin_username' => (string)($row['admin_username'] ?? 'admin'),
@@ -128,7 +126,6 @@ class AdminProfileRepository
       'appointment_date_value' => $appointmentDateRaw,
       'access_level' => (string)($row['access_level'] ?? 'Full Access - Super Administrator'),
       'admin_id' => $adminId,
-      'credential_created_at' => $row['credential_created_at'] ?? null,
     ];
   }
 

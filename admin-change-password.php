@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-brand-wrap">
-        <div class="admin-brand">Libris</div>
+        <div class="admin-brand">QueenLib</div>
         <div class="admin-brand-sub">Admin Portal</div>
       </div>
 

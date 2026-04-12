@@ -41,7 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($result['success']) {
       setFlash('success', $result['message']);
       $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
-      if ($role === 'admin') {
+      $isSuperadmin = !empty($_SESSION['is_superadmin']);
+      if ($role === 'admin' || $isSuperadmin) {
         $_SESSION['show_admin_welcome'] = true;
         redirect('admin-dashboard.php#about-me');
       }

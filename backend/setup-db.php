@@ -48,63 +48,6 @@ function ensureColumn(PDO $pdo, $database, $table, $columnName, $alterSql)
 }
 
 /**
- * Verify admin remediation tables and indexes idempotently.
- */
-function ensureAdminSecuritySchema(PDO $pdo, $database)
-{
-  $pdo->exec(
-    "CREATE TABLE IF NOT EXISTS admin_credentials (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      username VARCHAR(100) NOT NULL UNIQUE,
-      password_hash VARCHAR(255) NOT NULL,
-      is_active BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      password_changed_at DATETIME NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-  );
-
-  $pdo->exec(
-    "CREATE TABLE IF NOT EXISTS admin_session_registry (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      admin_identity VARCHAR(120) NOT NULL,
-      admin_credential_id INT NULL,
-      session_id_hash CHAR(64) NOT NULL UNIQUE,
-      auth_mode ENUM('db', 'bootstrap_env') NOT NULL,
-      ip_address VARCHAR(45) NULL,
-      user_agent VARCHAR(500) NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_seen_at DATETIME NULL,
-      invalidated_at DATETIME NULL,
-      CONSTRAINT fk_admin_session_credential
-        FOREIGN KEY (admin_credential_id) REFERENCES admin_credentials(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-  );
-
-  ensureIndex(
-    $pdo,
-    $database,
-    'admin_credentials',
-    'idx_admin_credentials_active',
-    'CREATE INDEX idx_admin_credentials_active ON admin_credentials(is_active)'
-  );
-  ensureIndex(
-    $pdo,
-    $database,
-    'admin_session_registry',
-    'idx_admin_session_identity',
-    'CREATE INDEX idx_admin_session_identity ON admin_session_registry(admin_identity)'
-  );
-  ensureIndex(
-    $pdo,
-    $database,
-    'admin_session_registry',
-    'idx_admin_session_active',
-    'CREATE INDEX idx_admin_session_active ON admin_session_registry(admin_identity, invalidated_at)'
-  );
-}
-
-/**
  * Verify admin dashboard feature tables and indexes idempotently.
  */
 function ensureAdminDashboardSchema(PDO $pdo, $database)
@@ -423,8 +366,7 @@ try {
     }
   }
 
-  // Step 5: Idempotent verification for remediation tables/indexes.
-  ensureAdminSecuritySchema($pdo, $database);
+  // Step 5: Idempotent verification for role-based admin dashboard tables/indexes.
   ensureAdminDashboardSchema($pdo, $database);
 
   // Step 6: Ensure env-declared superadmin managed account exists and remains unique.
@@ -447,8 +389,6 @@ try {
       'users',
       'verification_attempts',
       'login_history',
-      'admin_credentials',
-      'admin_session_registry',
       'role_profiles',
       'admin_profiles',
       'fine_collections'

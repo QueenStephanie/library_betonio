@@ -109,7 +109,6 @@ class PermissionGate
     'view_admin_dashboard',
     'change_admin_password',
     'view_admin_profile',
-    'manage_admin_credentials',
     'manage_system_settings',
     'view_audit_logs',
   ];
@@ -231,13 +230,9 @@ class PermissionGate
       return 'superadmin';
     }
 
-    // Admin portal users are authenticated via admin_credentials table.
-    // Their functional role is 'admin' unless overridden by a managed user profile.
-    if (isset($_SESSION['admin_profile']) && is_array($_SESSION['admin_profile'])) {
-      $profileRole = $_SESSION['admin_profile']['role'] ?? null;
-      if ($profileRole !== null && in_array(strtolower($profileRole), ['admin', 'librarian', 'borrower'], true)) {
-        return strtolower($profileRole);
-      }
+    $sessionRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+    if (in_array($sessionRole, ['admin', 'librarian', 'borrower'], true)) {
+      return $sessionRole;
     }
 
     return 'admin';
