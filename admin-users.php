@@ -338,7 +338,7 @@ function roleLabel($role)
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-brand-wrap">
-        <div class="admin-brand">Libris</div>
+        <div class="admin-brand">QueenLib</div>
         <div class="admin-brand-sub">Admin Portal</div>
       </div>
 
@@ -518,14 +518,13 @@ function roleLabel($role)
                           <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
                           <input type="hidden" name="status" value="<?php echo $isActive ? 'inactive' : 'active'; ?>">
                           <button
-                            class="admin-action-btn <?php echo $isActive ? 'admin-action-danger' : ''; ?>"
+                            class="admin-action-btn admin-action-toggle <?php echo $isActive ? 'is-active' : 'is-inactive'; ?>"
                             type="submit"
-                            aria-label="Toggle user status"
-                            title="Toggle user status">
+                            aria-label="<?php echo $isActive ? 'Set user inactive' : 'Set user active'; ?>"
+                            title="<?php echo $isActive ? 'Set user inactive' : 'Set user active'; ?>">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 7H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                              <path d="M9 7V5H15V7" stroke="currentColor" stroke-width="1.6" />
-                              <path d="M7 7L8 19H16L17 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                              <rect x="3" y="7" width="18" height="10" rx="5" stroke="currentColor" stroke-width="1.6" />
+                              <circle cx="<?php echo $isActive ? '16' : '8'; ?>" cy="12" r="3" fill="currentColor" />
                             </svg>
                           </button>
                         </form>

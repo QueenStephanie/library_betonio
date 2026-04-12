@@ -96,7 +96,7 @@ class AdminProfileRepository
     $stmt->execute([
       ':admin_username' => $adminUsername,
       ':full_name' => trim((string)($payload['full_name'] ?? 'System Administrator')),
-      ':email' => strtolower(trim((string)($payload['email'] ?? 'admin@libris.com'))),
+      ':email' => strtolower(trim((string)($payload['email'] ?? 'admin@queenlib.com'))),
       ':phone' => trim((string)($payload['phone'] ?? '(000) 000-0000')),
       ':address' => trim((string)($payload['address'] ?? 'Administrator Office')),
       ':appointment_date' => $appointmentDate,
@@ -119,7 +119,7 @@ class AdminProfileRepository
     return [
       'admin_username' => (string)($row['admin_username'] ?? 'admin'),
       'name' => (string)($row['full_name'] ?? 'System Administrator'),
-      'email' => (string)($row['email'] ?? 'admin@libris.com'),
+      'email' => (string)($row['email'] ?? 'admin@queenlib.com'),
       'phone' => (string)($row['phone'] ?? '(000) 000-0000'),
       'address' => (string)($row['address'] ?? 'Administrator Office'),
       'appointment_date' => $appointmentDateDisplay,
@@ -133,7 +133,7 @@ class AdminProfileRepository
   {
     return [
       'full_name' => 'System Administrator',
-      'email' => strtolower($adminUsername) . '@libris.com',
+      'email' => strtolower($adminUsername) . '@queenlib.com',
       'phone' => '(555) 123-4567',
       'address' => '456 Admin Boulevard, Central City',
       'appointment_date' => date('Y-m-d'),

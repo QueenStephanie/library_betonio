@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_editing) {
 
 $admin_profile = [
   'name' => 'System Administrator',
-  'email' => strtolower((string)$adminUsername) . '@libris.com',
+  'email' => strtolower((string)$adminUsername) . '@queenlib.com',
   'phone' => '(555) 123-4567',
   'admin_id' => 'ADM-BOOTSTRAP',
   'address' => '456 Admin Boulevard, Central City',
@@ -112,7 +112,7 @@ try {
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-brand-wrap">
-        <div class="admin-brand">Libris</div>
+        <div class="admin-brand">QueenLib</div>
         <div class="admin-brand-sub">Admin Portal</div>
       </div>
 

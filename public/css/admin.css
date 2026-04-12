@@ -1116,7 +1116,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
+  padding: 8px 14px;
+  min-height: 34px;
+  line-height: 1.1;
+  white-space: nowrap;
+  margin-right: 10px;
+  margin-bottom: 4px;
   border-radius: 999px;
   border: 1px solid #ebd5c8;
   background: #fff7f3;
@@ -1335,6 +1340,33 @@ body {
 
 .admin-action-btn.admin-action-danger:hover {
   background: #fdece2;
+}
+
+.admin-action-btn.admin-action-toggle {
+  width: 44px;
+  border-radius: 999px;
+}
+
+.admin-action-btn.admin-action-toggle.is-active {
+  border-color: #9fd9ad;
+  color: #2f7a3f;
+  background: #ebf8ef;
+}
+
+.admin-action-btn.admin-action-toggle.is-active:hover {
+  border-color: #2f7a3f;
+  color: #2f7a3f;
+}
+
+.admin-action-btn.admin-action-toggle.is-inactive {
+  border-color: #d8dde6;
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.admin-action-btn.admin-action-toggle.is-inactive:hover {
+  border-color: #6b7280;
+  color: #4b5563;
 }
 
 .admin-helper-text {
