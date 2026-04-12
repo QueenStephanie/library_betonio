@@ -32,7 +32,8 @@ html {
 body {
   min-height: 100vh;
   color: var(--text);
-  background: radial-gradient(circle at 8% 0%, #fff6ea 0%, transparent 28%),
+  background:
+    radial-gradient(circle at 8% 0%, #fff6ea 0%, transparent 28%),
     radial-gradient(circle at 92% 96%, #f8ead8 0%, transparent 34%), var(--bg);
   font-family: "Outfit", sans-serif;
   line-height: 1.6;
@@ -99,7 +100,9 @@ h3 {
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 500;
-  transition: background 220ms ease, color 220ms ease;
+  transition:
+    background 220ms ease,
+    color 220ms ease;
 }
 
 .nav-link:hover {
@@ -116,7 +119,10 @@ h3 {
   border-radius: 12px;
   border: 1px solid transparent;
   font-weight: 600;
-  transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease,
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    background 220ms ease,
     color 220ms ease;
 }
 
@@ -160,6 +166,12 @@ h3 {
   inset: 0;
 }
 
+.hero-slides,
+.hero-slide,
+.hero-overlay {
+  pointer-events: none;
+}
+
 .hero-slide {
   opacity: 0;
   transform: scale(1.03);
@@ -167,19 +179,34 @@ h3 {
 }
 
 .hero-slide:nth-child(1) {
-  background: radial-gradient(circle at 50% 15%, rgba(244, 212, 153, 0.56), transparent 20%),
+  background:
+    radial-gradient(
+      circle at 50% 15%,
+      rgba(244, 212, 153, 0.56),
+      transparent 20%
+    ),
     linear-gradient(rgba(50, 31, 19, 0.55), rgba(28, 20, 14, 0.7)),
     linear-gradient(180deg, #60442b 0%, #2d2118 58%, #1a1310 100%);
 }
 
 .hero-slide:nth-child(2) {
-  background: radial-gradient(circle at 52% 20%, rgba(252, 229, 173, 0.54), transparent 20%),
+  background:
+    radial-gradient(
+      circle at 52% 20%,
+      rgba(252, 229, 173, 0.54),
+      transparent 20%
+    ),
     linear-gradient(rgba(57, 38, 23, 0.53), rgba(27, 18, 13, 0.72)),
     linear-gradient(180deg, #6b4f36 0%, #34261d 58%, #19130f 100%);
 }
 
 .hero-slide:nth-child(3) {
-  background: radial-gradient(circle at 48% 18%, rgba(246, 209, 145, 0.56), transparent 20%),
+  background:
+    radial-gradient(
+      circle at 48% 18%,
+      rgba(246, 209, 145, 0.56),
+      transparent 20%
+    ),
     linear-gradient(rgba(52, 35, 21, 0.54), rgba(26, 19, 13, 0.74)),
     linear-gradient(180deg, #654931 0%, #30231b 58%, #17120f 100%);
 }
@@ -189,7 +216,11 @@ h3 {
 }
 
 .hero-overlay {
-  background: linear-gradient(180deg, rgba(10, 8, 6, 0.28), rgba(10, 8, 6, 0.58));
+  background: linear-gradient(
+    180deg,
+    rgba(10, 8, 6, 0.28),
+    rgba(10, 8, 6, 0.58)
+  );
 }
 
 .hero-content {
@@ -319,7 +350,9 @@ h3 {
   border-radius: var(--radius);
   padding: 28px;
   box-shadow: var(--shadow);
-  transition: transform 240ms ease, box-shadow 240ms ease;
+  transition:
+    transform 240ms ease,
+    box-shadow 240ms ease;
 }
 
 .card:hover {

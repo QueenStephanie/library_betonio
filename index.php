@@ -41,268 +41,270 @@ $flash = getFlash();
   <?php endif; ?>
   <style>
     <?php if ($is_logged_in): ?>
-      /* Dashboard Specific Styles */
-      .dashboard-header {
-        background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
-        border-bottom: 1px solid var(--line);
-        padding: 40px 0;
-        margin-bottom: 32px;
-      }
 
-      .dashboard-header h1 {
-        font-size: 2.8rem;
-        margin-bottom: 8px;
-      }
+    /* Dashboard Specific Styles */
+    .dashboard-header {
+      background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
+      border-bottom: 1px solid var(--line);
+      padding: 40px 0;
+      margin-bottom: 32px;
+    }
 
-      .dashboard-header p {
-        font-size: 1.1rem;
-        color: var(--muted);
-      }
+    .dashboard-header h1 {
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+    }
 
+    .dashboard-header p {
+      font-size: 1.1rem;
+      color: var(--muted);
+    }
+
+    .dashboard-main {
+      padding: 0 32px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
+      border-color: var(--accent);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .stat-card span {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .panel:hover {
+      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
+      border-color: var(--accent);
+    }
+
+    .panel-heading {
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to right, rgba(242, 240, 236, 0.5), transparent);
+    }
+
+    .panel-heading h2 {
+      font-size: 1.6rem;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .history-link {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .history-link:hover {
+      gap: 10px;
+    }
+
+    .panel-content {
+      padding: 32px;
+    }
+
+    .profile-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .profile-item:last-child {
+      border-bottom: none;
+    }
+
+    .profile-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .profile-value {
+      color: var(--muted);
+    }
+
+    .profile-value.verified {
+      color: #5d8049;
+      font-weight: 600;
+    }
+
+    .profile-value.pending {
+      color: #ca8616;
+      font-weight: 600;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .action-btn {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--accent), #b83d14);
+      color: white;
+      box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
+    }
+
+    .action-btn.secondary {
+      background: var(--neutral-bg);
+      color: var(--text);
+      border: 1.5px solid var(--line);
+    }
+
+    .action-btn.secondary:hover {
+      background: white;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .action-btn.danger {
+      background: #fff2ef;
+      color: #a62f0d;
+      border: 1.5px solid #f0b7a7;
+    }
+
+    .action-btn.danger:hover {
+      background: #a62f0d;
+      color: white;
+    }
+
+    @media (max-width: 1024px) {
       .dashboard-main {
-        padding: 0 32px;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 20px;
-        margin-bottom: 40px;
-      }
-
-      .stat-card {
-        background: white;
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 24px;
-        text-align: center;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--accent);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.3s ease;
-      }
-
-      .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
-        border-color: var(--accent);
-      }
-
-      .stat-card:hover::before {
-        transform: scaleX(1);
-      }
-
-      .stat-icon {
-        font-size: 2rem;
-        margin-bottom: 12px;
-      }
-
-      .stat-card strong {
-        display: block;
-        font-size: 1.3rem;
-        margin-bottom: 4px;
-        color: var(--text);
-      }
-
-      .stat-card span {
-        display: block;
-        font-size: 0.9rem;
-        color: var(--muted);
-      }
-
-      .panel {
-        background: white;
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        margin-bottom: 24px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-      }
-
-      .panel:hover {
-        box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
-        border-color: var(--accent);
+        padding: 0 24px;
       }
 
       .panel-heading {
-        padding: 28px 32px;
-        border-bottom: 1px solid var(--line);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: linear-gradient(to right, rgba(242, 240, 236, 0.5), transparent);
-      }
-
-      .panel-heading h2 {
-        font-size: 1.6rem;
-        color: var(--text);
-        margin: 0;
-      }
-
-      .history-link {
-        color: var(--accent);
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .history-link:hover {
-        gap: 10px;
+        padding: 20px 24px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .panel-content {
-        padding: 32px;
+        padding: 24px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-header {
+        padding: 24px 0;
+        margin-bottom: 24px;
       }
 
-      .profile-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 16px 0;
-        border-bottom: 1px solid var(--line);
+      .dashboard-header h1 {
+        font-size: 2rem;
       }
 
-      .profile-item:last-child {
-        border-bottom: none;
+      .dashboard-main {
+        padding: 0 16px;
       }
 
-      .profile-label {
-        font-weight: 600;
-        color: var(--text);
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
       }
 
-      .profile-value {
-        color: var(--muted);
+      .stat-card {
+        padding: 16px;
       }
 
-      .profile-value.verified {
-        color: #5d8049;
-        font-weight: 600;
-      }
-
-      .profile-value.pending {
-        color: #ca8616;
-        font-weight: 600;
+      .stat-card strong {
+        font-size: 1.1rem;
       }
 
       .action-buttons {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
+        grid-template-columns: 1fr;
       }
+    }
 
-      .action-btn {
-        padding: 14px 24px;
-        border: none;
-        border-radius: 12px;
-        font: inherit;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .action-btn.primary {
-        background: linear-gradient(135deg, var(--accent), #b83d14);
-        color: white;
-        box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
-      }
-
-      .action-btn.primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
-      }
-
-      .action-btn.secondary {
-        background: var(--neutral-bg);
-        color: var(--text);
-        border: 1.5px solid var(--line);
-      }
-
-      .action-btn.secondary:hover {
-        background: white;
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      .action-btn.danger {
-        background: #fff2ef;
-        color: #a62f0d;
-        border: 1.5px solid #f0b7a7;
-      }
-
-      .action-btn.danger:hover {
-        background: #a62f0d;
-        color: white;
-      }
-
-      @media (max-width: 1024px) {
-        .dashboard-main {
-          padding: 0 24px;
-        }
-
-        .panel-heading {
-          padding: 20px 24px;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 12px;
-        }
-
-        .panel-content {
-          padding: 24px;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .dashboard-header {
-          padding: 24px 0;
-          margin-bottom: 24px;
-        }
-
-        .dashboard-header h1 {
-          font-size: 2rem;
-        }
-
-        .dashboard-main {
-          padding: 0 16px;
-        }
-
-        .stats-grid {
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .stat-card {
-          padding: 16px;
-        }
-
-        .stat-card strong {
-          font-size: 1.1rem;
-        }
-
-        .action-buttons {
-          grid-template-columns: 1fr;
-        }
-      }
     <?php endif; ?>
   </style>
 </head>
@@ -314,7 +316,7 @@ $flash = getFlash();
     <div class="dashboard-layout">
       <!-- SIDEBAR -->
       <aside class="sidebar" role="navigation" aria-label="Main navigation">
-        <a class="sidebar-brand" href="index.php">QueenLib</a>
+        <a class="sidebar-brand" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">QueenLib</a>
 
         <div class="sidebar-user" id="userProfile">
           <div class="avatar"><?php echo strtoupper(substr($user['first_name'], 0, 1)); ?></div>
@@ -322,15 +324,15 @@ $flash = getFlash();
         </div>
 
         <nav class="sidebar-nav">
-          <a class="nav-item is-active" href="index.php">
+          <a class="nav-item is-active" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">⌂</span>
             <span>My Account</span>
           </a>
-          <a class="nav-item" href="account.php">
+          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">⚙</span>
             <span>Settings</span>
           </a>
-          <a class="nav-item" href="logout.php">
+          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">↪</span>
             <span>Log Out</span>
           </a>
@@ -379,7 +381,7 @@ $flash = getFlash();
           <!-- Settings -->
           <article class="stat-card">
             <div class="stat-icon">⚙</div>
-            <a href="account.php" style="color: inherit; text-decoration: none;">
+            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" style="color: inherit; text-decoration: none;">
               <strong>Account</strong>
               <span>Settings →</span>
             </a>
@@ -390,7 +392,7 @@ $flash = getFlash();
         <section class="panel">
           <div class="panel-heading">
             <h2>Profile Information</h2>
-            <a href="account.php" class="history-link">
+            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="history-link">
               <span>Edit Profile</span>
               <span>→</span>
             </a>
@@ -424,15 +426,15 @@ $flash = getFlash();
           </div>
           <div class="panel-content">
             <div class="action-buttons">
-              <a href="account.php" class="action-btn primary">
+              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn primary">
                 <span>📝</span>
                 <span>Edit Profile</span>
               </a>
-              <a href="account.php" class="action-btn secondary">
+              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>🔐</span>
                 <span>Change Password</span>
               </a>
-              <a href="logout.php" class="action-btn danger">
+              <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn danger">
                 <span>🚪</span>
                 <span>Logout</span>
               </a>
@@ -446,10 +448,10 @@ $flash = getFlash();
     <!-- NOT LOGGED IN - LANDING PAGE VIEW -->
     <header class="site-header">
       <div class="container nav-wrap">
-        <a class="brand" href="index.php">QueenLib</a>
+        <a class="brand" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">QueenLib</a>
         <nav class="nav-actions">
-          <a class="nav-link" href="login.php">Log In</a>
-          <a class="button button-primary button-small" href="register.php">Get Started</a>
+          <a class="nav-link" href="<?php echo htmlspecialchars(appPath('login.php'), ENT_QUOTES, 'UTF-8'); ?>">Log In</a>
+          <a class="button button-primary button-small" href="<?php echo htmlspecialchars(appPath('register.php'), ENT_QUOTES, 'UTF-8'); ?>">Get Started</a>
         </nav>
       </div>
     </header>
@@ -469,8 +471,8 @@ $flash = getFlash();
             loans, all from one place.
           </p>
           <div class="hero-actions">
-            <a class="button button-primary" href="register.php">Create a Free Account</a>
-            <a class="button button-secondary" href="login.php">Log In</a>
+            <a class="button button-primary" href="<?php echo htmlspecialchars(appPath('register.php'), ENT_QUOTES, 'UTF-8'); ?>">Create a Free Account</a>
+            <a class="button button-secondary" href="<?php echo htmlspecialchars(appPath('login.php'), ENT_QUOTES, 'UTF-8'); ?>">Log In</a>
           </div>
 
           <div class="hero-indicator" aria-label="Hero slide indicators">
@@ -554,14 +556,14 @@ $flash = getFlash();
     <footer class="site-footer">
       <div class="container footer-wrap">
         <div>
-          <a class="brand footer-brand" href="index.php">QueenLib</a>
+          <a class="brand footer-brand" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">QueenLib</a>
           <p class="footer-copy">A modern library, at your fingertips.</p>
         </div>
 
         <nav class="footer-nav">
           <a href="#">Browse Catalog</a>
-          <a href="login.php">Log In</a>
-          <a href="register.php">Register</a>
+          <a href="<?php echo htmlspecialchars(appPath('login.php'), ENT_QUOTES, 'UTF-8'); ?>">Log In</a>
+          <a href="<?php echo htmlspecialchars(appPath('register.php'), ENT_QUOTES, 'UTF-8'); ?>">Register</a>
         </nav>
 
         <p class="footer-meta">© 2026 QueenLib</p>
