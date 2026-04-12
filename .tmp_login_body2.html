@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueenLib | Log In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="public/css/auth.css">
+</head>
+
+<body>
+  <main class="auth-page">
+    <section class="auth-visual">
+      <div class="visual-overlay"></div>
+      <div class="visual-content">
+        <a class="visual-brand" href="index.php">QueenLib</a>
+        <p class="visual-quote">"A reader lives a thousand lives before he dies."</p>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in to your QueenLib account.</p>
+
+        <form class="auth-form" method="POST" action="login.php">
+          <input type="hidden" name="csrf_token" value="0e4988e219c0b68a5f6b21c23fa3deb8efa515086aa53817881f2ded2124d7f1">
+          <label for="email">Email Address</label>
+          <input id="email" name="email" type="email" placeholder="jane@example.com"
+            autocomplete="email" required value="">
+
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input id="password" name="password" type="password" placeholder="Your password"
+              autocomplete="current-password" required>
+            <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5c5.23 0 9.27 4.57 10 6c-.73 1.43-4.77 6-10 6S2.73 12.43 2 11c.73-1.43 4.77-6 10-6Zm0 2c-3.93 0-7.16 3.11-7.88 4c.72.89 3.95 4 7.88 4s7.16-3.11 7.88-4C19.16 10.11 15.93 7 12 7Zm0 1.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Zm0 2A1.5 1.5 0 1 0 13.5 12A1.5 1.5 0 0 0 12 10.5Z" />
+              </svg>
+            </button>
+          </div>
+
+          <button class="submit-button" type="submit">Log In</button>
+        </form>
+
+        <div class="auth-links">
+          <a class="forgot-link" href="forgot-password.php">Forgot your password?</a>
+          <p>Don't have an account? <a class="register-link" href="register.php">Register →</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="public/js/auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/library_betonio/public/js/sweetalert-config.js"></script>
+<script src="/library_betonio/public/js/page-alerts.js"></script>
+  </body>
+
+</html>
