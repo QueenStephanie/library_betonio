@@ -15,6 +15,7 @@ RewriteRule (^|/)\.(?!well-known/) - [F,L]
 # Block sensitive directories
 RewriteRule ^(?:includes|docs|_legacy)/ - [F,L]
 RewriteRule ^backend/(?:config|classes|mail|vendor)/ - [F,L]
+RewriteRule ^app/ - [F,L]
 
 # Deny direct access to configuration files
 RewriteRule ^\.env(?:\.production)?$ - [F,L]

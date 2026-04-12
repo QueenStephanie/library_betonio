@@ -95,14 +95,16 @@ Key documentation files:
 
 ```
 library_betonio/
-├── Core Authentication
-│   ├── index.php              # Dashboard
-│   ├── login.php              # Login
-│   ├── register.php           # Registration
-│   ├── verify-otp.php         # OTP Verification
-│   ├── forgot-password.php    # Password Reset Request
-│   ├── reset-password.php     # Password Reset Form
-│   └── logout.php             # Logout
+├── app/                       # Role-based page implementations
+│   ├── public/                # Guest/public auth pages
+│   ├── user/                  # Logged-in user pages
+│   ├── admin/                 # Admin portal pages
+│   └── system/                # System/maintenance entry pages
+│
+├── Root Entry Files
+│   ├── index.php, login.php, ...
+│   └── admin-*.php
+│      (Compatibility loaders that include files from app/*)
 │
 ├── Backend
 │   ├── includes/              # Core logic (auth, config, functions)
@@ -116,8 +118,8 @@ library_betonio/
 │   └── public/js/             # JavaScript functionality
 │
 └── Documentation
-    ├── DOCUMENTATION.md       # Complete documentation ✓
-    └── CLEANUP_GUIDE.md       # Files cleanup guide
+  ├── DOCUMENTATION.md       # Complete documentation ✓
+  └── CLEANUP_GUIDE.md       # Files cleanup guide
 ```
 
 For detailed structure and file descriptions, see: [`DOCUMENTATION.md`](DOCUMENTATION.md)
