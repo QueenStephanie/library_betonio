@@ -8,6 +8,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once APP_ROOT . '/backend/classes/AdminProfileRepository.php';
+require_once APP_ROOT . '/backend/classes/CirculationRepository.php';
 
 requireAdminAuth();
 
@@ -50,6 +51,21 @@ if ($show_admin_welcome) {
     'title' => 'Admin Access Granted',
     'message' => 'Welcome back, Administrator. You now have full system access.'
   ];
+}
+
+$circulationOverview = [
+  'catalog_titles' => 0,
+  'available_copies' => 0,
+  'active_loans' => 0,
+  'active_reservations' => 0,
+];
+$circulationDataAvailable = false;
+
+try {
+  $circulationOverview = CirculationRepository::getAdminOverview($db);
+  $circulationDataAvailable = true;
+} catch (Exception $e) {
+  error_log('admin dashboard circulation summary error: ' . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -207,6 +223,36 @@ if ($show_admin_welcome) {
             <span>PHP and MySQL for robust server-side logic and database management.</span>
           </article>
         </div>
+      </section>
+
+      <section class="admin-card" id="circulation-overview">
+        <div class="admin-card-header">
+          <h2>Circulation Overview</h2>
+          <p>Live snapshot of books, inventory, loans, and reservations.</p>
+        </div>
+
+        <div class="admin-stats-row">
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$circulationOverview['catalog_titles']; ?></strong>
+            <span>Catalog Titles</span>
+          </article>
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$circulationOverview['available_copies']; ?></strong>
+            <span>Available Copies</span>
+          </article>
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$circulationOverview['active_loans']; ?></strong>
+            <span>Active / Overdue Loans</span>
+          </article>
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$circulationOverview['active_reservations']; ?></strong>
+            <span>Active Reservations</span>
+          </article>
+        </div>
+
+        <?php if (!$circulationDataAvailable): ?>
+          <p class="admin-demo-note" style="margin-top: 12px;">Circulation module is scaffolded. Run circulation migration to enable live metrics.</p>
+        <?php endif; ?>
       </section>
     </main>
   </div>

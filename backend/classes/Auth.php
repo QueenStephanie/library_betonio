@@ -283,5 +283,4 @@ class Auth
       error_log("Log history error: " . $e->getMessage());
     }
   }
-
 }

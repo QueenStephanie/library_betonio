@@ -13,6 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/backend/classes/CirculationRepository.php';
 
 // Check session timeout
 if (isset($_SESSION['user_id'])) {
@@ -25,6 +26,24 @@ if ($is_logged_in) {
   $user = $auth->getCurrentUser();
 } else {
   $user = null;
+}
+
+$circulationOverview = [
+  'current_loans' => 0,
+  'due_soon' => 0,
+  'active_reservations' => 0,
+  'outstanding_fines' => 0.0,
+  'loan_history_count' => 0,
+];
+$circulationDataAvailable = false;
+
+if ($is_logged_in && $user && isset($user['id'])) {
+  try {
+    $circulationOverview = CirculationRepository::getBorrowerOverview($db, (int)$user['id']);
+    $circulationDataAvailable = true;
+  } catch (Exception $e) {
+    error_log('user dashboard circulation summary error: ' . $e->getMessage());
+  }
 }
 $flash = getFlash();
 
@@ -260,6 +279,22 @@ $flash = getFlash();
       color: white;
     }
 
+    .action-btn.is-disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .overview-note {
+      margin-top: 20px;
+      font-size: 0.92rem;
+      color: var(--muted);
+      padding: 12px 14px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fcfbf8;
+    }
+
     @media (max-width: 1024px) {
       .dashboard-main {
         padding: 0 24px;
@@ -362,34 +397,32 @@ $flash = getFlash();
 
         <!-- STATS SECTION -->
         <section class="stats-grid" aria-label="Account statistics">
-          <!-- Email -->
+          <!-- Current Loans -->
           <article class="stat-card">
-            <div class="stat-icon">✉</div>
-            <strong><?php echo htmlspecialchars($user['email']); ?></strong>
-            <span>Email Address</span>
+            <div class="stat-icon">📚</div>
+            <strong><?php echo (int)$circulationOverview['current_loans']; ?></strong>
+            <span>Current Loans</span>
           </article>
 
-          <!-- Verification Status -->
+          <!-- Due Soon -->
           <article class="stat-card">
-            <div class="stat-icon"><?php echo $user['is_verified'] ? '✓' : '⚠'; ?></div>
-            <strong><?php echo $user['is_verified'] ? 'Verified' : 'Pending'; ?></strong>
-            <span>Account Status</span>
+            <div class="stat-icon">⏰</div>
+            <strong><?php echo (int)$circulationOverview['due_soon']; ?></strong>
+            <span>Due in 3 Days</span>
           </article>
 
-          <!-- Member Since -->
+          <!-- Active Reservations -->
           <article class="stat-card">
-            <div class="stat-icon">📅</div>
-            <strong><?php echo date('M d, Y', strtotime($user['created_at'])); ?></strong>
-            <span>Member Since</span>
+            <div class="stat-icon">🏷</div>
+            <strong><?php echo (int)$circulationOverview['active_reservations']; ?></strong>
+            <span>Active Reservations</span>
           </article>
 
-          <!-- Settings -->
+          <!-- Outstanding Fines -->
           <article class="stat-card">
-            <div class="stat-icon">⚙</div>
-            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" style="color: inherit; text-decoration: none;">
-              <strong>Account</strong>
-              <span>Settings →</span>
-            </a>
+            <div class="stat-icon">💳</div>
+            <strong>₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></strong>
+            <span>Outstanding Fines</span>
           </article>
         </section>
 
@@ -431,19 +464,30 @@ $flash = getFlash();
           </div>
           <div class="panel-content">
             <div class="action-buttons">
+              <span class="action-btn secondary is-disabled" aria-disabled="true" title="Reservation workflow coming soon">
+                <span>📌</span>
+                <span>Reserve Book (Soon)</span>
+              </span>
+              <span class="action-btn secondary is-disabled" aria-disabled="true" title="Renewal workflow coming soon">
+                <span>♻</span>
+                <span>Renew Loan (Soon)</span>
+              </span>
+              <span class="action-btn secondary is-disabled" aria-disabled="true" title="Borrowing history detail page coming soon">
+                <span>🕘</span>
+                <span>View History (Soon)</span>
+              </span>
               <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn primary">
                 <span>📝</span>
                 <span>Edit Profile</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
-                <span>🔐</span>
-                <span>Change Password</span>
               </a>
               <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn danger">
                 <span>🚪</span>
                 <span>Logout</span>
               </a>
             </div>
+            <?php if (!$circulationDataAvailable): ?>
+              <p class="overview-note">Circulation widgets are now integrated, but your database migration has not been applied yet. Run the circulation migration to activate live borrower metrics.</p>
+            <?php endif; ?>
           </div>
         </section>
       </main>
