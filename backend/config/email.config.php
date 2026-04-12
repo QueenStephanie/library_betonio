@@ -10,9 +10,10 @@ AppBootstrap::loadEnvironment();
 
 $mailUser = trim((string) (AppBootstrap::env('MAIL_USER') ?: (AppBootstrap::env('MAIL_USERNAME') ?: '')));
 $mailPassRaw = trim((string) (AppBootstrap::env('MAIL_PASS') ?: (AppBootstrap::env('MAIL_PASSWORD') ?: '')));
-$mailPass = str_replace(' ', '', $mailPassRaw);
+$mailPass = $mailPassRaw;
 $mailFrom = trim((string) (AppBootstrap::env('MAIL_FROM') ?: ''));
 $mailEncryption = strtolower(trim((string) (AppBootstrap::env('MAIL_ENCRYPTION') ?: 'tls')));
+$mailAuth = filter_var(AppBootstrap::env('MAIL_AUTH', true), FILTER_VALIDATE_BOOL);
 
 if ($mailFrom === '' && $mailUser !== '') {
   $mailFrom = $mailUser;
@@ -23,11 +24,12 @@ return [
   'smtp' => [
     'host' => AppBootstrap::env('MAIL_HOST', 'smtp.gmail.com'),
     'port' => (int) (AppBootstrap::env('MAIL_PORT', 587)),
+    'auth' => $mailAuth,
     'username' => $mailUser,
     'password' => $mailPass,
     'from_email' => $mailFrom ?: 'noreply@example.com',
     'from_name' => AppBootstrap::env('MAIL_FROM_NAME', 'QueenLib'),
-    'encryption' => in_array($mailEncryption, ['ssl', 'tls'], true) ? $mailEncryption : 'tls'
+    'encryption' => in_array($mailEncryption, ['ssl', 'tls', 'none', ''], true) ? $mailEncryption : 'tls'
   ],
 
   // Alternative: Local Sendmail Configuration

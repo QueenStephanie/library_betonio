@@ -54,10 +54,10 @@ class PasswordRecovery
         return ['success' => false, 'error' => 'Too many password reset requests. Try again later.'];
       }
 
-       // Generate reset token (valid for 10 minutes)
-       $reset_token = bin2hex(random_bytes(32));
-       $reset_token_hash = password_hash($reset_token, PASSWORD_BCRYPT);
-       $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+      // Generate reset token (valid for 10 minutes)
+      $reset_token = bin2hex(random_bytes(32));
+      $reset_token_hash = password_hash($reset_token, PASSWORD_BCRYPT);
+      $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
       // Update user with reset token
       $update_query = "UPDATE " . $this->table . " 
@@ -75,8 +75,19 @@ class PasswordRecovery
         $mail_result = $this->mail_handler->sendPasswordResetEmail($email, $reset_token, $user['first_name']);
 
         if (!$mail_result['success']) {
-          error_log("Failed to send password reset email to $email");
+          $clear_query = "UPDATE " . $this->table . " 
+                               SET reset_token = NULL, reset_token_expires = NULL
+                               WHERE id = :user_id";
+          $clear_stmt = $this->db->prepare($clear_query);
+          $clear_stmt->bindParam(':user_id', $user['id']);
+          $clear_stmt->execute();
+
+          error_log("Failed to send password reset email to $email: " . ($mail_result['error'] ?? 'unknown mail error'));
+          return ['success' => false, 'error' => ($mail_result['error'] ?? 'Unable to send password reset email. Please check SMTP settings.')];
         }
+      } else {
+        error_log('Password recovery mail handler is not available.');
+        return ['success' => false, 'error' => 'Mail service is unavailable. Please contact support.'];
       }
 
       // Log attempt
@@ -107,11 +118,11 @@ class PasswordRecovery
       return ['success' => false, 'error' => 'Passwords do not match'];
     }
 
-     if (strlen($new_password) < 8) {
-       return ['success' => false, 'error' => 'Password must be at least 8 characters long'];
-     }
+    if (strlen($new_password) < 8) {
+      return ['success' => false, 'error' => 'Password must be at least 8 characters long'];
+    }
 
-     try {
+    try {
       // Get user and verify reset token
       $query = "SELECT id, email, reset_token, reset_token_expires, password_hash 
                       FROM " . $this->table . " 

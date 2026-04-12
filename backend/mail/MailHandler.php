@@ -71,21 +71,28 @@ class MailHandler
     private function initializePHPMailer()
     {
         try {
-            if (empty($this->config['smtp']['username']) || empty($this->config['smtp']['password'])) {
+            if (!empty($this->config['smtp']['auth']) && (empty($this->config['smtp']['username']) || empty($this->config['smtp']['password']))) {
                 throw new Exception('SMTP credentials are missing. Set MAIL_USER and MAIL_PASS in .env.');
             }
 
             $this->mail = new PHPMailer(true);
+            $this->mail->CharSet = 'UTF-8';
 
             // Server settings
             $this->mail->isSMTP();
             $this->mail->Host = $this->config['smtp']['host'];
-            $this->mail->SMTPAuth = true;
+            $this->mail->SMTPAuth = !empty($this->config['smtp']['auth']);
             $this->mail->Username = $this->config['smtp']['username'];
             $this->mail->Password = $this->config['smtp']['password'];
-            $this->mail->SMTPSecure = ($this->config['smtp']['encryption'] ?? 'tls') === 'ssl'
-                ? PHPMailer::ENCRYPTION_SMTPS
-                : PHPMailer::ENCRYPTION_STARTTLS;
+            $encryption = strtolower((string)($this->config['smtp']['encryption'] ?? 'tls'));
+            if ($encryption === 'ssl') {
+                $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } elseif ($encryption === 'tls') {
+                $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } else {
+                $this->mail->SMTPSecure = '';
+                $this->mail->SMTPAutoTLS = false;
+            }
             $this->mail->Port = $this->config['smtp']['port'];
 
             // SSL verification
@@ -128,15 +135,15 @@ class MailHandler
             $this->mail->Body = $body;
             $this->mail->AltBody = "Click here to verify your email: $verification_link";
 
-            $result = $this->mail->send();
-
-            // Clear recipients for next email
-            $this->mail->clearAddresses();
+            $this->mail->send();
 
             return ['success' => true, 'message' => 'Verification email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending verification email: " . $e->getMessage());
             return $this->errorResponse('Failed to send verification email', $e);
+        } finally {
+            $this->mail->clearAllRecipients();
+            $this->mail->clearAttachments();
         }
     }
 
@@ -161,15 +168,15 @@ class MailHandler
             $this->mail->Body = $body;
             $this->mail->AltBody = "Click the link to reset your password: $reset_link";
 
-            $result = $this->mail->send();
-
-            // Clear recipients for next email
-            $this->mail->clearAddresses();
+            $this->mail->send();
 
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending password reset email: " . $e->getMessage());
             return $this->errorResponse('Failed to send password reset email', $e);
+        } finally {
+            $this->mail->clearAllRecipients();
+            $this->mail->clearAttachments();
         }
     }
 
@@ -190,13 +197,13 @@ class MailHandler
 
             $this->mail->send();
 
-            // Clear recipients for next email
-            $this->mail->clearAddresses();
-
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
         } catch (Exception $e) {
             error_log("Error sending password reset email by link: " . $e->getMessage());
             return $this->errorResponse('Failed to send password reset email', $e);
+        } finally {
+            $this->mail->clearAllRecipients();
+            $this->mail->clearAttachments();
         }
     }
 
