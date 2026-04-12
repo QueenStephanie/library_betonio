@@ -6,6 +6,10 @@ require_once APP_ROOT . '/backend/classes/FineReporting.php';
 
 requireAdminAuth();
 
+$currentUserEmail = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
+$isSuperadmin = isCurrentAdminSuperadmin();
+$adminRoleLabel = $isSuperadmin ? 'Super Administrator' : 'Administrator';
+
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
 $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
@@ -64,8 +68,8 @@ try {
           </svg>
         </span>
         <div>
-          <div class="admin-sidebar-name">Admin</div>
-          <div class="admin-sidebar-role">System Administrator</div>
+          <div class="admin-sidebar-name"><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="admin-sidebar-role"><?php echo htmlspecialchars($adminRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       </div>
 

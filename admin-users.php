@@ -18,6 +18,8 @@ $csrf_token = getAdminCsrfToken();
 $allowedRoles = UserRepository::MANAGED_ROLES;
 $superadminUserId = null;
 $isCurrentSuperadmin = isCurrentAdminSuperadmin();
+$currentUserEmail = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
+$adminRoleLabel = $isCurrentSuperadmin ? 'Super Administrator' : 'Administrator';
 $roleGovernanceDeniedMessage = 'Only superadmin can create or update borrower, librarian, and admin profiles.';
 try {
   $superadminUser = UserRepository::getSuperadminUser($db);
@@ -348,8 +350,8 @@ function roleLabel($role)
           </svg>
         </span>
         <div>
-          <div class="admin-sidebar-name">Admin</div>
-          <div class="admin-sidebar-role">System Administrator</div>
+          <div class="admin-sidebar-name"><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="admin-sidebar-role"><?php echo htmlspecialchars($adminRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       </div>
 

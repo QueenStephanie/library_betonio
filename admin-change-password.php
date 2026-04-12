@@ -8,6 +8,10 @@ requireAdminAuth();
 
 $page_alerts = [];
 $csrf_token = getAdminCsrfToken();
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
+$currentUserEmail = (string)($_SESSION['user_email'] ?? '');
+$isSuperadmin = isCurrentAdminSuperadmin();
+$adminRoleLabel = $isSuperadmin ? 'Super Administrator' : 'Administrator';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $submittedToken = $_POST['csrf_token'] ?? '';
@@ -28,48 +32,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errorMessage = 'New password and confirmation do not match.';
   } elseif (hash_equals($currentPassword, $newPassword)) {
     $errorMessage = 'New password must be different from the current password.';
+  } elseif ($currentUserId <= 0) {
+    $errorMessage = 'Unable to resolve the current user session.';
   } else {
-    $adminIdentity = $_SESSION['admin_username'] ?? ADMIN_USERNAME;
-    $sessionAuthMode = $_SESSION['admin_auth_mode'] ?? '';
+    try {
+      $stmt = $db->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
+      $stmt->execute([':id' => $currentUserId]);
+      $currentHash = (string)$stmt->fetchColumn();
 
-    $verification = verifyAdminCurrentPassword($adminIdentity, $currentPassword, $sessionAuthMode);
-    if (empty($verification['success'])) {
-      $errorMessage = $verification['error'] ?? 'Current password verification failed.';
-    } else {
-      $persistResult = updateAdminPassword($adminIdentity, $newPassword);
-      if (empty($persistResult['success'])) {
-        $errorMessage = $persistResult['error'] ?? 'Unable to update password at this time.';
+      if ($currentHash === '' || !password_verify($currentPassword, $currentHash)) {
+        $errorMessage = 'Current password verification failed.';
       } else {
-        $oldSessionId = session_id();
-        AuthSupport::invalidateOtherAdminSessions($db, $persistResult['admin_identity'], $oldSessionId);
-
-        session_regenerate_id(true);
-
-        $_SESSION['admin_authenticated'] = true;
-        $_SESSION['admin_username'] = $persistResult['admin_identity'];
-        $_SESSION['admin_auth_mode'] = 'db';
-        $_SESSION['admin_password_changed_at'] = time();
-        if (isset($persistResult['admin_credential_id']) && $persistResult['admin_credential_id'] !== null) {
-          $_SESSION['admin_credential_id'] = (int)$persistResult['admin_credential_id'];
+        $newHash = password_hash($newPassword, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
+        if ($newHash === false) {
+          $errorMessage = 'Unable to update password at this time.';
         } else {
-          unset($_SESSION['admin_credential_id']);
+          $update = $db->prepare('UPDATE users SET password_hash = :password_hash, updated_at = NOW() WHERE id = :id LIMIT 1');
+          $update->execute([
+            ':password_hash' => $newHash,
+            ':id' => $currentUserId,
+          ]);
+
+          session_regenerate_id(true);
+          $_SESSION['login_time'] = time();
+
+          clearAdminCsrfToken();
+          $csrf_token = getAdminCsrfToken();
+
+          $page_alerts[] = [
+            'type' => 'success',
+            'title' => 'Password Updated',
+            'message' => 'Password updated successfully.'
+          ];
         }
-
-        clearAdminCsrfToken();
-        $csrf_token = getAdminCsrfToken();
-
-        AuthSupport::refreshAdminSessionRegistry($db, [
-          'admin_identity' => $_SESSION['admin_username'],
-          'admin_credential_id' => $_SESSION['admin_credential_id'] ?? null,
-          'auth_mode' => $_SESSION['admin_auth_mode'],
-        ], $oldSessionId);
-
-        $page_alerts[] = [
-          'type' => 'success',
-          'title' => 'Password Updated',
-          'message' => 'Password updated successfully. Other active admin sessions were signed out.'
-        ];
       }
+    } catch (Exception $e) {
+      error_log('admin-change-password update error: ' . $e->getMessage());
+      $errorMessage = 'Unable to update password at this time.';
     }
   }
 
@@ -113,8 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </svg>
         </span>
         <div>
-          <div class="admin-sidebar-name">Admin</div>
-          <div class="admin-sidebar-role">System Administrator</div>
+          <div class="admin-sidebar-name"><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="admin-sidebar-role"><?php echo htmlspecialchars($adminRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       </div>
 
@@ -161,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>Change Password</h1>
-        <p>Update your administrator account password</p>
+        <p>Update your account password</p>
       </header>
 
       <section class="admin-card admin-password-card">

@@ -121,7 +121,7 @@ class AuthManager
         $this->db,
         'users',
         $email,
-        ['id', 'first_name', 'last_name', 'email', 'password_hash', 'is_verified']
+        ['id', 'first_name', 'last_name', 'email', 'password_hash', 'is_verified', 'is_active', 'role', 'is_superadmin']
       );
 
       if (!$user) {
@@ -136,6 +136,10 @@ class AuthManager
       // Check if email is verified
       if (!$user['is_verified']) {
         return ['success' => false, 'error' => 'Please verify your email first', 'unverified' => true, 'email' => $email];
+      }
+
+      if ((int)($user['is_active'] ?? 0) !== 1) {
+        return ['success' => false, 'error' => 'Your account is inactive. Please contact an administrator.'];
       }
 
       // Set session
@@ -182,7 +186,7 @@ class AuthManager
         $this->db,
         'users',
         $_SESSION['user_id'],
-        ['id', 'first_name', 'last_name', 'email', 'is_verified']
+        ['id', 'first_name', 'last_name', 'email', 'is_verified', 'is_active', 'role', 'is_superadmin']
       );
     } catch (Exception $e) {
       return null;

@@ -73,11 +73,20 @@ function requireLogin()
 }
 
 /**
- * Check whether an admin session is authenticated.
+ * Check whether an authenticated user has admin role.
  */
 function isAdminAuthenticated()
 {
-  return isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true;
+  if (!isset($_SESSION['user_id'])) {
+    return false;
+  }
+
+  $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+  if ($role === 'admin') {
+    return true;
+  }
+
+  return !empty($_SESSION['is_superadmin']);
 }
 
 /**
@@ -120,21 +129,8 @@ function isCurrentAdminSuperadmin()
     return false;
   }
 
-  $identity = $_SESSION['admin_username'] ?? '';
-  return isConfiguredSuperadminIdentity($identity);
-}
-
-/**
- * Validate that the current admin session is still active in registry.
- */
-function isActiveAdminSession()
-{
-  if (!isAdminAuthenticated()) {
-    return false;
-  }
-
-  if (!isset($_SESSION['admin_username']) || !is_string($_SESSION['admin_username']) || $_SESSION['admin_username'] === '') {
-    return false;
+  if (isset($_SESSION['is_superadmin'])) {
+    return (bool)$_SESSION['is_superadmin'];
   }
 
   global $db;
@@ -142,48 +138,42 @@ function isActiveAdminSession()
     return false;
   }
 
-  $sessionId = session_id();
-  if (!is_string($sessionId) || $sessionId === '') {
+  $userId = (int)($_SESSION['user_id'] ?? 0);
+  if ($userId <= 0) {
     return false;
   }
 
   try {
-    $stmt = $db->prepare(
-      'SELECT id
-       FROM admin_session_registry
-       WHERE session_id_hash = :session_id_hash
-         AND admin_identity = :admin_identity
-         AND invalidated_at IS NULL
-       LIMIT 1'
-    );
-    $stmt->execute([
-      ':session_id_hash' => hash('sha256', $sessionId),
-      ':admin_identity' => $_SESSION['admin_username'],
-    ]);
-    return (bool)$stmt->fetchColumn();
+    $stmt = $db->prepare('SELECT is_superadmin FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $userId]);
+    $isSuperadmin = (int)$stmt->fetchColumn() === 1;
+    $_SESSION['is_superadmin'] = $isSuperadmin;
+    return $isSuperadmin;
   } catch (Exception $e) {
-    error_log('isActiveAdminSession error: ' . $e->getMessage());
+    error_log('isCurrentAdminSuperadmin lookup error: ' . $e->getMessage());
     return false;
   }
 }
 
 /**
+ * Validate that the current role session is active and allowed.
+ */
+function isActiveAdminSession()
+{
+  return isAdminAuthenticated();
+}
+
+/**
  * Enforce admin authentication for protected admin pages.
  */
-function requireAdminAuth($redirectPath = 'admin-login.php')
+function requireAdminAuth($redirectPath = 'login.php')
 {
   if (!isAdminAuthenticated() || !isActiveAdminSession()) {
-    unset($_SESSION['admin_authenticated']);
-    unset($_SESSION['admin_username']);
-    unset($_SESSION['admin_last_login']);
-    unset($_SESSION['admin_auth_mode']);
-    unset($_SESSION['admin_credential_id']);
     unset($_SESSION['show_admin_welcome']);
     unset($_SESSION['admin_profile']);
-    unset($_SESSION['admin_password_changed_at']);
-    unset($_SESSION['admin_is_superadmin']);
+    setFlash('warning', 'Admin access requires an account with the admin role.');
     clearAdminCsrfToken();
-    redirect($redirectPath);
+    redirect(appPath($redirectPath, ['force' => 1]));
   }
 }
 

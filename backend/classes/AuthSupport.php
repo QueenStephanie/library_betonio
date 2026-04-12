@@ -19,6 +19,8 @@ class AuthSupport
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
     $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_role'] = strtolower(trim((string)($user['role'] ?? 'borrower')));
+    $_SESSION['is_superadmin'] = (int)($user['is_superadmin'] ?? 0) === 1;
     $_SESSION['login_time'] = time();
   }
 
@@ -30,6 +32,8 @@ class AuthSupport
     $_SESSION['email'] = $user['email'];
     $_SESSION['first_name'] = $user['first_name'];
     $_SESSION['last_name'] = $user['last_name'];
+    $_SESSION['user_role'] = strtolower(trim((string)($user['role'] ?? 'borrower')));
+    $_SESSION['is_superadmin'] = (int)($user['is_superadmin'] ?? 0) === 1;
     $_SESSION['login_time'] = time();
   }
 

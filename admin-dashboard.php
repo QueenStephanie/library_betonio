@@ -6,10 +6,14 @@ require_once APP_ROOT . '/backend/classes/AdminProfileRepository.php';
 
 requireAdminAuth();
 
-$adminUsername = $_SESSION['admin_username'] ?? ADMIN_USERNAME;
+$adminUsername = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
+$isSuperadmin = isCurrentAdminSuperadmin();
+$adminRoleLabel = $isSuperadmin ? 'Super Administrator' : 'Administrator';
 $admin_profile = [
   'name' => 'System Administrator',
-  'email' => strtolower((string)$adminUsername) . '@libris.com',
+  'email' => filter_var($adminUsername, FILTER_VALIDATE_EMAIL)
+    ? strtolower((string)$adminUsername)
+    : strtolower((string)$adminUsername) . '@libris.com',
   'phone' => '(555) 123-4567',
   'admin_id' => 'ADM-BOOTSTRAP',
   'address' => '456 Admin Boulevard, Central City',
@@ -71,7 +75,7 @@ if ($show_admin_welcome) {
         </span>
         <div>
           <div class="admin-sidebar-name"><?php echo htmlspecialchars($admin_profile['name'], ENT_QUOTES, 'UTF-8'); ?></div>
-          <div class="admin-sidebar-role">System Administrator</div>
+          <div class="admin-sidebar-role"><?php echo htmlspecialchars($adminRoleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       </div>
 
@@ -138,7 +142,7 @@ if ($show_admin_welcome) {
               </span>
               <div>
                 <h3><?php echo htmlspecialchars($admin_profile['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
-                <span>System Administrator</span>
+                <span><?php echo htmlspecialchars($adminRoleLabel, ENT_QUOTES, 'UTF-8'); ?></span>
               </div>
             </div>
 

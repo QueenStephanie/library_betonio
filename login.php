@@ -40,6 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($result['success']) {
       setFlash('success', $result['message']);
+      $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+      if ($role === 'admin') {
+        $_SESSION['show_admin_welcome'] = true;
+        redirect('admin-dashboard.php#about-me');
+      }
       redirect('index.php');
     } else {
       if (isset($result['unverified']) && $result['unverified']) {
@@ -128,7 +133,6 @@ if (isset($_SESSION['show_timeout_alert'])) {
         <div class="auth-links">
           <a class="forgot-link" href="forgot-password.php">Forgot your password?</a>
           <p>Don't have an account? <a class="register-link" href="register.php">Register →</a></p>
-          <p>Admin access? <a class="register-link" href="admin-login.php">Admin Login →</a></p>
         </div>
       </div>
     </section>
