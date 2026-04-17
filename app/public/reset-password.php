@@ -17,7 +17,7 @@ require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
-$email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
+$email = isset($_GET['email']) ? trim($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : ''; // Don't sanitize token - it's hex
 $csrf_scope = 'reset_password';
 $csrf_token = getPublicCsrfToken($csrf_scope);
@@ -36,7 +36,7 @@ if (empty($email) || empty($token)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('reset_password_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  $email = sanitize(getPost('email'));
+  $email = getPost('email');
 
   if (!$originCheck['valid']) {
     logVerificationAttempt($email, 'csrf_reject', false);

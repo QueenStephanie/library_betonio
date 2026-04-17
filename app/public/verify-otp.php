@@ -17,7 +17,7 @@ require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
-$email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
+$email = isset($_GET['email']) ? trim($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 $fromLogin = isset($_GET['from_login']) && $_GET['from_login'] === '1';
 $csrf_scope = 'verify_resend';
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification']
   try {
     $originCheck = validateStateChangingRequestOrigin('verify_otp_resend_post');
     $submittedToken = (string)($_POST['csrf_token'] ?? '');
-    $resend_email = sanitize(getPost('email'));
+    $resend_email = getPost('email');
     $normalizedResendEmail = strtolower(trim((string)$resend_email));
 
     if (!$originCheck['valid']) {

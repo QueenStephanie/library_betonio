@@ -78,12 +78,16 @@ class CirculationRepository
     $activeStatuses = "'active', 'overdue', 'borrowed'";
     $returnedStatuses = "'returned'";
 
+    $userCol = "`$loanUserColumn`";
+    $statusCol = "`$loanStatusColumn`";
+    $dueCol = "`$loanDueColumn`";
+
     $loanSql = "SELECT
-      COUNT(CASE WHEN {$loanStatusColumn} IN ({$activeStatuses}) THEN 1 END) AS current_loans,
-      COUNT(CASE WHEN {$loanStatusColumn} IN ({$activeStatuses}) AND {$loanDueColumn} >= CURDATE() AND {$loanDueColumn} <= DATE_ADD(CURDATE(), INTERVAL 3 DAY) THEN 1 END) AS due_soon,
-      COUNT(CASE WHEN {$loanStatusColumn} IN ({$returnedStatuses}) THEN 1 END) AS loan_history_count
+      COUNT(CASE WHEN {$statusCol} IN ({$activeStatuses}) THEN 1 END) AS current_loans,
+      COUNT(CASE WHEN {$statusCol} IN ({$activeStatuses}) AND {$dueCol} >= CURDATE() AND {$dueCol} < DATE_ADD(CURDATE(), INTERVAL 4 DAY) THEN 1 END) AS due_soon,
+      COUNT(CASE WHEN {$statusCol} IN ({$returnedStatuses}) THEN 1 END) AS loan_history_count
       FROM loans
-      WHERE {$loanUserColumn} = :user_id";
+      WHERE {$userCol} = :user_id";
 
     $loanStmt = $db->prepare($loanSql);
     $loanStmt->execute([':user_id' => $userId]);
@@ -98,13 +102,15 @@ class CirculationRepository
       throw new RuntimeException('Incompatible reservations table schema.');
     }
 
-    $reservationSql = "SELECT COUNT(*) FROM reservations WHERE {$reservationUserColumn} = :user_id AND status IN ('pending', 'ready_for_pickup', 'ready')";
+    $reservationUserCol = "`$reservationUserColumn`";
+    $reservationSql = "SELECT COUNT(*) FROM reservations WHERE {$reservationUserCol} = :user_id AND status IN ('pending', 'ready_for_pickup', 'ready')";
     $reservationStmt = $db->prepare($reservationSql);
     $reservationStmt->execute([':user_id' => $userId]);
     $overview['active_reservations'] = (int)$reservationStmt->fetchColumn();
 
     if ($loanFineColumn !== null) {
-      $loanFineSql = "SELECT COALESCE(SUM(CASE WHEN {$loanStatusColumn} IN ({$activeStatuses}) THEN {$loanFineColumn} ELSE 0 END), 0) FROM loans WHERE {$loanUserColumn} = :user_id";
+      $fineCol = "`$loanFineColumn`";
+      $loanFineSql = "SELECT COALESCE(SUM(CASE WHEN {$statusCol} IN ({$activeStatuses}) THEN {$fineCol} ELSE 0 END), 0) FROM loans WHERE {$userCol} = :user_id";
       $loanFineStmt = $db->prepare($loanFineSql);
       $loanFineStmt->execute([':user_id' => $userId]);
       $overview['outstanding_fines'] = (float)$loanFineStmt->fetchColumn();
@@ -140,7 +146,8 @@ class CirculationRepository
     if ($loanStatusColumn === null) {
       throw new RuntimeException('Incompatible loans table schema.');
     }
-    $overview['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$loanStatusColumn} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
+    $statusCol = "`$loanStatusColumn`";
+    $overview['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$statusCol} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
 
     $overview['active_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status IN ('pending', 'ready_for_pickup', 'ready')")->fetchColumn();
 

@@ -24,7 +24,7 @@ $csrf_token = getPublicCsrfToken($csrf_scope);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('forgot_password_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  $email = sanitize(getPost('email'));
+   $email = getPost('email');
 
   if (!$originCheck['valid']) {
     logVerificationAttempt($email, 'csrf_reject', false);

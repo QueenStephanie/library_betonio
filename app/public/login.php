@@ -51,7 +51,7 @@ if (isset($_SESSION['user_id']) && !$forceLogin) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('login_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  $email = sanitize(getPost('email'));
+  $email = getPost('email');
 
   if (!$originCheck['valid']) {
     logVerificationAttempt($email, 'csrf_reject', false);

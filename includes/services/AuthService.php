@@ -29,48 +29,54 @@ class AuthService
   public function registerBorrower(string $firstName, string $lastName, string $email, string $password, string $passwordConfirm): array
   {
     $auth = new AuthManager($this->db);
-    $result = $auth->register($firstName, $lastName, $email, $password, $passwordConfirm);
 
-    if (empty($result['success'])) {
-      return $result;
-    }
-
-    $verificationToken = (string)($result['verification_token'] ?? '');
-    if ($verificationToken === '') {
-      try {
-        $rollback = $this->db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-        $rollback->execute([':id' => (int)($result['user_id'] ?? 0)]);
-      } catch (Exception $rollbackError) {
-        error_log('Registration rollback failed: ' . $rollbackError->getMessage());
-      }
-
-      return [
-        'success' => false,
-        'error' => 'Registration failed because verification token was not generated. Please try again.',
-      ];
-    }
-
-    $mailResult = sendVerificationEmail(
-      $email,
-      $firstName,
-      $verificationToken
-    );
-
-    if (!empty($mailResult['success'])) {
-      return $result;
-    }
+    // Start transaction to ensure atomicity
+    $this->db->beginTransaction();
 
     try {
-      $rollback = $this->db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-      $rollback->execute([':id' => (int)($result['user_id'] ?? 0)]);
-    } catch (Exception $rollbackError) {
-      error_log('Registration rollback failed: ' . $rollbackError->getMessage());
-    }
+      $result = $auth->register($firstName, $lastName, $email, $password, $passwordConfirm);
 
-    return [
-      'success' => false,
-      'error' => 'Registration failed because verification email could not be sent. Please check SMTP settings.',
-    ];
+      if (empty($result['success'])) {
+        $this->db->rollBack();
+        return $result;
+      }
+
+      $verificationToken = (string)($result['verification_token'] ?? '');
+      if ($verificationToken === '') {
+        $this->db->rollBack();
+        return [
+          'success' => false,
+          'error' => 'Registration failed because verification token was not generated. Please try again.',
+        ];
+      }
+
+      $mailResult = sendVerificationEmail(
+        $email,
+        $firstName,
+        $verificationToken
+      );
+
+      if (!empty($mailResult['success'])) {
+        $this->db->commit();
+        return $result;
+      }
+
+      // Email failed: rollback user creation
+      $this->db->rollBack();
+      return [
+        'success' => false,
+        'error' => 'Registration failed because verification email could not be sent. Please check SMTP settings.',
+      ];
+    } catch (Exception $e) {
+      if ($this->db->inTransaction()) {
+        $this->db->rollBack();
+      }
+      error_log('AuthService::registerBorrower error: ' . $e->getMessage());
+      return [
+        'success' => false,
+        'error' => 'Registration failed: ' . $e->getMessage(),
+      ];
+    }
   }
 
   public function verifyEmailByToken(string $email, string $token): array

@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = getPost('action');
 
     if ($action === 'update_profile') {
-      $first_name = sanitize(getPost('first_name'));
-      $last_name = sanitize(getPost('last_name'));
+      $first_name = getPost('first_name');
+      $last_name = getPost('last_name');
 
       $result = $accountService->updateProfile((int)($_SESSION['user_id'] ?? 0), $first_name, $last_name);
       if (!empty($result['success'])) {

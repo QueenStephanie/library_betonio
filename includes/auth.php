@@ -40,9 +40,9 @@ class AuthManager
     }
 
     try {
-      // Check if user exists
+      // Check if user exists (verified or not)
       $existing_user = UserRepository::findByEmail($this->db, 'users', $email, ['id', 'is_verified']);
-      if ($existing_user && (int)$existing_user['is_verified'] === 1) {
+      if ($existing_user) {
         return ['success' => false, 'error' => 'Email already registered'];
       }
 
@@ -53,45 +53,20 @@ class AuthManager
       $verification_token = bin2hex(random_bytes(32));
       $token_expires = date('Y-m-d H:i:s', time() + 86400); // 24 hours
 
-      if ($existing_user && (int)$existing_user['is_verified'] === 0) {
-        // Reuse stale unverified account and issue a fresh verification token.
-        $query = "UPDATE users
-                  SET first_name = :first_name,
-                      last_name = :last_name,
-                      password_hash = :password_hash,
-                      verification_token = :verification_token,
-                      verification_token_expires = :token_expires,
-                      reset_token = NULL,
-                      reset_token_expires = NULL,
-                      is_active = 1
-                  WHERE id = :id";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([
-          ':first_name' => $first_name,
-          ':last_name' => $last_name,
-          ':password_hash' => $password_hash,
-          ':verification_token' => $verification_token,
-          ':token_expires' => $token_expires,
-          ':id' => $existing_user['id']
-        ]);
+      // Insert new user (we already ensured email doesn't exist)
+      $query = "INSERT INTO users (first_name, last_name, email, password_hash, verification_token, verification_token_expires, is_verified, is_active, role)
+                VALUES (:first_name, :last_name, :email, :password_hash, :verification_token, :token_expires, 0, 1, 'borrower')";
+      $stmt = $this->db->prepare($query);
+      $stmt->execute([
+        ':first_name' => $first_name,
+        ':last_name' => $last_name,
+        ':email' => $email,
+        ':password_hash' => $password_hash,
+        ':verification_token' => $verification_token,
+        ':token_expires' => $token_expires
+      ]);
 
-        $user_id = $existing_user['id'];
-      } else {
-        // Insert user
-        $query = "INSERT INTO users (first_name, last_name, email, password_hash, verification_token, verification_token_expires)
-                  VALUES (:first_name, :last_name, :email, :password_hash, :verification_token, :token_expires)";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([
-          ':first_name' => $first_name,
-          ':last_name' => $last_name,
-          ':email' => $email,
-          ':password_hash' => $password_hash,
-          ':verification_token' => $verification_token,
-          ':token_expires' => $token_expires
-        ]);
-
-        $user_id = $this->db->lastInsertId();
-      }
+      $user_id = $this->db->lastInsertId();
 
       return [
         'success' => true,

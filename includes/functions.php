@@ -178,7 +178,6 @@ function requireAdminAuth($redirectPath = 'login.php')
     unset($_SESSION['show_admin_welcome']);
     unset($_SESSION['admin_profile']);
     setFlash('warning', 'Staff access requires a librarian or admin account.');
-    clearAdminCsrfToken();
     redirect(appPath($redirectPath, ['force' => 1]));
   }
 }
@@ -624,7 +623,19 @@ function evaluateOtpResendRateLimit($email)
 }
 
 /**
- * Sanitize user input
+ * Clean input data for use (trim only). No HTML escaping - escaping should be done at output.
+ */
+function cleanInput($data)
+{
+  if (is_array($data)) {
+    return array_map('cleanInput', $data);
+  }
+  return trim((string)$data);
+}
+
+/**
+ * Sanitize user input - DEPRECATED for DB storage. Use cleanInput() for DB-bound values.
+ * This function applies HTML escaping which should only be used for output contexts.
  */
 function sanitize($data)
 {

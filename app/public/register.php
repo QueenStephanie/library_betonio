@@ -29,7 +29,7 @@ if (isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('register_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  $email = sanitize(getPost('email'));
+   $email = getPost('email');
 
   if (!$originCheck['valid']) {
     logVerificationAttempt($email, 'csrf_reject', false);
@@ -39,8 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     logVerificationAttempt($email, 'csrf_reject', false);
     $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $first_name = sanitize(getPost('first_name'));
-    $last_name = sanitize(getPost('last_name'));
+    $first_name = getPost('first_name');
+    $last_name = getPost('last_name');
     $password = getPost('password');
     $password_confirm = getPost('password_confirm');
 

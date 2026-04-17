@@ -110,10 +110,13 @@ class LibrarianPortalRepository
       $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
       $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
       if ($loanStatusColumn !== null) {
-        $summary['stats']['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$loanStatusColumn} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
+        $col = "`$loanStatusColumn`";
+        $summary['stats']['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$col} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
       }
       if ($loanStatusColumn !== null && $loanDueColumn !== null) {
-        $summary['stats']['overdue_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$loanStatusColumn} IN ('active', 'overdue', 'borrowed') AND {$loanDueColumn} < NOW()")->fetchColumn();
+        $statusCol = "`$loanStatusColumn`";
+        $dueCol = "`$loanDueColumn`";
+        $summary['stats']['overdue_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$statusCol} IN ('active', 'overdue', 'borrowed') AND {$dueCol} < NOW()")->fetchColumn();
       }
     }
 
@@ -158,15 +161,22 @@ class LibrarianPortalRepository
     $hasUsers = self::tableExists($db, 'users') && $loanUserColumn !== null;
 
     $limit = max(1, min(500, $limit));
-    $copyJoin = $hasBookCopies ? ' LEFT JOIN book_copies bc ON bc.id = l.' . $loanCopyColumn : '';
+
+    // Quote column identifiers with backticks for safety
+    $statusCol = "`$loanStatusColumn`";
+    $dueCol = "`$loanDueColumn`";
+    $copyCol = $loanCopyColumn !== null ? "`$loanCopyColumn`" : '';
+    $userCol = $loanUserColumn !== null ? "`$loanUserColumn`" : '';
+
+    $copyJoin = $hasBookCopies ? ' LEFT JOIN book_copies bc ON bc.id = l.' . $copyCol : '';
     $bookJoin = ($hasBookCopies && $hasBooks && self::hasColumn($db, 'book_copies', 'book_id')) ? ' LEFT JOIN books b ON b.id = bc.book_id' : '';
-    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = l.' . $loanUserColumn : '';
+    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = l.' . $userCol : '';
 
     $sql = "SELECT
       l.id,
-      l.{$loanStatusColumn} AS loan_status,
+      l.{$statusCol} AS loan_status,
       l.checked_out_at,
-      l.{$loanDueColumn} AS due_at,
+      l.{$dueCol} AS due_at,
       l.returned_at,
       l.fine_amount,
       " . ($hasBookCopies && self::hasColumn($db, 'book_copies', 'barcode') ? 'bc.barcode' : "''") . " AS barcode,
@@ -179,8 +189,8 @@ class LibrarianPortalRepository
     {$copyJoin}
     {$bookJoin}
     {$userJoin}
-    WHERE l.{$loanStatusColumn} IN ('active', 'overdue', 'borrowed')
-    ORDER BY l.{$loanDueColumn} ASC, l.id ASC
+    WHERE l.{$statusCol} IN ('active', 'overdue', 'borrowed')
+    ORDER BY l.{$dueCol} ASC, l.id ASC
     LIMIT {$limit}";
 
     $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
@@ -219,9 +229,9 @@ class LibrarianPortalRepository
     try {
       $db->beginTransaction();
 
-      $loanQuery = 'SELECT id, ' . $loanStatusColumn . ' AS loan_status';
+      $loanQuery = 'SELECT id, `' . $loanStatusColumn . '` AS loan_status';
       if ($loanCopyColumn !== null) {
-        $loanQuery .= ', ' . $loanCopyColumn . ' AS book_copy_id';
+        $loanQuery .= ', `' . $loanCopyColumn . '` AS book_copy_id';
       }
       if (self::hasColumn($db, 'loans', 'returned_at')) {
         $loanQuery .= ', returned_at';
@@ -243,7 +253,7 @@ class LibrarianPortalRepository
         return ['ok' => false, 'message' => 'Loan is not in a check-in state.'];
       }
 
-      $updateParts = ["{$loanStatusColumn} = :next_status"];
+      $updateParts = ["`$loanStatusColumn` = :next_status"];
       $params = [
         ':next_status' => 'returned',
         ':id' => $loanId,
