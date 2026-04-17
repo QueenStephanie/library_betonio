@@ -135,6 +135,21 @@ function ensureAdminDashboardSchema(PDO $pdo, $database)
 }
 
 /**
+ * Ensure migration history table exists for canonical runner.
+ */
+function ensureSchemaMigrationsTable(PDO $pdo)
+{
+  $pdo->exec(
+    "CREATE TABLE IF NOT EXISTS schema_migrations (
+      migration_name VARCHAR(255) NOT NULL,
+      checksum CHAR(64) NOT NULL,
+      applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (migration_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  );
+}
+
+/**
  * Normalize configured superadmin username.
  */
 function normalizeSuperadminUsername($username)
@@ -380,6 +395,9 @@ try {
   }
   $superadminResult = ensureSuperadminAccount($pdo, (string)$superadminUsername, (string)$superadminPassword);
 
+  // Step 7: Ensure canonical migration history table exists.
+  ensureSchemaMigrationsTable($pdo);
+
   http_response_code(200);
   echo json_encode([
     'success' => true,
@@ -389,6 +407,7 @@ try {
       'users',
       'verification_attempts',
       'login_history',
+      'schema_migrations',
       'role_profiles',
       'admin_profiles',
       'fine_collections'

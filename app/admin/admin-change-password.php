@@ -8,8 +8,10 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
+require_once APP_ROOT . '/backend/classes/PermissionGate.php';
+require_once APP_ROOT . '/includes/services/AdminPasswordService.php';
 
-requireAdminAuth();
+PermissionGate::requirePageAccess('admin-change-password');
 
 $page_alerts = [];
 $csrf_token = getAdminCsrfToken();
@@ -17,63 +19,39 @@ $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 $currentUserEmail = (string)($_SESSION['user_email'] ?? '');
 $isSuperadmin = isCurrentAdminSuperadmin();
 $adminRoleLabel = $isSuperadmin ? 'Super Administrator' : 'Administrator';
+$adminPasswordService = new AdminPasswordService($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('admin_change_password_post');
   $submittedToken = $_POST['csrf_token'] ?? '';
   $currentPassword = getPost('current_password');
   $newPassword = getPost('new_password');
   $confirmPassword = getPost('confirm_password');
   $errorMessage = null;
 
-  if (!validateAdminCsrfToken($submittedToken)) {
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+    error_log('Blocked admin-change-password POST due to origin validation: ' . json_encode($originCheck));
+    $errorMessage = 'Origin validation failed. Please refresh and try again.';
+  } elseif (!validateAdminCsrfToken($submittedToken)) {
+    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
     $errorMessage = 'Invalid or missing security token. Please refresh and try again.';
-  } elseif ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-    $errorMessage = 'All password fields are required.';
-  } elseif (strlen($newPassword) < 8) {
-    $errorMessage = 'New password must be at least 8 characters long.';
-  } elseif (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/\d/', $newPassword) || !preg_match('/[^a-zA-Z\d]/', $newPassword)) {
-    $errorMessage = 'New password must include uppercase, lowercase, number, and special character.';
-  } elseif ($newPassword !== $confirmPassword) {
-    $errorMessage = 'New password and confirmation do not match.';
-  } elseif (hash_equals($currentPassword, $newPassword)) {
-    $errorMessage = 'New password must be different from the current password.';
-  } elseif ($currentUserId <= 0) {
-    $errorMessage = 'Unable to resolve the current user session.';
   } else {
-    try {
-      $stmt = $db->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
-      $stmt->execute([':id' => $currentUserId]);
-      $currentHash = (string)$stmt->fetchColumn();
+    $result = $adminPasswordService->changePassword($currentUserId, $currentPassword, $newPassword, $confirmPassword);
+    if (!empty($result['success'])) {
+      session_regenerate_id(true);
+      $_SESSION['login_time'] = time();
 
-      if ($currentHash === '' || !password_verify($currentPassword, $currentHash)) {
-        $errorMessage = 'Current password verification failed.';
-      } else {
-        $newHash = password_hash($newPassword, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
-        if ($newHash === false) {
-          $errorMessage = 'Unable to update password at this time.';
-        } else {
-          $update = $db->prepare('UPDATE users SET password_hash = :password_hash, updated_at = NOW() WHERE id = :id LIMIT 1');
-          $update->execute([
-            ':password_hash' => $newHash,
-            ':id' => $currentUserId,
-          ]);
+      clearAdminCsrfToken();
+      $csrf_token = getAdminCsrfToken();
 
-          session_regenerate_id(true);
-          $_SESSION['login_time'] = time();
-
-          clearAdminCsrfToken();
-          $csrf_token = getAdminCsrfToken();
-
-          $page_alerts[] = [
-            'type' => 'success',
-            'title' => 'Password Updated',
-            'message' => 'Password updated successfully.'
-          ];
-        }
-      }
-    } catch (Exception $e) {
-      error_log('admin-change-password update error: ' . $e->getMessage());
-      $errorMessage = 'Unable to update password at this time.';
+      $page_alerts[] = [
+        'type' => 'success',
+        'title' => 'Password Updated',
+        'message' => (string)($result['message'] ?? 'Password updated successfully.')
+      ];
+    } else {
+      $errorMessage = (string)($result['error'] ?? 'Unable to update password at this time.');
     }
   }
 

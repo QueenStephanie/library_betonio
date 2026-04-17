@@ -11,11 +11,7 @@ require_once __DIR__ . '/_bootstrap.php';
 apiHandleCorsAndMethod('POST');
 
 try {
-  // Load required files
-  require_once __DIR__ . '/../vendor/autoload.php';
-  require_once __DIR__ . '/../config/Database.php';
-  require_once __DIR__ . '/../classes/Auth.php';
-  require_once __DIR__ . '/../mail/MailHandler.php';
+  require_once __DIR__ . '/../../includes/services/AuthService.php';
 
   // Get POST data
   $input = apiReadJsonInput();
@@ -36,9 +32,9 @@ try {
   // Initialize database
   $db = apiGetDatabaseConnection();
 
-  // Register user
-  $auth = new Auth($db);
-  $register_result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
+  $authServiceClass = 'AuthService';
+  $authService = new $authServiceClass($db);
+  $register_result = $authService->registerBorrower($first_name, $last_name, $email, $password, $password_confirm);
 
   if (!$register_result['success']) {
     http_response_code(400);
@@ -46,50 +42,7 @@ try {
     exit();
   }
 
-  // Send verification email with token
-  $mail_handler = new MailHandler($db);
-  $verification_token = $register_result['verification_token'] ?? '';
-  $user_name = $first_name ?? 'User';
-
-  if (!is_string($verification_token) || trim($verification_token) === '') {
-    error_log("Registration token missing for {$email}; rolling back unverified user record.");
-
-    try {
-      $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-      $rollback->execute([':id' => $register_result['user_id']]);
-    } catch (Exception $rollback_error) {
-      error_log('API registration rollback (missing token) failed: ' . $rollback_error->getMessage());
-    }
-
-    http_response_code(500);
-    echo json_encode([
-      'success' => false,
-      'error' => 'Registration failed because verification token was not generated. Please try again.'
-    ]);
-    exit();
-  }
-
-  $send_result = $mail_handler->sendVerificationEmail($email, $user_name, $verification_token);
-
-  if (!$send_result['success']) {
-    error_log("Failed to send verification email to $email: " . $send_result['error']);
-
-    try {
-      $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-      $rollback->execute([':id' => $register_result['user_id']]);
-    } catch (Exception $rollback_error) {
-      error_log('API registration rollback failed: ' . $rollback_error->getMessage());
-    }
-
-    http_response_code(500);
-    echo json_encode([
-      'success' => false,
-      'error' => 'Registration failed because verification email could not be sent. Please check SMTP settings.'
-    ]);
-    exit();
-  } else {
-    $register_result['email_message'] = 'Verification email sent to your email address';
-  }
+  $register_result['email_message'] = 'Verification email sent to your email address';
 
   unset($register_result['verification_token']);
 

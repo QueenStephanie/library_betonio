@@ -13,8 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
-require_once 'backend/vendor/autoload.php';
-require_once 'backend/classes/PasswordRecovery.php';
+require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
@@ -22,12 +21,12 @@ $email = isset($_GET['email']) ? sanitize($_GET['email']) : '';
 $token = isset($_GET['token']) ? trim($_GET['token']) : ''; // Don't sanitize token - it's hex
 $csrf_scope = 'reset_password';
 $csrf_token = getPublicCsrfToken($csrf_scope);
-$password_recovery = new PasswordRecovery($db);
+$authService = new AuthService($db);
 
 if (empty($email) || empty($token)) {
   $error = 'Invalid reset link';
 } elseif ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  $token_check = $password_recovery->verifyResetToken($email, $token);
+  $token_check = $authService->verifyResetToken($email, $token);
   if (empty($token_check['success'])) {
     $error = 'Reset link is invalid or expired. Please request a new password reset link.';
   }
@@ -35,16 +34,23 @@ if (empty($email) || empty($token)) {
 
 // Handle password reset
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('reset_password_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+  $email = sanitize(getPost('email'));
+
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($email, 'csrf_reject', false);
+    error_log('Blocked reset-password POST due to origin validation: ' . json_encode($originCheck));
+    $error = 'Security check failed. Please refresh and try again.';
+  } elseif (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    logVerificationAttempt($email, 'csrf_reject', false);
     $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $email = sanitize(getPost('email'));
     $reset_token = trim(getPost('reset_token')); // Don't sanitize token - keep it as plain hex
     $password = getPost('password');
     $password_confirm = getPost('password_confirm');
 
-    $result = $password_recovery->resetPassword($email, $reset_token, $password, $password_confirm);
+    $result = $authService->resetPassword($email, $reset_token, $password, $password_confirm);
 
     if ($result['success']) {
       setFlash('success', 'Password reset successfully! You can now log in with your new password.');

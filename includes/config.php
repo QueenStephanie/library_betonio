@@ -30,12 +30,25 @@ $appUrl = AppBootstrap::env('APP_URL', 'http://localhost');
 $basePath = AppBootstrap::env('APP_BASE_PATH');
 $basePath = $basePath !== null ? trim((string) $basePath) : '';
 
-if ($basePath === '' && isset($_SERVER['SCRIPT_NAME'])) {
-    $detectedBasePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+$detectedBasePath = '';
+if (isset($_SERVER['SCRIPT_NAME'])) {
+    $detectedBasePath = str_replace('\\', '/', dirname((string)$_SERVER['SCRIPT_NAME']));
     if ($detectedBasePath === '/' || $detectedBasePath === '.') {
         $detectedBasePath = '';
     }
-    $basePath = rtrim($detectedBasePath, '/');
+    $detectedBasePath = rtrim($detectedBasePath, '/');
+}
+
+if ($basePath === '') {
+    $basePath = $detectedBasePath;
+} elseif ($detectedBasePath !== '' && PHP_SAPI !== 'cli') {
+    $requestHost = isset($_SERVER['HTTP_HOST']) ? strtolower((string)preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST'])) : '';
+    $isLocalRequest = in_array($requestHost, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
+
+    if ($isLocalRequest && $detectedBasePath !== $basePath) {
+        // Prefer runtime path in local dev to avoid broken redirects when APP_BASE_PATH is stale.
+        $basePath = $detectedBasePath;
+    }
 }
 $appName = AppBootstrap::env('APP_NAME', 'QueenLib');
 $appEnv = AppBootstrap::env('APP_ENV', 'development');
@@ -92,6 +105,7 @@ $adminBootstrapAllowed = $adminBootstrapConfigured && !$adminBootstrapUnsafe;
 // ============================================
 
 $sessionTimeout = (int)(AppBootstrap::env('SESSION_TIMEOUT', 3600));
+$sessionAbsoluteTimeout = (int)(AppBootstrap::env('SESSION_ABSOLUTE_TIMEOUT', 43200));
 $bcryptCost = (int)(AppBootstrap::env('BCRYPT_COST', 12));
 
 // ============================================
@@ -175,6 +189,7 @@ define('APP_DEBUG', $appDebug);
 define('PASSWORD_HASH_ALGO', PASSWORD_BCRYPT);
 define('PASSWORD_HASH_OPTIONS', ['cost' => $bcryptCost]);
 define('SESSION_TIMEOUT', $sessionTimeout);
+define('SESSION_ABSOLUTE_TIMEOUT', $sessionAbsoluteTimeout);
 
 define('ADMIN_USERNAME', $adminUsername);
 define('SUPERADMIN_USERNAME', $superadminUsername);

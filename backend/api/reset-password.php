@@ -11,10 +11,7 @@ require_once __DIR__ . '/_bootstrap.php';
 apiHandleCorsAndMethod('POST');
 
 try {
-  // Load required files
-  require_once __DIR__ . '/../vendor/autoload.php';
-  require_once __DIR__ . '/../config/Database.php';
-  require_once __DIR__ . '/../classes/PasswordRecovery.php';
+  require_once __DIR__ . '/../../includes/services/AuthService.php';
 
   // Get POST data
   $input = apiReadJsonInput();
@@ -41,9 +38,9 @@ try {
   // Initialize database
   $db = apiGetDatabaseConnection();
 
-  // Reset password
-  $password_recovery = new PasswordRecovery($db);
-  $result = $password_recovery->resetPassword($email, $reset_token, $new_password, $confirm_password);
+  $authServiceClass = 'AuthService';
+  $authService = new $authServiceClass($db);
+  $result = $authService->resetPassword($email, $reset_token, $new_password, $confirm_password);
 
   if (!$result['success']) {
     http_response_code(400);

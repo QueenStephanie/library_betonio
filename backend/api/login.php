@@ -11,8 +11,7 @@ require_once __DIR__ . '/_bootstrap.php';
 apiHandleCorsAndMethod('POST');
 
 try {
-  // Load required files
-  require_once __DIR__ . '/../classes/Auth.php';
+  require_once __DIR__ . '/../../includes/services/AuthService.php';
 
   apiEnsureSessionStarted();
 
@@ -39,15 +38,20 @@ try {
   // Initialize database
   $db = apiGetDatabaseConnection();
 
-  // Authenticate user
-  $auth = new Auth($db);
-  $login_result = $auth->login($email, $password);
+  $authServiceClass = 'AuthService';
+  $authService = new $authServiceClass($db);
+  $login_result = $authService->login($email, $password);
+
+  if (!empty($login_result['unverified']) && empty($login_result['requires_verification'])) {
+    $login_result['requires_verification'] = true;
+  }
+
+  unset($login_result['unverified']);
 
   if (!$login_result['success']) {
     http_response_code(401);
 
-    // Check if it's specifically a verification issue
-    if (isset($login_result['requires_verification']) && $login_result['requires_verification']) {
+    if (!empty($login_result['requires_verification']) || !empty($login_result['unverified'])) {
       http_response_code(403);
       $login_result['requires_verification'] = true;
     }

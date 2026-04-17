@@ -13,9 +13,12 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/backend/classes/PermissionGate.php';
+require_once APP_ROOT . '/includes/services/AccountService.php';
 
 // Require login
 requireLogin();
+PermissionGate::requireFrontendRole('borrower', 'index.php');
 checkSessionTimeout();
 
 $auth = new AuthManager($db);
@@ -24,11 +27,20 @@ $error = '';
 $success = '';
 $accountCsrfScope = 'account_settings';
 $accountCsrfToken = getPublicCsrfToken($accountCsrfScope);
+$accountService = new AccountService($db);
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('account_settings_post');
   $submittedToken = getPost('csrf_token');
-  if (!validatePublicCsrfToken($submittedToken, $accountCsrfScope)) {
+  if (!$originCheck['valid']) {
+    logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
+    error_log('Blocked account settings POST due to origin validation: ' . json_encode($originCheck));
+    clearPublicCsrfToken($accountCsrfScope);
+    $accountCsrfToken = getPublicCsrfToken($accountCsrfScope);
+    $error = 'Security check failed. Please refresh the page and try again.';
+  } elseif (!validatePublicCsrfToken($submittedToken, $accountCsrfScope)) {
+    logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
     clearPublicCsrfToken($accountCsrfScope);
     $accountCsrfToken = getPublicCsrfToken($accountCsrfScope);
     $error = 'Invalid or missing security token. Please refresh the page and try again.';
@@ -39,23 +51,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $first_name = sanitize(getPost('first_name'));
       $last_name = sanitize(getPost('last_name'));
 
-      try {
-        $query = "UPDATE users SET first_name = :first_name, last_name = :last_name WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->execute([
-          ':first_name' => $first_name,
-          ':last_name' => $last_name,
-          ':id' => $_SESSION['user_id']
-        ]);
-
-        // Update session
+      $result = $accountService->updateProfile((int)($_SESSION['user_id'] ?? 0), $first_name, $last_name);
+      if (!empty($result['success'])) {
         $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-
         $_SESSION['show_profile_success'] = true;
         $auth = new AuthManager($db);
         $user = $auth->getCurrentUser();
-      } catch (Exception $e) {
-        $error = 'Failed to update profile';
+      } else {
+        $error = (string)($result['error'] ?? 'Failed to update profile');
       }
     }
 
@@ -64,38 +67,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $new_password = getPost('new_password');
       $new_password_confirm = getPost('new_password_confirm');
 
-      if (empty($current_password) || empty($new_password)) {
-        $error = 'All password fields are required';
-      } elseif ($new_password !== $new_password_confirm) {
-        $error = 'New passwords do not match';
-      } elseif (strlen($new_password) < 8) {
-        $error = 'New password must be at least 8 characters';
+      $result = $accountService->changePassword(
+        (int)($_SESSION['user_id'] ?? 0),
+        $current_password,
+        $new_password,
+        $new_password_confirm
+      );
+
+      if (!empty($result['success'])) {
+        $_SESSION['show_password_success'] = true;
       } else {
-        try {
-          // Get current password hash
-          $query = "SELECT password_hash FROM users WHERE id = :id";
-          $stmt = $db->prepare($query);
-          $stmt->execute([':id' => $_SESSION['user_id']]);
-          $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-          // Verify current password
-          if (!password_verify($current_password, $result['password_hash'])) {
-            $error = 'Current password is incorrect';
-          } else {
-            // Update password
-            $new_hash = password_hash($new_password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
-            $query = "UPDATE users SET password_hash = :password WHERE id = :id";
-            $stmt = $db->prepare($query);
-            $stmt->execute([
-              ':password' => $new_hash,
-              ':id' => $_SESSION['user_id']
-            ]);
-
-            $_SESSION['show_password_success'] = true;
-          }
-        } catch (Exception $e) {
-          $error = 'Failed to change password';
-        }
+        $error = (string)($result['error'] ?? 'Failed to change password');
       }
     }
   }

@@ -222,7 +222,7 @@ class AuthManager
         return ['success' => true, 'message' => 'Email already verified'];
       }
 
-      if (!empty($user['verification_token_expires']) && strtotime($user['verification_token_expires']) < time()) {
+      if (empty($user['verification_token_expires']) || strtotime($user['verification_token_expires']) < time()) {
         return ['success' => false, 'error' => 'Verification link has expired'];
       }
 
@@ -256,22 +256,19 @@ class AuthManager
         return ['success' => false, 'error' => 'Email not found'];
       }
 
-      // Generate reset token
+      // Generate reset token (hashed at rest)
       $reset_token = bin2hex(random_bytes(32));
+      $reset_token_hash = password_hash($reset_token, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS);
       $token_expires = date('Y-m-d H:i:s', time() + 600); // 10 minutes
 
       // Store token
       $query = "UPDATE users SET reset_token = :token, reset_token_expires = :expires WHERE id = :id";
       $stmt = $this->db->prepare($query);
       $stmt->execute([
-        ':token' => $reset_token,
+        ':token' => $reset_token_hash,
         ':expires' => $token_expires,
         ':id' => $user['id']
       ]);
-
-      // Store in temporary storage for email sending
-      $_SESSION['password_reset_email'] = $email;
-      $_SESSION['password_reset_token'] = $reset_token;
 
       return [
         'success' => true,

@@ -70,6 +70,8 @@ function requireLogin()
   if (!isset($_SESSION['user_id'])) {
     redirect('login.php');
   }
+
+  enforceAuthenticatedSessionTimeout('login.php');
 }
 
 /**
@@ -82,7 +84,7 @@ function isAdminAuthenticated()
   }
 
   $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
-  if ($role === 'admin') {
+  if (in_array($role, ['admin', 'librarian'], true)) {
     return true;
   }
 
@@ -168,10 +170,14 @@ function isActiveAdminSession()
  */
 function requireAdminAuth($redirectPath = 'login.php')
 {
+  if (isset($_SESSION['user_id'])) {
+    enforceAuthenticatedSessionTimeout($redirectPath);
+  }
+
   if (!isAdminAuthenticated() || !isActiveAdminSession()) {
     unset($_SESSION['show_admin_welcome']);
     unset($_SESSION['admin_profile']);
-    setFlash('warning', 'Admin access requires an account with the admin role.');
+    setFlash('warning', 'Staff access requires a librarian or admin account.');
     clearAdminCsrfToken();
     redirect(appPath($redirectPath, ['force' => 1]));
   }
@@ -313,6 +319,311 @@ function clearPublicCsrfToken($scope = null)
 }
 
 /**
+ * Resolve normalized client IP address.
+ */
+function getClientIpAddress()
+{
+  $ip = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+  return $ip !== '' ? $ip : '0.0.0.0';
+}
+
+/**
+ * Normalize an origin-like URL into scheme://host:port format.
+ */
+function normalizeOriginUrl($url)
+{
+  $url = trim((string)$url);
+  if ($url === '') {
+    return null;
+  }
+
+  $parts = parse_url($url);
+  if (!is_array($parts)) {
+    return null;
+  }
+
+  $scheme = strtolower(trim((string)($parts['scheme'] ?? '')));
+  $host = strtolower(trim((string)($parts['host'] ?? '')));
+
+  if ($scheme === '' || $host === '') {
+    return null;
+  }
+
+  if ($scheme !== 'http' && $scheme !== 'https') {
+    return null;
+  }
+
+  $port = isset($parts['port']) ? (int)$parts['port'] : ($scheme === 'https' ? 443 : 80);
+  if ($port <= 0) {
+    $port = $scheme === 'https' ? 443 : 80;
+  }
+
+  return $scheme . '://' . $host . ':' . $port;
+}
+
+/**
+ * Build allowed same-origin candidates based on app URL and request host.
+ */
+function getAllowedOriginCandidates()
+{
+  $allowed = [];
+
+  if (defined('APP_URL')) {
+    $fromAppUrl = normalizeOriginUrl((string)APP_URL);
+    if ($fromAppUrl !== null) {
+      $allowed[$fromAppUrl] = true;
+    }
+  }
+
+  $requestHost = trim((string)($_SERVER['HTTP_HOST'] ?? ''));
+  if ($requestHost !== '') {
+    $isHttps = false;
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+      $isHttps = true;
+    } elseif ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443) {
+      $isHttps = true;
+    } elseif (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+      $isHttps = true;
+    }
+
+    $scheme = $isHttps ? 'https' : 'http';
+    $requestOrigin = normalizeOriginUrl($scheme . '://' . $requestHost);
+    if ($requestOrigin !== null) {
+      $allowed[$requestOrigin] = true;
+    }
+  }
+
+  return array_keys($allowed);
+}
+
+/**
+ * Resolve request origin from Origin header or Referer fallback.
+ */
+function getRequestOriginCandidate()
+{
+  $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+  if ($origin !== '') {
+    return [
+      'source' => 'origin',
+      'origin' => normalizeOriginUrl($origin),
+      'raw' => $origin,
+    ];
+  }
+
+  $referer = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
+  if ($referer !== '') {
+    return [
+      'source' => 'referer',
+      'origin' => normalizeOriginUrl($referer),
+      'raw' => $referer,
+    ];
+  }
+
+  return [
+    'source' => 'none',
+    'origin' => null,
+    'raw' => '',
+  ];
+}
+
+/**
+ * Validate same-origin for state-changing requests.
+ */
+function validateStateChangingRequestOrigin($context = 'request')
+{
+  $candidate = getRequestOriginCandidate();
+  $allowedOrigins = getAllowedOriginCandidates();
+
+  if ($candidate['source'] === 'none') {
+    return [
+      'valid' => false,
+      'reason' => 'missing_origin_headers',
+      'source' => 'none',
+      'origin' => null,
+      'allowed' => $allowedOrigins,
+      'context' => (string)$context,
+    ];
+  }
+
+  if (!is_string($candidate['origin']) || $candidate['origin'] === '') {
+    return [
+      'valid' => false,
+      'reason' => 'invalid_origin_header',
+      'source' => $candidate['source'],
+      'origin' => null,
+      'allowed' => $allowedOrigins,
+      'context' => (string)$context,
+    ];
+  }
+
+  $isAllowed = in_array($candidate['origin'], $allowedOrigins, true);
+
+  return [
+    'valid' => $isAllowed,
+    'reason' => $isAllowed ? '' : 'origin_mismatch',
+    'source' => $candidate['source'],
+    'origin' => $candidate['origin'],
+    'allowed' => $allowedOrigins,
+    'context' => (string)$context,
+  ];
+}
+
+/**
+ * Insert verification/security attempt record for throttling and audits.
+ */
+function logVerificationAttempt($email, $attemptType, $isSuccessful)
+{
+  global $db;
+
+  if (!isset($db)) {
+    return;
+  }
+
+  try {
+    $query = 'INSERT INTO verification_attempts (email, attempt_type, ip_address, is_successful) VALUES (:email, :attempt_type, :ip_address, :is_successful)';
+    $stmt = $db->prepare($query);
+    $stmt->execute([
+      ':email' => strtolower(trim((string)$email)),
+      ':attempt_type' => (string)$attemptType,
+      ':ip_address' => getClientIpAddress(),
+      ':is_successful' => $isSuccessful ? 1 : 0,
+    ]);
+  } catch (Exception $e) {
+    error_log('logVerificationAttempt error: ' . $e->getMessage());
+  }
+}
+
+/**
+ * Evaluate DB-backed throttling limits by email + IP.
+ */
+function evaluateAttemptThrottle($attemptType, $email, $windowSeconds, $emailLimit, $ipLimit, $successFilter = null)
+{
+  global $db;
+
+  $response = [
+    'limited' => false,
+    'retry_after' => 0,
+    'email_count' => 0,
+    'ip_count' => 0,
+  ];
+
+  if (!isset($db)) {
+    return $response;
+  }
+
+  $attemptType = trim((string)$attemptType);
+  $email = strtolower(trim((string)$email));
+  $windowSeconds = max(1, (int)$windowSeconds);
+  $emailLimit = max(1, (int)$emailLimit);
+  $ipLimit = max(1, (int)$ipLimit);
+  $ipAddress = getClientIpAddress();
+  $windowExpr = 'DATE_SUB(NOW(), INTERVAL ' . $windowSeconds . ' SECOND)';
+  $statusClause = '';
+  $statusParams = [];
+
+  if ($successFilter !== null) {
+    $statusClause = ' AND is_successful = :is_successful';
+    $statusParams[':is_successful'] = $successFilter ? 1 : 0;
+  }
+
+  try {
+    if ($email !== '') {
+      $emailCountStmt = $db->prepare(
+        'SELECT COUNT(*) FROM verification_attempts
+         WHERE email = :email AND attempt_type = :attempt_type
+           AND attempted_at >= ' . $windowExpr . $statusClause
+      );
+      $emailCountStmt->execute(array_merge([
+        ':email' => $email,
+        ':attempt_type' => $attemptType,
+      ], $statusParams));
+      $response['email_count'] = (int)$emailCountStmt->fetchColumn();
+    }
+
+    $ipCountStmt = $db->prepare(
+      'SELECT COUNT(*) FROM verification_attempts
+       WHERE ip_address = :ip_address AND attempt_type = :attempt_type
+         AND attempted_at >= ' . $windowExpr . $statusClause
+    );
+    $ipCountStmt->execute(array_merge([
+      ':ip_address' => $ipAddress,
+      ':attempt_type' => $attemptType,
+    ], $statusParams));
+    $response['ip_count'] = (int)$ipCountStmt->fetchColumn();
+
+    $emailLimited = $email !== '' && $response['email_count'] >= $emailLimit;
+    $ipLimited = $response['ip_count'] >= $ipLimit;
+    $response['limited'] = $emailLimited || $ipLimited;
+
+    if ($response['limited']) {
+      $retryAfter = 0;
+
+      if ($emailLimited) {
+        $emailRetryStmt = $db->prepare(
+          'SELECT MIN(UNIX_TIMESTAMP(attempted_at)) FROM verification_attempts
+           WHERE email = :email AND attempt_type = :attempt_type
+             AND attempted_at >= ' . $windowExpr . $statusClause
+        );
+        $emailRetryStmt->execute(array_merge([
+          ':email' => $email,
+          ':attempt_type' => $attemptType,
+        ], $statusParams));
+        $emailMin = (int)$emailRetryStmt->fetchColumn();
+        if ($emailMin > 0) {
+          $retryAfter = max($retryAfter, max(1, $windowSeconds - (time() - $emailMin)));
+        }
+      }
+
+      if ($ipLimited) {
+        $ipRetryStmt = $db->prepare(
+          'SELECT MIN(UNIX_TIMESTAMP(attempted_at)) FROM verification_attempts
+           WHERE ip_address = :ip_address AND attempt_type = :attempt_type
+             AND attempted_at >= ' . $windowExpr . $statusClause
+        );
+        $ipRetryStmt->execute(array_merge([
+          ':ip_address' => $ipAddress,
+          ':attempt_type' => $attemptType,
+        ], $statusParams));
+        $ipMin = (int)$ipRetryStmt->fetchColumn();
+        if ($ipMin > 0) {
+          $retryAfter = max($retryAfter, max(1, $windowSeconds - (time() - $ipMin)));
+        }
+      }
+
+      $response['retry_after'] = $retryAfter;
+    }
+  } catch (Exception $e) {
+    error_log('evaluateAttemptThrottle error: ' . $e->getMessage());
+  }
+
+  return $response;
+}
+
+/**
+ * Evaluate login-specific rate limits.
+ */
+function evaluateLoginRateLimit($email)
+{
+  return evaluateAttemptThrottle('login_attempt', $email, 900, 5, 20, false);
+}
+
+/**
+ * Evaluate verification token attempt rate limits.
+ */
+function evaluateOtpVerifyRateLimit($email)
+{
+  return evaluateAttemptThrottle('otp_verify', $email, 600, 8, 30, false);
+}
+
+/**
+ * Evaluate verification resend rate limits.
+ */
+function evaluateOtpResendRateLimit($email)
+{
+  return evaluateAttemptThrottle('otp_resend', $email, 300, 3, 10, null);
+}
+
+/**
  * Sanitize user input
  */
 function sanitize($data)
@@ -348,6 +659,15 @@ function setFlash($type, $message)
     'type' => $type, // 'success', 'error', 'warning', 'info'
     'message' => $message
   ];
+}
+
+/**
+ * Handle permission denial with a consistent flash + redirect flow.
+ */
+function denyWithFlashRedirect($redirectPath = 'index.php', $message = 'You do not have permission to access this page.')
+{
+  setFlash('error', (string)$message);
+  redirect($redirectPath);
 }
 
 /**
@@ -462,13 +782,49 @@ function logActivity($user_id, $action, $details = '')
  */
 function checkSessionTimeout()
 {
-  if (isset($_SESSION['login_time'])) {
-    $elapsed = time() - $_SESSION['login_time'];
-    if ($elapsed > SESSION_TIMEOUT) {
-      session_destroy();
-      redirect(appPath('login.php', ['timeout' => 1]));
-    }
+  enforceAuthenticatedSessionTimeout('login.php');
+}
+
+/**
+ * Enforce idle and absolute timeout for authenticated sessions.
+ */
+function enforceAuthenticatedSessionTimeout($redirectPath = 'login.php')
+{
+  if (!isset($_SESSION['user_id'])) {
+    return;
   }
+
+  $now = time();
+  $idleTimeout = max(60, (int)(defined('SESSION_TIMEOUT') ? SESSION_TIMEOUT : 3600));
+  $absoluteTimeout = max(300, (int)(defined('SESSION_ABSOLUTE_TIMEOUT') ? constant('SESSION_ABSOLUTE_TIMEOUT') : 43200));
+  $sessionStartedAt = (int)($_SESSION['session_started_at'] ?? $_SESSION['login_time'] ?? $now);
+  $lastActivityAt = (int)($_SESSION['last_activity_at'] ?? $_SESSION['login_time'] ?? $now);
+
+  $isIdleExpired = ($now - $lastActivityAt) > $idleTimeout;
+  $isAbsoluteExpired = ($now - $sessionStartedAt) > $absoluteTimeout;
+
+  if ($isIdleExpired || $isAbsoluteExpired) {
+    $timeoutReason = $isIdleExpired ? 'idle' : 'absolute';
+    $timeoutRole = strtolower(trim((string)($_SESSION['user_role'] ?? 'borrower')));
+
+    if (class_exists('AuthSupport')) {
+      AuthSupport::clearSession();
+      AuthSupport::ensureSessionStarted();
+    } else {
+      $_SESSION = [];
+      session_destroy();
+      if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+      }
+    }
+
+    $_SESSION['show_timeout_alert'] = true;
+    $_SESSION['timeout_reason'] = $timeoutReason;
+    $_SESSION['timeout_role'] = $timeoutRole;
+    redirect(appPath($redirectPath, ['timeout' => 1]));
+  }
+
+  $_SESSION['last_activity_at'] = $now;
 }
 
 /**

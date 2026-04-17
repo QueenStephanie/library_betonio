@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS role_profiles (
 CREATE TABLE IF NOT EXISTS verification_attempts (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL,
-    attempt_type ENUM('password_reset', 'registration', 'login_attempt', 'password_reset_verify') NOT NULL,
+    attempt_type ENUM('password_reset', 'registration', 'login_attempt', 'password_reset_verify', 'otp_verify', 'otp_resend', 'csrf_reject', 'login_blocked') NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     is_successful BOOLEAN DEFAULT FALSE,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -59,6 +59,14 @@ CREATE TABLE IF NOT EXISTS login_history (
     is_successful BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_login (user_id, login_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Applied SQL migration history
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    migration_name VARCHAR(255) NOT NULL,
+    checksum CHAR(64) NOT NULL,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (migration_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Admin Profile Store (separate from credentials)

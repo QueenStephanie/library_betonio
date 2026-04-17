@@ -145,6 +145,28 @@ class PermissionGate
   ];
 
   /**
+   * Resolve role-specific safe landing path for denied redirects.
+   */
+  private static function getRoleHomePath(string $role, string $default = 'index.php'): string
+  {
+    $role = strtolower(trim($role));
+
+    if ($role === 'superadmin' || $role === 'admin') {
+      return 'admin-dashboard.php';
+    }
+
+    if ($role === 'librarian') {
+      return 'librarian-dashboard.php';
+    }
+
+    if ($role === 'borrower') {
+      return 'index.php';
+    }
+
+    return $default;
+  }
+
+  /**
    * Check if a role has a specific permission.
    */
   public static function hasPermission(string $role, string $permission): bool
@@ -284,8 +306,7 @@ class PermissionGate
     $currentRole = self::resolveAdminRole();
 
     if (!self::meetsMinimumRole($currentRole, $minimumRole)) {
-      setFlash('error', 'You do not have permission to access this page.');
-      redirect($redirectPath);
+      denyWithFlashRedirect(appPath(self::getRoleHomePath($currentRole, $redirectPath)), 'You do not have permission to access this page.');
     }
   }
 
@@ -299,8 +320,7 @@ class PermissionGate
     $currentRole = self::resolveAdminRole();
 
     if (!self::hasPermission($currentRole, $permission)) {
-      setFlash('error', 'You do not have permission to perform this action.');
-      redirect($redirectPath);
+      denyWithFlashRedirect(appPath(self::getRoleHomePath($currentRole, $redirectPath)), 'You do not have permission to perform this action.');
     }
   }
 
@@ -315,8 +335,7 @@ class PermissionGate
     $currentRole = self::resolveFrontendRole($db);
 
     if (!self::meetsMinimumRole($currentRole, $minimumRole)) {
-      setFlash('error', 'You do not have permission to access this page.');
-      redirect($redirectPath);
+      denyWithFlashRedirect(appPath($redirectPath), 'You do not have permission to access this page.');
     }
   }
 
@@ -347,8 +366,8 @@ class PermissionGate
     requireAdminAuth();
 
     if (!self::canAccessPage($pageBasename)) {
-      setFlash('error', 'You do not have permission to access this page.');
-      redirect($fallbackRedirect);
+      $currentRole = self::resolveAdminRole();
+      denyWithFlashRedirect(appPath(self::getRoleHomePath($currentRole, $fallbackRedirect)), 'You do not have permission to access this page.');
     }
   }
 

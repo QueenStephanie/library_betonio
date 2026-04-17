@@ -13,6 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
@@ -26,46 +27,34 @@ if (isset($_SESSION['user_id'])) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('register_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+  $email = sanitize(getPost('email'));
+
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($email, 'csrf_reject', false);
+    error_log('Blocked register POST due to origin validation: ' . json_encode($originCheck));
+    $error = 'Security check failed. Please refresh and try again.';
+  } elseif (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    logVerificationAttempt($email, 'csrf_reject', false);
     $error = 'Security check failed. Please refresh and try again.';
   } else {
     $first_name = sanitize(getPost('first_name'));
     $last_name = sanitize(getPost('last_name'));
-    $email = sanitize(getPost('email'));
     $password = getPost('password');
     $password_confirm = getPost('password_confirm');
 
-    $auth = new AuthManager($db);
-    $result = $auth->register($first_name, $last_name, $email, $password, $password_confirm);
+    $authService = new AuthService($db);
+    $result = $authService->registerBorrower($first_name, $last_name, $email, $password, $password_confirm);
 
-    if ($result['success']) {
-      $mail_result = sendVerificationEmail(
-        $email,
-        $first_name,
-        $result['verification_token']
-      );
+    if (!empty($result['success'])) {
+      // Store email in session for verification page
+      $_SESSION['verify_email'] = $email;
+      $_SESSION['verify_user_id'] = (int)$result['user_id'];
 
-      if (empty($mail_result['success'])) {
-        try {
-          $rollback = $db->prepare('DELETE FROM users WHERE id = :id AND is_verified = 0');
-          $rollback->execute([':id' => $result['user_id']]);
-        } catch (Exception $rollback_error) {
-          error_log('Registration rollback failed: ' . $rollback_error->getMessage());
-        }
-
-        $error = $mail_result['error'] ?? 'Registration failed because verification email could not be sent.';
-        $error .= ' Please update MAIL_USER / MAIL_PASS in .env and try again.';
-        $page_alerts = [];
-      } else {
-        // Store email in session for verification page
-        $_SESSION['verify_email'] = $email;
-        $_SESSION['verify_user_id'] = $result['user_id'];
-
-        // Set flag to show SweetAlert on page load
-        $_SESSION['show_registration_alert'] = true;
-        redirect(appPath('register.php', ['success' => 1]));
-      }
+      // Set flag to show SweetAlert on page load
+      $_SESSION['show_registration_alert'] = true;
+      redirect(appPath('register.php', ['success' => 1]));
     } else {
       $error = $result['error'];
     }

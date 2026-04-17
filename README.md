@@ -9,6 +9,7 @@ A PHP-based library management system with role-based access, email verification
 
 ```bash
 php backend/setup-db.php
+php backend/migrations/migrate.php --apply
 ```
 
 3. Start Apache/MySQL in XAMPP.
@@ -52,6 +53,25 @@ See `INFINITYFREE_DEPLOYMENT.md` for full checklist.
 - Admin profile and fine-reporting pages
 - Borrower account dashboard
 
+## Current Auth Routes
+
+- Page routes (web):
+  - `GET|POST /register.php`
+  - `GET|POST /login.php`
+  - `GET /verify-otp.php?email=...&token=...` (email-link verification)
+  - `POST /verify-otp.php` (resend verification email)
+  - `GET|POST /forgot-password.php`
+  - `GET|POST /reset-password.php?email=...&token=...`
+  - `GET /admin-login.php` (compat redirect to `/login.php?force=1`)
+  - `GET /admin-logout.php`, `GET /logout.php`
+- JSON auth API routes (implemented):
+  - `POST /backend/api/register.php`
+  - `POST /backend/api/login.php`
+  - `POST /backend/api/logout.php`
+  - `POST /backend/api/forgot-password.php`
+  - `POST /backend/api/verify-reset-token.php`
+  - `POST /backend/api/reset-password.php`
+
 ## Project Layout
 
 - `app/` role-based page implementations (`public`, `user`, `admin`, `system`)
@@ -65,6 +85,9 @@ See `INFINITYFREE_DEPLOYMENT.md` for full checklist.
 
 ```bash
 php backend/setup-db.php
+php backend/migrations/migrate.php --status
+php backend/migrations/migrate.php --dry-run
+php backend/tests/run.php
 php -r "require 'includes/config.php'; echo 'Connected!';"
 ```
 

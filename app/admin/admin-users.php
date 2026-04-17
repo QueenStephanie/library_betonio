@@ -8,8 +8,10 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once APP_ROOT . '/backend/classes/UserRepository.php';
+require_once APP_ROOT . '/backend/classes/PermissionGate.php';
+require_once APP_ROOT . '/includes/services/AdminUserManagementService.php';
 
-requireAdminAuth();
+PermissionGate::requirePageAccess('admin-users');
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
@@ -20,12 +22,12 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminC
 
 $page_alerts = [];
 $csrf_token = getAdminCsrfToken();
-$allowedRoles = UserRepository::MANAGED_ROLES;
 $superadminUserId = null;
 $isCurrentSuperadmin = isCurrentAdminSuperadmin();
 $currentUserEmail = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
 $adminRoleLabel = $isCurrentSuperadmin ? 'Super Administrator' : 'Administrator';
 $roleGovernanceDeniedMessage = 'Only superadmin can create or update borrower, librarian, and admin profiles.';
+$adminUserManagementService = new AdminUserManagementService($db);
 try {
   $superadminUser = UserRepository::getSuperadminUser($db);
   if (is_array($superadminUser) && isset($superadminUser['id'])) {
@@ -36,8 +38,18 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('admin_users_post');
   $submittedToken = $_POST['csrf_token'] ?? '';
-  if (!validateAdminCsrfToken($submittedToken)) {
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+    error_log('Blocked admin-users POST due to origin validation: ' . json_encode($originCheck));
+    $page_alerts[] = [
+      'type' => 'error',
+      'title' => 'Security Validation Failed',
+      'message' => 'Origin validation failed. Please refresh and try again.',
+    ];
+  } elseif (!validateAdminCsrfToken($submittedToken)) {
+    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
     $page_alerts[] = [
       'type' => 'error',
       'title' => 'Security Validation Failed',
@@ -53,213 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => 'Permission Denied',
         'message' => $roleGovernanceDeniedMessage,
       ];
-    } elseif ($action === 'create_user') {
-      $firstName = trim((string)($_POST['first_name'] ?? ''));
-      $lastName = trim((string)($_POST['last_name'] ?? ''));
-      $email = strtolower(trim((string)($_POST['email'] ?? '')));
-      $role = UserRepository::normalizeRole($_POST['role'] ?? 'borrower');
-      $password = (string)($_POST['password'] ?? '');
-      $roleInformation = trim((string)($_POST['role_information'] ?? ''));
-      $status = trim((string)($_POST['status'] ?? 'active'));
-      $isActive = $status !== 'inactive';
-
-      $errorMessage = null;
-      if ($firstName === '' || $lastName === '') {
-        $errorMessage = 'First and last name are required.';
-      } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errorMessage = 'A valid email address is required.';
-      } elseif (strlen($password) < 8) {
-        $errorMessage = 'Temporary password must be at least 8 characters long.';
-      } elseif (!in_array($role, $allowedRoles, true)) {
-        $errorMessage = 'Unsupported role selected.';
-      } elseif (UserRepository::emailExistsForOtherUser($db, $email, null)) {
-        $errorMessage = 'This email already exists. Use a different email.';
-      }
-
-      if ($errorMessage !== null) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Create User Failed',
-          'message' => $errorMessage,
-        ];
-      } else {
-        try {
-          UserRepository::createManagedUser($db, [
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'password_hash' => password_hash($password, PASSWORD_HASH_ALGO, PASSWORD_HASH_OPTIONS),
-            'is_verified' => true,
-            'is_active' => $isActive,
-            'role' => $role,
-            'role_information' => $roleInformation,
-            'actor_is_superadmin' => $isCurrentSuperadmin,
-          ]);
-
-          $page_alerts[] = [
-            'type' => 'success',
-            'title' => 'User Created',
-            'message' => 'User account and role assignment were created successfully.',
-          ];
-        } catch (Exception $e) {
-          error_log('admin-users create_user error: ' . $e->getMessage());
-          $page_alerts[] = [
-            'type' => 'error',
-            'title' => 'Create User Failed',
-            'message' => 'Unable to create user at this time.',
-          ];
-        }
-      }
-    } elseif ($action === 'update_user') {
-      $userId = (int)($_POST['user_id'] ?? 0);
-      $firstName = trim((string)($_POST['first_name'] ?? ''));
-      $lastName = trim((string)($_POST['last_name'] ?? ''));
-      $email = strtolower(trim((string)($_POST['email'] ?? '')));
-      $role = UserRepository::normalizeRole($_POST['role'] ?? 'borrower');
-      $roleInformation = trim((string)($_POST['role_information'] ?? ''));
-      $status = trim((string)($_POST['status'] ?? 'active'));
-      $isActive = $status !== 'inactive';
-
-      $errorMessage = null;
-      if ($userId <= 0) {
-        $errorMessage = 'Invalid user selected.';
-      } elseif ($firstName === '' || $lastName === '') {
-        $errorMessage = 'First and last name are required.';
-      } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errorMessage = 'A valid email address is required.';
-      } elseif (!in_array($role, $allowedRoles, true)) {
-        $errorMessage = 'Unsupported role selected.';
-      } elseif (UserRepository::emailExistsForOtherUser($db, $email, $userId)) {
-        $errorMessage = 'This email is already assigned to another user.';
-      } elseif ($superadminUserId !== null && $userId === $superadminUserId && (!$isActive || $role !== 'admin')) {
-        $errorMessage = 'Superadmin account role and active status are protected.';
-      }
-
-      if ($errorMessage !== null) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Update Failed',
-          'message' => $errorMessage,
-        ];
-      } else {
-        try {
-          $updated = UserRepository::updateManagedUser($db, $userId, [
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'role' => $role,
-            'is_active' => $isActive,
-            'role_information' => $roleInformation,
-            'actor_is_superadmin' => $isCurrentSuperadmin,
-          ]);
-
-          if ($updated === null) {
-            $page_alerts[] = [
-              'type' => 'error',
-              'title' => 'Update Failed',
-              'message' => 'User not found.',
-            ];
-          } else {
-            $page_alerts[] = [
-              'type' => 'success',
-              'title' => 'User Updated',
-              'message' => 'User details and role were updated successfully.',
-            ];
-          }
-        } catch (Exception $e) {
-          error_log('admin-users update_user error: ' . $e->getMessage());
-          $page_alerts[] = [
-            'type' => 'error',
-            'title' => 'Update Failed',
-            'message' => 'Unable to update user at this time.',
-          ];
-        }
-      }
-    } elseif ($action === 'toggle_status') {
-      $userId = (int)($_POST['user_id'] ?? 0);
-      $status = trim((string)($_POST['status'] ?? 'active'));
-      $isActive = $status !== 'inactive';
-
-      if ($userId <= 0) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Status Update Failed',
-          'message' => 'Invalid user selected.',
-        ];
-      } elseif ($superadminUserId !== null && $userId === $superadminUserId && !$isActive) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Status Update Blocked',
-          'message' => 'Superadmin account cannot be deactivated.',
-        ];
-      } else {
-        try {
-          $updated = UserRepository::setUserActiveState($db, $userId, $isActive);
-          if ($updated === null) {
-            $page_alerts[] = [
-              'type' => 'error',
-              'title' => 'Status Update Failed',
-              'message' => 'User not found.',
-            ];
-          } else {
-            $page_alerts[] = [
-              'type' => 'success',
-              'title' => 'Status Updated',
-              'message' => $isActive ? 'User has been activated.' : 'User has been set to inactive.',
-            ];
-          }
-        } catch (Exception $e) {
-          error_log('admin-users toggle_status error: ' . $e->getMessage());
-          $page_alerts[] = [
-            'type' => 'error',
-            'title' => 'Status Update Failed',
-            'message' => stripos($e->getMessage(), 'superadmin') !== false
-              ? $e->getMessage()
-              : 'Unable to update user status right now.',
-          ];
-        }
-      }
-    } elseif ($action === 'delete_user') {
-      $userId = (int)($_POST['user_id'] ?? 0);
-
-      if ($userId <= 0) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Delete Failed',
-          'message' => 'Invalid user selected.',
-        ];
-      } elseif ($superadminUserId !== null && $userId === $superadminUserId) {
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Delete Blocked',
-          'message' => 'Superadmin account cannot be deleted.',
-        ];
-      } else {
-        try {
-          $deleted = UserRepository::deleteManagedUser($db, $userId);
-          if ($deleted === null) {
-            $page_alerts[] = [
-              'type' => 'error',
-              'title' => 'Delete Failed',
-              'message' => 'User not found.',
-            ];
-          } else {
-            $page_alerts[] = [
-              'type' => 'success',
-              'title' => 'User Deleted',
-              'message' => 'User account was deleted successfully.',
-            ];
-          }
-        } catch (Exception $e) {
-          error_log('admin-users delete_user error: ' . $e->getMessage());
-          $page_alerts[] = [
-            'type' => 'error',
-            'title' => 'Delete Failed',
-            'message' => stripos($e->getMessage(), 'superadmin') !== false
-              ? $e->getMessage()
-              : 'Unable to delete user right now.',
-          ];
-        }
+    } else {
+      $alert = $adminUserManagementService->handleAction($action, $_POST, $isCurrentSuperadmin, $superadminUserId);
+      if (is_array($alert)) {
+        $page_alerts[] = $alert;
       }
     }
   }

@@ -22,7 +22,10 @@ class AuthSupport
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_role'] = strtolower(trim((string)($user['role'] ?? 'borrower')));
     $_SESSION['is_superadmin'] = (int)($user['is_superadmin'] ?? 0) === 1;
-    $_SESSION['login_time'] = time();
+    $now = time();
+    $_SESSION['login_time'] = $now;
+    $_SESSION['session_started_at'] = $now;
+    $_SESSION['last_activity_at'] = $now;
   }
 
   public static function setBackendSession(array $user)
@@ -36,7 +39,10 @@ class AuthSupport
     $_SESSION['last_name'] = $user['last_name'];
     $_SESSION['user_role'] = strtolower(trim((string)($user['role'] ?? 'borrower')));
     $_SESSION['is_superadmin'] = (int)($user['is_superadmin'] ?? 0) === 1;
-    $_SESSION['login_time'] = time();
+    $now = time();
+    $_SESSION['login_time'] = $now;
+    $_SESSION['session_started_at'] = $now;
+    $_SESSION['last_activity_at'] = $now;
   }
 
   public static function clearSession()

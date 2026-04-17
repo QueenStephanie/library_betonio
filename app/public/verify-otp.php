@@ -13,6 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
@@ -21,80 +22,111 @@ $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 $fromLogin = isset($_GET['from_login']) && $_GET['from_login'] === '1';
 $csrf_scope = 'verify_resend';
 $csrf_token = getPublicCsrfToken($csrf_scope);
-$resendCooldownWindow = 45;
-$resendCooldownUntil = (int)($_SESSION['verify_resend_available_at'] ?? 0);
-$resendCooldownRemaining = max(0, $resendCooldownUntil - time());
+$resendPublicMessage = 'If your account is eligible, a verification email will arrive shortly.';
+$resendCooldownRemaining = 0;
 
 if (empty($email)) {
   redirect('register.php');
 }
 
-$auth = new AuthManager($db);
+$authService = new AuthService($db);
+
+if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+  $resendLimitCheck = evaluateOtpResendRateLimit($email);
+  if (!empty($resendLimitCheck['limited'])) {
+    $resendCooldownRemaining = (int)($resendLimitCheck['retry_after'] ?? 0);
+  }
+}
 
 // Handle resend verification request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification'])) {
   try {
+    $originCheck = validateStateChangingRequestOrigin('verify_otp_resend_post');
     $submittedToken = (string)($_POST['csrf_token'] ?? '');
     $resend_email = sanitize(getPost('email'));
+    $normalizedResendEmail = strtolower(trim((string)$resend_email));
 
-    if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    if (!$originCheck['valid']) {
+      logVerificationAttempt($normalizedResendEmail, 'csrf_reject', false);
+      error_log('Blocked verify-otp resend POST due to origin validation: ' . json_encode($originCheck));
       $error = 'Security check failed. Please refresh and try again.';
-    } elseif ($resendCooldownRemaining > 0) {
-      $error = 'Please wait ' . $resendCooldownRemaining . ' seconds before requesting another verification email.';
+    } elseif (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+      logVerificationAttempt($normalizedResendEmail, 'csrf_reject', false);
+      $error = 'Security check failed. Please refresh and try again.';
     } elseif (empty($resend_email) || !filter_var($resend_email, FILTER_VALIDATE_EMAIL)) {
       $error = 'A valid email is required.';
     } else {
-      $stmt = $db->prepare('SELECT id, first_name, is_verified, verification_token FROM users WHERE email = :email LIMIT 1');
-      $stmt->execute([':email' => $resend_email]);
-      $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-      if (!$user) {
-        $error = 'Email not found.';
-      } elseif (!empty($user['is_verified'])) {
-        $success = 'This email is already verified. You can log in now.';
+      $resendLimitCheck = evaluateOtpResendRateLimit($normalizedResendEmail);
+      if (!empty($resendLimitCheck['limited'])) {
+        $resendCooldownRemaining = (int)($resendLimitCheck['retry_after'] ?? 0);
+        logVerificationAttempt($normalizedResendEmail, 'otp_resend', false);
+        $success = $resendPublicMessage;
       } else {
-        $verificationToken = $user['verification_token'];
+        $stmt = $db->prepare('SELECT id, first_name, is_verified, verification_token, verification_token_expires FROM users WHERE email = :email LIMIT 1');
+        $stmt->execute([':email' => $normalizedResendEmail]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (empty($verificationToken)) {
-          $verificationToken = bin2hex(random_bytes(32));
-          $tokenExpiry = date('Y-m-d H:i:s', time() + 86400);
-          $update = $db->prepare('UPDATE users SET verification_token = :token, verification_token_expires = :expiry WHERE id = :id');
-          $update->execute([
-            ':token' => $verificationToken,
-            ':expiry' => $tokenExpiry,
-            ':id' => $user['id']
-          ]);
+        $mailSent = false;
+        if ($user && empty($user['is_verified'])) {
+          $verificationToken = trim((string)($user['verification_token'] ?? ''));
+          $tokenExpires = (string)($user['verification_token_expires'] ?? '');
+          $hasActiveToken = $verificationToken !== '' && $tokenExpires !== '' && strtotime($tokenExpires) > time();
+
+          if (!$hasActiveToken) {
+            $verificationToken = bin2hex(random_bytes(32));
+            $tokenExpiry = date('Y-m-d H:i:s', time() + 86400);
+            $update = $db->prepare('UPDATE users SET verification_token = :token, verification_token_expires = :expiry WHERE id = :id');
+            $update->execute([
+              ':token' => $verificationToken,
+              ':expiry' => $tokenExpiry,
+              ':id' => $user['id']
+            ]);
+          }
+
+          $mailResult = sendVerificationEmail($normalizedResendEmail, $user['first_name'] ?: 'User', $verificationToken);
+          $mailSent = !empty($mailResult['success']);
         }
 
-        $mailResult = sendVerificationEmail($resend_email, $user['first_name'] ?: 'User', $verificationToken);
-
-        if (!empty($mailResult['success'])) {
-          $_SESSION['verify_resend_available_at'] = time() + $resendCooldownWindow;
-          $success = 'Verification email resent. Please check Inbox/Spam/Promotions.';
-        } else {
-          $error = $mailResult['error'] ?? 'Failed to resend verification email.';
-        }
+        logVerificationAttempt($normalizedResendEmail, 'otp_resend', $mailSent);
+        $success = $resendPublicMessage;
       }
     }
   } catch (Exception $e) {
-    $error = 'Failed to resend verification email. Please try again.';
+    $error = 'Failed to process request. Please try again.';
     error_log('Resend verification failed: ' . $e->getMessage());
   }
 }
 
-$resendCooldownUntil = (int)($_SESSION['verify_resend_available_at'] ?? 0);
-$resendCooldownRemaining = max(0, $resendCooldownUntil - time());
+if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+  $resendLimitCheck = evaluateOtpResendRateLimit($email);
+  if (!empty($resendLimitCheck['limited'])) {
+    $resendCooldownRemaining = max($resendCooldownRemaining, (int)($resendLimitCheck['retry_after'] ?? 0));
+  }
+}
 
 // If token is provided in URL, verify it automatically
 if (!empty($token)) {
-  $token_result = $auth->verifyEmailByToken($email, $token);
+  if (!preg_match('/^[a-f0-9]{64}$/i', $token)) {
+    logVerificationAttempt($email, 'otp_verify', false);
+    $error = 'Verification failed. Please request a new verification email.';
+  } else {
+    $verifyLimitCheck = evaluateOtpVerifyRateLimit($email);
+    if (!empty($verifyLimitCheck['limited'])) {
+      logVerificationAttempt($email, 'otp_verify', false);
+      $error = 'Too many verification attempts. Please wait before trying again.';
+    } else {
+      $token_result = $authService->verifyEmailByToken($email, $token);
 
-  if ($token_result['success']) {
-    setFlash('success', 'Email verified successfully. You can now log in.');
-    redirect(appPath('login.php'));
+      if ($token_result['success']) {
+        logVerificationAttempt($email, 'otp_verify', true);
+        setFlash('success', 'Email verified successfully. You can now log in.');
+        redirect(appPath('login.php'));
+      }
+
+      logVerificationAttempt($email, 'otp_verify', false);
+      $error = 'Verification failed. Please request a new verification email.';
+    }
   }
-
-  $error = $token_result['error'] ?? 'Verification failed. Please try again.';
 }
 
 $page_alerts = [];

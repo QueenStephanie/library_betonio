@@ -13,6 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
+require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
@@ -21,6 +22,21 @@ $csrf_token = getPublicCsrfToken($csrf_scope);
 
 $forceLogin = isset($_GET['force']) && $_GET['force'] === '1';
 
+$resolveLoginRedirect = static function (): string {
+  $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+  $isSuperadmin = !empty($_SESSION['is_superadmin']);
+
+  if ($role === 'admin' || $isSuperadmin) {
+    return 'admin-dashboard.php#about-me';
+  }
+
+  if ($role === 'librarian') {
+    return 'librarian-dashboard.php';
+  }
+
+  return 'index.php';
+};
+
 if (isset($_GET['logout']) && $_GET['logout'] === '1') {
   AuthSupport::clearSession();
   redirect('login.php');
@@ -28,35 +44,47 @@ if (isset($_GET['logout']) && $_GET['logout'] === '1') {
 
 // Check if already logged in
 if (isset($_SESSION['user_id']) && !$forceLogin) {
-  redirect('index.php');
+  redirect($resolveLoginRedirect());
 }
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('login_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+  $email = sanitize(getPost('email'));
+
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($email, 'csrf_reject', false);
+    error_log('Blocked login POST due to origin validation: ' . json_encode($originCheck));
+    $error = 'Security check failed. Please refresh and try again.';
+  } elseif (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    logVerificationAttempt($email, 'csrf_reject', false);
     $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $email = sanitize(getPost('email'));
     $password = getPost('password');
 
-    $auth = new AuthManager($db);
-    $result = $auth->login($email, $password);
-
-    if ($result['success']) {
-      setFlash('success', $result['message']);
-      $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
-      $isSuperadmin = !empty($_SESSION['is_superadmin']);
-      if ($role === 'admin' || $isSuperadmin) {
-        $_SESSION['show_admin_welcome'] = true;
-        redirect('admin-dashboard.php#about-me');
-      }
-      redirect('index.php');
+    $rateLimit = evaluateLoginRateLimit($email);
+    if (!empty($rateLimit['limited'])) {
+      logVerificationAttempt($email, 'login_blocked', false);
+      $error = 'Too many failed login attempts. Please wait a few minutes before trying again.';
     } else {
-      if (isset($result['unverified']) && $result['unverified']) {
-        redirect(appPath('verify-otp.php', ['email' => $result['email'], 'from_login' => '1']));
+      $authService = new AuthService($db);
+      $result = $authService->login($email, $password);
+
+      if ($result['success']) {
+        logVerificationAttempt($email, 'login_attempt', true);
+        setFlash('success', $result['message']);
+        if (str_starts_with($resolveLoginRedirect(), 'admin-dashboard.php')) {
+          $_SESSION['show_admin_welcome'] = true;
+        }
+        redirect($resolveLoginRedirect());
+      } else {
+        logVerificationAttempt($email, 'login_attempt', false);
+        if (isset($result['unverified']) && $result['unverified']) {
+          redirect(appPath('verify-otp.php', ['email' => $result['email'], 'from_login' => '1']));
+        }
+        $error = $result['error'];
       }
-      $error = $result['error'];
     }
   }
 }
@@ -76,11 +104,26 @@ if ($error) {
 }
 
 if (isset($_SESSION['show_timeout_alert'])) {
+  $timeoutReason = (string)($_SESSION['timeout_reason'] ?? 'idle');
+  $timeoutRole = strtolower(trim((string)($_SESSION['timeout_role'] ?? 'borrower')));
+
   unset($_SESSION['show_timeout_alert']);
+  unset($_SESSION['timeout_reason']);
+  unset($_SESSION['timeout_role']);
+
+  $sessionExpiredMessage = 'Your session has expired. Please log in again.';
+  if ($timeoutReason === 'absolute') {
+    $sessionExpiredMessage = 'Your secure session reached its maximum duration. Please log in again.';
+  }
+
+  if ($timeoutRole === 'admin') {
+    $sessionExpiredMessage .= ' Admin tools require a fresh authenticated session.';
+  }
+
   $page_alerts[] = [
     'type' => 'warning',
     'title' => 'Session Expired',
-    'message' => 'Your session has expired. Please log in again.',
+    'message' => $sessionExpiredMessage,
     'confirmText' => 'OK',
     'cancelText' => null
   ];

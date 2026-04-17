@@ -9,8 +9,9 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 require_once APP_ROOT . '/backend/classes/AdminProfileRepository.php';
 require_once APP_ROOT . '/backend/classes/CirculationRepository.php';
+require_once APP_ROOT . '/backend/classes/PermissionGate.php';
 
-requireAdminAuth();
+PermissionGate::requirePageAccess('admin-dashboard');
 
 $adminUsername = (string)($_SESSION['user_email'] ?? 'admin@local.admin');
 $isSuperadmin = isCurrentAdminSuperadmin();

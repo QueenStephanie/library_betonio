@@ -49,6 +49,8 @@ tmp/
 temp/
 cache/
 *.tmp
+.playwright-mcp/
+.tmp_*
 
 # IDE specific
 .vscode/

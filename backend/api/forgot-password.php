@@ -11,11 +11,7 @@ require_once __DIR__ . '/_bootstrap.php';
 apiHandleCorsAndMethod('POST');
 
 try {
-  // Load required files
-  require_once __DIR__ . '/../vendor/autoload.php';
-  require_once __DIR__ . '/../config/Database.php';
-  require_once __DIR__ . '/../classes/PasswordRecovery.php';
-  require_once __DIR__ . '/../mail/MailHandler.php';
+  require_once __DIR__ . '/../../includes/services/AuthService.php';
 
   // Get POST data
   $input = apiReadJsonInput();
@@ -39,12 +35,9 @@ try {
   // Initialize database
   $db = apiGetDatabaseConnection();
 
-  // Initialize mail handler
-  $mail_handler = new MailHandler($db);
-
-  // Request password reset
-  $password_recovery = new PasswordRecovery($db, $mail_handler);
-  $result = $password_recovery->requestPasswordReset($email);
+  $authServiceClass = 'AuthService';
+  $authService = new $authServiceClass($db);
+  $result = $authService->requestPasswordReset($email);
 
   // Always return success message for security (don't reveal if email exists)
   http_response_code(200);

@@ -13,9 +13,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 require_once 'includes/config.php';
 require_once 'includes/auth.php';
 require_once 'includes/functions.php';
-require_once 'backend/vendor/autoload.php';
-require_once 'backend/classes/PasswordRecovery.php';
-require_once 'backend/mail/MailHandler.php';
+require_once APP_ROOT . '/includes/services/AuthService.php';
 
 $error = '';
 $success = '';
@@ -24,18 +22,20 @@ $csrf_token = getPublicCsrfToken($csrf_scope);
 
 // Handle forget password request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('forgot_password_post');
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-  if (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+  $email = sanitize(getPost('email'));
+
+  if (!$originCheck['valid']) {
+    logVerificationAttempt($email, 'csrf_reject', false);
+    error_log('Blocked forgot-password POST due to origin validation: ' . json_encode($originCheck));
+    $error = 'Security check failed. Please refresh and try again.';
+  } elseif (!validatePublicCsrfToken($submittedToken, $csrf_scope)) {
+    logVerificationAttempt($email, 'csrf_reject', false);
     $error = 'Security check failed. Please refresh and try again.';
   } else {
-    $email = sanitize(getPost('email'));
-
-    // Initialize PasswordRecovery with database and mail handler
-    // $db is already initialized in includes/config.php
-    $mail_handler = new MailHandler($db);
-    $password_recovery = new PasswordRecovery($db, $mail_handler);
-
-    $result = $password_recovery->requestPasswordReset($email);
+    $authService = new AuthService($db);
+    $result = $authService->requestPasswordReset($email);
 
     if ($result['success']) {
       $_SESSION['show_password_reset_alert'] = true;
