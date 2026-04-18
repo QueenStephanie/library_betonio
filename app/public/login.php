@@ -50,10 +50,13 @@ if (isset($_SESSION['user_id']) && !$forceLogin) {
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('login_post');
+  $originReason = (string)($originCheck['reason'] ?? '');
+  // Some clients/proxies omit Origin/Referer on same-site form POSTs; allow that case only when CSRF token validation succeeds.
+  $allowMissingOriginFallback = !$originCheck['valid'] && $originReason === 'missing_origin_headers';
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
   $email = getPost('email');
 
-  if (!$originCheck['valid']) {
+  if (!$originCheck['valid'] && !$allowMissingOriginFallback) {
     logVerificationAttempt($email, 'csrf_reject', false);
     error_log('Blocked login POST due to origin validation: ' . json_encode($originCheck));
     $error = 'Security check failed. Please refresh and try again.';
@@ -74,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($result['success']) {
         logVerificationAttempt($email, 'login_attempt', true);
         setFlash('success', $result['message']);
-        if (str_starts_with($resolveLoginRedirect(), 'admin-dashboard.php')) {
+        if (strpos($resolveLoginRedirect(), 'admin-dashboard.php') === 0) {
           $_SESSION['show_admin_welcome'] = true;
         }
         redirect($resolveLoginRedirect());

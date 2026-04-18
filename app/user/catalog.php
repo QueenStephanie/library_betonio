@@ -216,7 +216,7 @@ foreach ($catalogRows as $catalogRowSummary) {
                                               })), ENT_QUOTES, 'UTF-8'); ?>">
                   <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                   <input type="hidden" name="book_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                  <button type="submit" class="borrower-btn borrower-btn-secondary"<?php echo $availableCopies < 1 ? ' disabled' : ''; ?>>Reserve</button>
+                  <button type="submit" class="borrower-btn borrower-btn-secondary">Reserve</button>
                 </form>
               </div>
             </article>
