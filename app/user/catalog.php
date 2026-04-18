@@ -83,7 +83,17 @@ try {
 }
 
 $flash = getFlash();
-$currentPage = 'catalog';
+$catalogRows = is_array($catalog['rows'] ?? null) ? $catalog['rows'] : [];
+$catalogResultCount = count($catalogRows);
+$catalogInStockTitles = 0;
+$catalogAvailableCopies = 0;
+foreach ($catalogRows as $catalogRowSummary) {
+  $itemAvailableCopies = max(0, (int)($catalogRowSummary['available_copies'] ?? 0));
+  if ($itemAvailableCopies > 0) {
+    $catalogInStockTitles++;
+  }
+  $catalogAvailableCopies += $itemAvailableCopies;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -96,18 +106,45 @@ $currentPage = 'catalog';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+  <link rel="stylesheet" href="public/css/admin.css">
   <link rel="stylesheet" href="public/css/borrower.css">
 </head>
 
-<body>
-  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
+<body class="admin-portal-body portal-role-borrower">
+  <div class="admin-shell">
+    <?php
+    $portalRole = 'borrower';
+    $portalCurrentPage = 'catalog';
+    $portalIdentityName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+    if ($portalIdentityName === '') {
+      $portalIdentityName = 'Borrower User';
+    }
+    $portalIdentityMeta = (string)($user['email'] ?? '');
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
-  <main class="borrower-page">
-    <div class="borrower-shell">
+    <main class="admin-main borrower-main">
+      <div class="borrower-page">
+        <div class="borrower-shell">
       <header class="borrower-page-header">
         <h1>Book Catalog</h1>
         <p class="borrower-page-subtitle">Search by title, author, or ISBN and reserve available titles.</p>
       </header>
+
+      <section class="borrower-dashboard-stats catalog-summary-stats" aria-label="Catalog summary">
+        <article class="borrower-card borrower-stat-card">
+          <p class="borrower-stat-label">Results</p>
+          <p class="borrower-stat-value"><?php echo (int)$catalogResultCount; ?></p>
+        </article>
+        <article class="borrower-card borrower-stat-card">
+          <p class="borrower-stat-label">In-Stock Titles</p>
+          <p class="borrower-stat-value"><?php echo (int)$catalogInStockTitles; ?></p>
+        </article>
+        <article class="borrower-card borrower-stat-card">
+          <p class="borrower-stat-label">Available Copies</p>
+          <p class="borrower-stat-value"><?php echo (int)$catalogAvailableCopies; ?></p>
+        </article>
+      </section>
 
       <?php if ($flash): ?>
         <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
@@ -121,25 +158,36 @@ $currentPage = 'catalog';
         </div>
       <?php endif; ?>
 
-      <form method="GET" action="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="catalog-search">
-        <input type="search" name="q" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search title, author, ISBN">
-        <select name="category">
-          <option value="">All Categories</option>
-          <?php foreach (($catalog['categories'] ?? []) as $categoryOption): ?>
-            <?php $categoryOption = (string)$categoryOption; ?>
-            <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $categoryOption === $category ? 'selected' : ''; ?>>
-              <?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-        <button type="submit" class="borrower-btn borrower-btn-primary">Search</button>
-      </form>
+      <section class="borrower-card catalog-filter-card" aria-label="Catalog search and filters">
+        <form method="GET" action="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="catalog-search">
+          <div class="catalog-filter-group">
+            <label for="catalog-query">Search Catalog</label>
+            <input id="catalog-query" type="search" name="q" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search title, author, ISBN">
+          </div>
+          <div class="catalog-filter-group">
+            <label for="catalog-category">Category</label>
+            <select id="catalog-category" name="category">
+              <option value="">All Categories</option>
+              <?php foreach (($catalog['categories'] ?? []) as $categoryOption): ?>
+                <?php $categoryOption = (string)$categoryOption; ?>
+                <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $categoryOption === $category ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="catalog-filter-actions">
+            <button type="submit" class="borrower-btn borrower-btn-primary">Search</button>
+            <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary">Clear Filters</a>
+          </div>
+        </form>
+      </section>
 
-      <?php if (empty($catalog['rows'])): ?>
+      <?php if (empty($catalogRows)): ?>
         <div class="borrower-empty">No catalog titles matched your filters.</div>
       <?php else: ?>
         <div class="catalog-grid">
-          <?php foreach ($catalog['rows'] as $row): ?>
+          <?php foreach ($catalogRows as $row): ?>
             <?php
             $availableCopies = max(0, (int)($row['available_copies'] ?? 0));
             $totalCopies = max(0, (int)($row['total_copies'] ?? 0));
@@ -148,36 +196,37 @@ $currentPage = 'catalog';
             }
             ?>
             <article class="catalog-item borrower-card">
-              <div>
+              <div class="catalog-item-main">
                 <h3><?php echo htmlspecialchars((string)($row['title'] ?? 'Unknown Title'), ENT_QUOTES, 'UTF-8'); ?></h3>
-                <p class="catalog-meta">
-                  <?php echo htmlspecialchars((string)($row['author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?>
+                <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars((string)($row['author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?></p>
+                <p class="catalog-meta catalog-meta-secondary">
                   <?php if (!empty($row['category'])): ?>
-                    - <?php echo htmlspecialchars((string)$row['category'], ENT_QUOTES, 'UTF-8'); ?>
+                    <span>Category: <?php echo htmlspecialchars((string)$row['category'], ENT_QUOTES, 'UTF-8'); ?></span>
                   <?php endif; ?>
-                  <?php if (!empty($row['isbn'])): ?>
-                    - ISBN: <?php echo htmlspecialchars((string)$row['isbn'], ENT_QUOTES, 'UTF-8'); ?>
-                  <?php endif; ?>
+                  <span>ISBN: <?php echo htmlspecialchars((string)($row['isbn'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></span>
                 </p>
               </div>
               <div class="catalog-actions">
-                <div class="availability">
-                  <strong><?php echo $availableCopies; ?></strong> available of <?php echo $totalCopies; ?> copy/copies
+                <div class="availability<?php echo $availableCopies > 0 ? ' is-available' : ' is-unavailable'; ?>">
+                  <strong><?php echo $availableCopies > 0 ? 'Available' : 'Unavailable'; ?></strong>
+                  <span><?php echo $availableCopies; ?> of <?php echo $totalCopies; ?> copies ready</span>
                 </div>
                 <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) {
                                                 return $value !== '';
                                               })), ENT_QUOTES, 'UTF-8'); ?>">
                   <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                   <input type="hidden" name="book_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                  <button type="submit" class="borrower-btn borrower-btn-secondary">Reserve</button>
+                  <button type="submit" class="borrower-btn borrower-btn-secondary"<?php echo $availableCopies < 1 ? ' disabled' : ''; ?>>Reserve</button>
                 </form>
               </div>
             </article>
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
-    </div>
-  </main>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
 
 </html>

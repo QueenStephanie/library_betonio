@@ -74,14 +74,26 @@ $currentPage = 'reservations';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+  <link rel="stylesheet" href="public/css/admin.css">
   <link rel="stylesheet" href="public/css/borrower.css">
 </head>
 
-<body>
-  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
+<body class="admin-portal-body portal-role-borrower">
+  <div class="admin-shell">
+    <?php
+    $portalRole = 'borrower';
+    $portalCurrentPage = 'reservations';
+    $portalIdentityName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+    if ($portalIdentityName === '') {
+      $portalIdentityName = 'Borrower User';
+    }
+    $portalIdentityMeta = (string)($user['email'] ?? '');
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
-  <main class="borrower-page">
-    <div class="borrower-shell">
+    <main class="admin-main borrower-main">
+      <div class="borrower-page">
+        <div class="borrower-shell">
       <header class="borrower-page-header">
         <h1>My Active Reservations</h1>
         <p class="borrower-page-subtitle">Track reservation status and cancel active queue entries.</p>
@@ -110,7 +122,7 @@ $currentPage = 'reservations';
                 <th>Status</th>
                 <th>Queued At</th>
                 <th>Ready Until</th>
-                <th>Action</th>
+                <th class="borrower-col-action">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -128,7 +140,7 @@ $currentPage = 'reservations';
                   </td>
                   <td><?php echo htmlspecialchars((string)($row['queued_at'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                   <td><?php echo htmlspecialchars((string)($row['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                  <td>
+                  <td class="borrower-col-action">
                     <?php if (CirculationRepository::canBorrowerCancelReservationStatus($status)): ?>
                       <form method="POST" action="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cancelToken, ENT_QUOTES, 'UTF-8'); ?>">
@@ -145,8 +157,10 @@ $currentPage = 'reservations';
           </table>
         </div>
       <?php endif; ?>
-    </div>
-  </main>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
 
 </html>

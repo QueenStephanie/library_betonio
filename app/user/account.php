@@ -123,14 +123,26 @@ $currentPage = 'account';
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+  <link rel="stylesheet" href="public/css/admin.css">
   <link rel="stylesheet" href="public/css/borrower.css">
 </head>
 
-<body>
-  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
+<body class="admin-portal-body portal-role-borrower">
+  <div class="admin-shell">
+    <?php
+    $portalRole = 'borrower';
+    $portalCurrentPage = 'account';
+    $portalIdentityName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+    if ($portalIdentityName === '') {
+      $portalIdentityName = 'Borrower User';
+    }
+    $portalIdentityMeta = (string)($user['email'] ?? '');
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
-  <main class="borrower-page">
-    <div class="borrower-shell">
+    <main class="admin-main borrower-main">
+      <div class="borrower-page">
+        <div class="borrower-shell">
       <header class="borrower-page-header">
         <h1>Account Settings</h1>
         <p class="borrower-page-subtitle">Manage your profile details and password in one place.</p>
@@ -200,8 +212,10 @@ $currentPage = 'account';
           </form>
         </section>
       </div>
-    </div>
-  </main>
+        </div>
+      </div>
+    </main>
+  </div>
 
   <script src="public/js/main.js"></script>
   <?php renderSweetAlertScripts(); ?>

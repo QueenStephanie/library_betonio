@@ -48,6 +48,13 @@ try {
 }
 
 $rows = $catalog['rows'];
+$resultCount = count($rows);
+$totalCopiesCount = 0;
+$availableCopiesCount = 0;
+foreach ($rows as $rowSummary) {
+  $totalCopiesCount += max(0, (int)($rowSummary['total_copies'] ?? 0));
+  $availableCopiesCount += max(0, (int)($rowSummary['available_copies'] ?? 0));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -64,36 +71,15 @@ $rows = $catalog['rows'];
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
-<body class="admin-portal-body">
+<body class="admin-portal-body portal-role-librarian">
   <div class="admin-shell">
-    <aside class="admin-sidebar">
-      <div class="admin-brand-wrap">
-        <div class="admin-brand">QueenLib</div>
-        <div class="admin-brand-sub">Librarian Portal</div>
-      </div>
-
-      <div class="admin-sidebar-profile">
-        <span class="admin-sidebar-avatar" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8" />
-            <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </span>
-        <div>
-          <div class="admin-sidebar-name"><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></div>
-          <div class="admin-sidebar-role"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
-        </div>
-      </div>
-
-      <nav class="admin-nav">
-        <a class="admin-nav-item" href="librarian-dashboard.php"><span>Dashboard</span></a>
-        <a class="admin-nav-item" href="librarian-circulation.php"><span>Circulation</span></a>
-        <a class="admin-nav-item is-active" href="librarian-books.php"><span>Books</span></a>
-        <a class="admin-nav-item" href="librarian-reservations.php"><span>Reservations</span></a>
-        <a class="admin-nav-item" href="librarian-fines.php"><span>Fines</span></a>
-        <a class="admin-nav-item admin-nav-logout" href="admin-logout.php"><span>Log Out</span></a>
-      </nav>
-    </aside>
+    <?php
+    $portalRole = 'librarian';
+    $portalCurrentPage = 'books';
+    $portalIdentityName = $currentUserEmail;
+    $portalIdentityMeta = $roleLabel;
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
     <main class="admin-main">
       <header class="admin-page-hero">
@@ -116,38 +102,63 @@ $rows = $catalog['rows'];
           <a href="librarian-books.php" class="admin-button admin-button-ghost">Reset</a>
         </form>
 
-        <p class="admin-demo-note">Showing <?php echo (int)count($rows); ?> catalog result(s).</p>
+        <div class="admin-stats-row admin-inline-stats">
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$resultCount; ?></strong>
+            <span>Results</span>
+          </article>
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$totalCopiesCount; ?></strong>
+            <span>Total Copies</span>
+          </article>
+          <article class="admin-stat-tile">
+            <strong><?php echo (int)$availableCopiesCount; ?></strong>
+            <span>Available Copies</span>
+          </article>
+        </div>
 
         <div class="admin-table-wrap">
-          <table class="admin-table">
+          <table class="admin-table admin-table-compact librarian-books-table">
             <thead>
               <tr>
                 <th>Book ID</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>ISBN</th>
-                <th>Category</th>
-                <th>Year</th>
-                <th>Copies</th>
-                <th>Available</th>
+                <th>Book Details</th>
+                <th>Inventory</th>
               </tr>
             </thead>
             <tbody>
               <?php if (empty($rows)): ?>
                 <tr>
-                  <td colspan="8" class="admin-empty-state">No books matched the current search.</td>
+                  <td colspan="3" class="admin-empty-state">No books matched the current search.</td>
                 </tr>
               <?php else: ?>
                 <?php foreach ($rows as $row): ?>
+                  <?php
+                  $isbn = trim((string)($row['isbn'] ?? ''));
+                  $categoryLabel = trim((string)($row['category'] ?? ''));
+                  $authorLabel = trim((string)($row['author'] ?? ''));
+                  $titleLabel = trim((string)($row['title'] ?? ''));
+                  $yearLabel = trim((string)($row['published_year'] ?? ''));
+                  $bookTotalCopies = max(0, (int)($row['total_copies'] ?? 0));
+                  $bookAvailableCopies = max(0, (int)($row['available_copies'] ?? 0));
+                  ?>
                   <tr>
                     <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['author'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['isbn'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['category'] ?: '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['published_year'] ?: '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo (int)($row['total_copies'] ?? 0); ?></td>
-                    <td><?php echo (int)($row['available_copies'] ?? 0); ?></td>
+                    <td>
+                      <div class="admin-table-identity"><?php echo htmlspecialchars($titleLabel !== '' ? $titleLabel : 'Unknown title', ENT_QUOTES, 'UTF-8'); ?></div>
+                      <div class="admin-table-meta"><?php echo htmlspecialchars($authorLabel !== '' ? $authorLabel : 'Unknown author', ENT_QUOTES, 'UTF-8'); ?></div>
+                      <div class="admin-table-submeta">
+                        <span>ISBN: <?php echo htmlspecialchars($isbn !== '' ? $isbn : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span>Category: <?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span>Year: <?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="admin-inventory-stack">
+                        <span><strong><?php echo $bookAvailableCopies; ?></strong> available</span>
+                        <span><?php echo $bookTotalCopies; ?> total copies</span>
+                      </div>
+                    </td>
                   </tr>
                 <?php endforeach; ?>
               <?php endif; ?>

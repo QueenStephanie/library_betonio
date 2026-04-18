@@ -98,14 +98,26 @@ $currentPage = 'history';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+  <link rel="stylesheet" href="public/css/admin.css">
   <link rel="stylesheet" href="public/css/borrower.css">
 </head>
 
-<body>
-  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
+<body class="admin-portal-body portal-role-borrower">
+  <div class="admin-shell">
+    <?php
+    $portalRole = 'borrower';
+    $portalCurrentPage = 'history';
+    $portalIdentityName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+    if ($portalIdentityName === '') {
+      $portalIdentityName = 'Borrower User';
+    }
+    $portalIdentityMeta = (string)($user['email'] ?? '');
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
-  <main class="borrower-page">
-    <div class="borrower-shell">
+    <main class="admin-main borrower-main">
+      <div class="borrower-page">
+        <div class="borrower-shell">
       <header class="borrower-page-header">
         <h1>Loan History &amp; Renewals</h1>
         <p class="borrower-page-subtitle">Review active loans, renew eligible items, and view returned/closed borrowing records.</p>
@@ -140,7 +152,7 @@ $currentPage = 'history';
                   <th>Due At</th>
                   <th>Status</th>
                   <th>Renewals</th>
-                  <th>Action</th>
+                  <th class="borrower-col-action">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,7 +177,7 @@ $currentPage = 'history';
                     <td><?php echo htmlspecialchars((string)($row['due_at'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><span class="badge"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></span></td>
                     <td><?php echo $renewalCount; ?> used / <?php echo $renewalsRemaining; ?> left</td>
-                    <td>
+                    <td class="borrower-col-action">
                       <?php if (!empty($row['can_renew'])): ?>
                         <form method="POST" action="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>">
                           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($renewToken, ENT_QUOTES, 'UTF-8'); ?>">
@@ -239,8 +251,10 @@ $currentPage = 'history';
           </div>
         <?php endif; ?>
       </section>
-    </div>
-  </main>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
 
 </html>

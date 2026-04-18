@@ -68,17 +68,29 @@ $currentPage = 'dashboard';
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <?php if ($is_logged_in): ?>
+    <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/borrower.css">
   <?php endif; ?>
 </head>
 
-<body>
+<body<?php if ($is_logged_in): ?> class="admin-portal-body portal-role-borrower"<?php endif; ?>>
 
   <?php if ($is_logged_in && $user): ?>
-    <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
+    <div class="admin-shell">
+      <?php
+      $portalRole = 'borrower';
+      $portalCurrentPage = 'dashboard';
+      $portalIdentityName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+      if ($portalIdentityName === '') {
+        $portalIdentityName = 'Borrower User';
+      }
+      $portalIdentityMeta = (string)($user['email'] ?? '');
+      require APP_ROOT . '/app/shared/portal-sidebar.php';
+      ?>
 
-    <main class="borrower-page">
-      <div class="borrower-shell borrower-dashboard-shell">
+      <main class="admin-main borrower-main">
+        <div class="borrower-page">
+          <div class="borrower-shell borrower-dashboard-shell">
         <header class="borrower-page-header borrower-dashboard-header">
           <h1>Borrower Dashboard</h1>
           <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars((string)($user['first_name'] . ' ' . $user['last_name']), ENT_QUOTES, 'UTF-8'); ?>. Review account activity and take your next action.</p>
@@ -155,8 +167,10 @@ $currentPage = 'dashboard';
             <?php endif; ?>
           </div>
         </section>
-      </div>
-    </main>
+          </div>
+        </div>
+      </main>
+    </div>
 
   <?php else: ?>
     <!-- NOT LOGGED IN - LANDING PAGE VIEW -->

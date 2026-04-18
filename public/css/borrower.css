@@ -1,3 +1,7 @@
+.borrower-page {
+  --borrower-anchor-offset: 96px;
+}
+
 .borrower-navbar {
   position: sticky;
   top: 0;
@@ -9,6 +13,7 @@
   padding: 14px 24px;
   border-bottom: 1px solid var(--line);
   background: rgba(253, 247, 239, 0.96);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -107,7 +112,6 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .borrower-table {
@@ -123,6 +127,11 @@
   vertical-align: middle;
 }
 
+.borrower-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .borrower-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -132,6 +141,18 @@
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.borrower-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+}
+
+.borrower-col-action {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .borrower-alert {
@@ -205,11 +226,58 @@
   background: #fce6df;
 }
 
+.borrower-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.portal-role-borrower .borrower-main {
+  padding: 28px 28px 48px;
+}
+
+.portal-role-borrower .borrower-page {
+  padding: 0;
+}
+
+.catalog-summary-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.catalog-filter-card {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.catalog-filter-group {
+  display: grid;
+  gap: 8px;
+}
+
+.catalog-filter-group label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.catalog-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.catalog-filter-actions .borrower-btn {
+  min-height: 42px;
+  text-decoration: none;
+}
+
 .catalog-search {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .catalog-search input,
@@ -236,6 +304,11 @@
   align-items: center;
 }
 
+.catalog-item-main {
+  display: grid;
+  gap: 8px;
+}
+
 .catalog-item h3 {
   margin: 0;
 }
@@ -243,7 +316,16 @@
 .catalog-meta {
   color: var(--muted);
   font-size: 0.92rem;
-  margin: 6px 0 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.catalog-meta-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 0.86rem;
 }
 
 .catalog-actions {
@@ -255,12 +337,45 @@
 }
 
 .availability {
-  font-size: 0.92rem;
-  color: var(--muted);
+  display: grid;
+  gap: 2px;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  color: #5d4a35;
+  background: #f7f1e8;
 }
 
 .availability strong {
-  color: var(--text);
+  color: #355f2a;
+}
+
+.availability.is-unavailable {
+  border-color: #ebcfc3;
+  background: #fff4ef;
+  color: #8f3219;
+}
+
+.availability.is-unavailable strong {
+  color: #8f3219;
+}
+
+.borrower-table {
+  min-width: 720px;
+}
+
+.borrower-table tbody tr:nth-child(even) {
+  background: #fdfaf6;
+}
+
+.borrower-table tbody tr:hover {
+  background: #f6efe4;
+}
+
+.borrower-table th,
+.borrower-table td {
+  padding: 13px 14px;
 }
 
 .reservations-table {
@@ -280,6 +395,8 @@
 .reservations-page-note {
   color: var(--muted);
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .history-table {
@@ -459,6 +576,8 @@
 
 .borrower-profile-value {
   color: var(--muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .borrower-profile-value.is-verified {
@@ -492,7 +611,7 @@
 }
 
 .borrower-page [id] {
-  scroll-margin-top: 96px;
+  scroll-margin-top: var(--borrower-anchor-offset);
 }
 
 .borrower-brand:focus-visible,
@@ -517,6 +636,14 @@
 }
 
 @media (max-width: 960px) {
+  .portal-role-borrower .borrower-main {
+    padding: 20px 16px 32px;
+  }
+
+  .borrower-page {
+    --borrower-anchor-offset: 138px;
+  }
+
   .borrower-navbar {
     padding: 12px 16px;
   }
@@ -528,9 +655,17 @@
   .settings-grid {
     grid-template-columns: 1fr;
   }
+
+  .catalog-summary-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
+  .borrower-page {
+    --borrower-anchor-offset: 172px;
+  }
+
   .borrower-navbar {
     flex-direction: column;
     align-items: flex-start;
@@ -567,6 +702,14 @@
 
   .catalog-search {
     grid-template-columns: 1fr;
+  }
+
+  .catalog-filter-actions {
+    width: 100%;
+  }
+
+  .catalog-filter-actions .borrower-btn {
+    width: 100%;
   }
 
   .catalog-item {

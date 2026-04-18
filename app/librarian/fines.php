@@ -78,36 +78,15 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
-<body class="admin-portal-body">
+<body class="admin-portal-body portal-role-librarian">
   <div class="admin-shell">
-    <aside class="admin-sidebar">
-      <div class="admin-brand-wrap">
-        <div class="admin-brand">QueenLib</div>
-        <div class="admin-brand-sub">Librarian Portal</div>
-      </div>
-
-      <div class="admin-sidebar-profile">
-        <span class="admin-sidebar-avatar" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8" />
-            <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </span>
-        <div>
-          <div class="admin-sidebar-name"><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></div>
-          <div class="admin-sidebar-role"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
-        </div>
-      </div>
-
-      <nav class="admin-nav">
-        <a class="admin-nav-item" href="librarian-dashboard.php"><span>Dashboard</span></a>
-        <a class="admin-nav-item" href="librarian-circulation.php"><span>Circulation</span></a>
-        <a class="admin-nav-item" href="librarian-books.php"><span>Books</span></a>
-        <a class="admin-nav-item" href="librarian-reservations.php"><span>Reservations</span></a>
-        <a class="admin-nav-item is-active" href="librarian-fines.php"><span>Fines</span></a>
-        <a class="admin-nav-item admin-nav-logout" href="admin-logout.php"><span>Log Out</span></a>
-      </nav>
-    </aside>
+    <?php
+    $portalRole = 'librarian';
+    $portalCurrentPage = 'fines';
+    $portalIdentityName = $currentUserEmail;
+    $portalIdentityMeta = $roleLabel;
+    require APP_ROOT . '/app/shared/portal-sidebar.php';
+    ?>
 
     <main class="admin-main">
       <header class="admin-page-hero">
