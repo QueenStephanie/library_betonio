@@ -57,22 +57,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     $action = strtolower(trim((string)($_POST['action'] ?? '')));
     $reservationId = (int)($_POST['reservation_id'] ?? 0);
-    $result = LibrarianPortalRepository::updateReservationStatus($db, $reservationId, $action);
 
-    $title = 'Reservation Updated';
-    if ($action === 'approve') {
-      $title = 'Reservation Approved';
-    } elseif ($action === 'reject') {
-      $title = 'Reservation Rejected';
-    } elseif ($action === 'cancel') {
-      $title = 'Reservation Cancelled';
+    if ($action === 'checkout') {
+      $actorUserId = (int)($_SESSION['user_id'] ?? 0);
+      $result = LibrarianPortalRepository::checkoutReadyReservation($db, $reservationId, $actorUserId);
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Action Failed',
+        'message' => (string)$result['message'],
+      ];
+    } else {
+      $result = LibrarianPortalRepository::updateReservationStatus($db, $reservationId, $action);
+
+      $title = 'Reservation Updated';
+      if ($action === 'approve') {
+        $title = 'Reservation Approved';
+      } elseif ($action === 'reject') {
+        $title = 'Reservation Rejected';
+      } elseif ($action === 'cancel') {
+        $title = 'Reservation Cancelled';
+      }
+
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? $title : 'Action Failed',
+        'message' => (string)$result['message'],
+      ];
     }
-
-    $page_alerts[] = [
-      'type' => $result['ok'] ? 'success' : 'error',
-      'title' => $result['ok'] ? $title : 'Action Failed',
-      'message' => (string)$result['message'],
-    ];
   }
 }
 
@@ -208,6 +219,14 @@ $rows = $queue['rows'];
                             <input type="hidden" name="action" value="reject">
                             <input type="hidden" name="reservation_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
                             <button type="submit" class="admin-action-btn admin-action-danger" title="Reject reservation">R</button>
+                          </form>
+                        <?php endif; ?>
+                         <?php if (in_array($status, ['ready_for_pickup', 'ready'], true)): ?>
+                          <form method="POST" class="admin-inline-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="action" value="checkout">
+                            <input type="hidden" name="reservation_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                            <button type="submit" class="admin-action-btn" title="Checkout from ready reservation">P</button>
                           </form>
                         <?php endif; ?>
                         <?php if (in_array($status, ['pending', 'ready_for_pickup', 'ready'], true)): ?>

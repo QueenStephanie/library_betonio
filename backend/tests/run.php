@@ -7,6 +7,12 @@ $testFiles = [
   __DIR__ . '/test_auth_session_helpers.php',
   __DIR__ . '/test_csrf_origin_helpers.php',
   __DIR__ . '/test_permission_gate.php',
+  __DIR__ . '/test_borrower_reservations.php',
+<<<<<<< ours
+=======
+  __DIR__ . '/test_librarian_checkout_rules.php',
+  __DIR__ . '/test_borrower_renewal_rules.php',
+>>>>>>> theirs
 ];
 
 $results = [];

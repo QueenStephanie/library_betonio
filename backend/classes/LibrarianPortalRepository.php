@@ -7,6 +7,8 @@
  */
 class LibrarianPortalRepository
 {
+  const DEFAULT_LOAN_DAYS = 14;
+
   /** @var array<string, bool> */
   private static $tableCache = [];
 
@@ -66,6 +68,67 @@ class LibrarianPortalRepository
     }
 
     return null;
+  }
+
+  /**
+   * @param array<string,mixed> $facts
+   * @return array{ok: bool, message: string}
+   */
+  public static function evaluateCheckoutRules(array $facts): array
+  {
+    $borrowerUserId = (int)($facts['borrower_user_id'] ?? 0);
+    $bookId = (int)($facts['book_id'] ?? 0);
+    $hasAvailableCopy = !empty($facts['has_available_copy']);
+
+    if ($borrowerUserId <= 0) {
+      return ['ok' => false, 'message' => 'Invalid borrower identifier.'];
+    }
+
+    if ($bookId <= 0) {
+      return ['ok' => false, 'message' => 'Invalid book identifier.'];
+    }
+
+    if (!$hasAvailableCopy) {
+      return ['ok' => false, 'message' => 'No available copy found for selected title.'];
+    }
+
+    return ['ok' => true, 'message' => 'Checkout can proceed.'];
+  }
+
+  /**
+   * @param array<string,mixed> $facts
+   * @return array{ok: bool, message: string}
+   */
+  public static function evaluateReadyReservationCheckoutRules(array $facts): array
+  {
+    $reservationId = (int)($facts['reservation_id'] ?? 0);
+    $reservationExists = !empty($facts['reservation_exists']);
+    $status = strtolower(trim((string)($facts['reservation_status'] ?? '')));
+    $borrowerUserId = (int)($facts['borrower_user_id'] ?? 0);
+    $bookId = (int)($facts['book_id'] ?? 0);
+    $hasAvailableCopy = !empty($facts['has_available_copy']);
+
+    if ($reservationId <= 0) {
+      return ['ok' => false, 'message' => 'Invalid reservation identifier.'];
+    }
+
+    if (!$reservationExists) {
+      return ['ok' => false, 'message' => 'Reservation record not found.'];
+    }
+
+    if (!in_array($status, ['ready_for_pickup', 'ready'], true)) {
+      return ['ok' => false, 'message' => 'Only ready-for-pickup reservations can be checked out.'];
+    }
+
+    if ($borrowerUserId <= 0 || $bookId <= 0) {
+      return ['ok' => false, 'message' => 'Reservation is missing borrower or book details.'];
+    }
+
+    if (!$hasAvailableCopy) {
+      return ['ok' => false, 'message' => 'No available copy found for this ready reservation.'];
+    }
+
+    return ['ok' => true, 'message' => 'Ready reservation checkout can proceed.'];
   }
 
   /**
@@ -317,6 +380,454 @@ class LibrarianPortalRepository
       }
       error_log('LibrarianPortalRepository::checkInLoan error: ' . $e->getMessage());
       return ['ok' => false, 'message' => 'Unable to check in loan right now.'];
+    }
+  }
+
+  /**
+   * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
+   */
+  public static function getCheckoutCandidates(PDO $db, int $borrowerLimit = 200, int $bookLimit = 200): array
+  {
+    $response = [
+      'rows' => [
+        'borrowers' => [],
+        'books' => [],
+      ],
+      'available' => true,
+      'message' => '',
+    ];
+
+    $borrowerLimit = max(1, min(500, $borrowerLimit));
+    $bookLimit = max(1, min(500, $bookLimit));
+
+    if (self::tableExists($db, 'users') && self::hasColumn($db, 'users', 'id')) {
+      $nameParts = [];
+      if (self::hasColumn($db, 'users', 'first_name')) {
+        $nameParts[] = 'u.first_name';
+      }
+      if (self::hasColumn($db, 'users', 'last_name')) {
+        $nameParts[] = 'u.last_name';
+      }
+
+      $nameExpr = empty($nameParts)
+        ? "''"
+        : 'TRIM(CONCAT(' . implode(", ' ', ", $nameParts) . '))';
+      $emailExpr = self::hasColumn($db, 'users', 'email') ? 'u.email' : "''";
+
+      $where = ['1=1'];
+      if (self::hasColumn($db, 'users', 'is_active')) {
+        $where[] = 'u.is_active = 1';
+      }
+
+      if (self::hasColumn($db, 'users', 'role')) {
+        $where[] = "LOWER(COALESCE(u.role, 'borrower')) = 'borrower'";
+      }
+
+      $borrowerSql = 'SELECT
+        u.id,
+        ' . $nameExpr . ' AS display_name,
+        ' . $emailExpr . ' AS email
+        FROM users u
+        WHERE ' . implode(' AND ', $where) . '
+        ORDER BY u.id DESC
+        LIMIT ' . $borrowerLimit;
+
+      $response['rows']['borrowers'] = $db->query($borrowerSql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    if (self::tableExists($db, 'books') && self::hasColumn($db, 'books', 'id') && self::hasColumn($db, 'books', 'title')) {
+      $hasCopies = self::tableExists($db, 'book_copies')
+        && self::hasColumn($db, 'book_copies', 'book_id')
+        && self::hasColumn($db, 'book_copies', 'status');
+
+      if ($hasCopies) {
+        $authorExpr = self::hasColumn($db, 'books', 'author') ? 'b.author' : "''";
+        $bookSql = 'SELECT
+          b.id,
+          b.title,
+          ' . $authorExpr . ' AS author,
+          SUM(CASE WHEN bc.status = \'available\' THEN 1 ELSE 0 END) AS available_copies
+          FROM books b
+          LEFT JOIN book_copies bc ON bc.book_id = b.id';
+
+        if (self::hasColumn($db, 'books', 'is_active')) {
+          $bookSql .= ' WHERE b.is_active = 1';
+        }
+
+        $bookSql .= ' GROUP BY b.id, b.title, ' . $authorExpr . '
+          HAVING available_copies > 0
+          ORDER BY b.title ASC
+          LIMIT ' . $bookLimit;
+
+        $response['rows']['books'] = $db->query($bookSql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+      }
+    }
+
+    return $response;
+  }
+
+  /**
+   * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
+   */
+  public static function getReadyReservationCheckoutRows(PDO $db, int $limit = 150): array
+  {
+    $response = [
+      'rows' => [],
+      'available' => true,
+      'message' => '',
+    ];
+
+    if (!self::tableExists($db, 'reservations')) {
+      $response['available'] = false;
+      $response['message'] = 'Reservations table is missing.';
+      return $response;
+    }
+
+    if (!self::hasColumn($db, 'reservations', 'status')) {
+      $response['available'] = false;
+      $response['message'] = 'Reservations schema is incompatible with checkout bridge.';
+      return $response;
+    }
+
+    $limit = max(1, min(300, $limit));
+    $hasUsers = self::tableExists($db, 'users') && self::hasColumn($db, 'reservations', 'user_id');
+    $hasBooks = self::tableExists($db, 'books') && self::hasColumn($db, 'reservations', 'book_id');
+    $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id') && self::hasColumn($db, 'book_copies', 'status');
+
+    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
+    $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.book_id' : '';
+
+    $availableCopiesExpr = '0';
+    if ($hasCopies) {
+      $availableCopiesExpr = '(SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = r.book_id AND bc.status = \'available\')';
+    }
+
+    $sql = "SELECT
+      r.id,
+      r.user_id,
+      r.book_id,
+      r.status,
+      r.queued_at,
+      r.ready_until,
+      {$availableCopiesExpr} AS available_copies,
+      " . ($hasUsers ? 'u.first_name' : "''") . " AS borrower_first_name,
+      " . ($hasUsers ? 'u.last_name' : "''") . " AS borrower_last_name,
+      " . ($hasUsers ? 'u.email' : "''") . " AS borrower_email,
+      " . ($hasBooks ? 'b.title' : "''") . " AS book_title,
+      " . ($hasBooks ? 'b.author' : "''") . " AS book_author
+      FROM reservations r
+      {$userJoin}
+      {$bookJoin}
+      WHERE r.status IN ('ready_for_pickup', 'ready')
+      ORDER BY r.queued_at ASC, r.id ASC
+      LIMIT {$limit}";
+
+    $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    foreach ($rows as &$row) {
+      $row['can_checkout'] = ((int)($row['available_copies'] ?? 0)) > 0;
+    }
+    unset($row);
+
+    $response['rows'] = $rows;
+    return $response;
+  }
+
+  /**
+   * @return array{ok: bool, message: string, loan_id?: int, copy_id?: int}
+   */
+  public static function checkoutLoan(PDO $db, int $borrowerUserId, int $bookId, int $actorUserId, ?int $reservationId = null, int $loanDays = self::DEFAULT_LOAN_DAYS): array
+  {
+    $preCheck = self::evaluateCheckoutRules([
+      'borrower_user_id' => $borrowerUserId,
+      'book_id' => $bookId,
+      'has_available_copy' => true,
+    ]);
+    if (!$preCheck['ok']) {
+      return $preCheck;
+    }
+
+    if (!self::tableExists($db, 'loans') || !self::tableExists($db, 'book_copies')) {
+      return ['ok' => false, 'message' => 'Checkout is unavailable because circulation tables are missing.'];
+    }
+
+    if (!self::hasColumn($db, 'book_copies', 'book_id') || !self::hasColumn($db, 'book_copies', 'status')) {
+      return ['ok' => false, 'message' => 'Checkout is unavailable due to incompatible copies schema.'];
+    }
+
+    $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
+    $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
+    if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
+      return ['ok' => false, 'message' => 'Checkout is unavailable due to incompatible loans schema.'];
+    }
+
+    $loanDays = max(1, min(60, $loanDays));
+
+    try {
+      $db->beginTransaction();
+
+      $copyStmt = $db->prepare('SELECT id FROM book_copies WHERE book_id = :book_id AND status = :status ORDER BY id ASC LIMIT 1 FOR UPDATE');
+      $copyStmt->execute([
+        ':book_id' => $bookId,
+        ':status' => 'available',
+      ]);
+      $copyId = (int)$copyStmt->fetchColumn();
+
+      $runtimeRule = self::evaluateCheckoutRules([
+        'borrower_user_id' => $borrowerUserId,
+        'book_id' => $bookId,
+        'has_available_copy' => $copyId > 0,
+      ]);
+      if (!$runtimeRule['ok']) {
+        $db->rollBack();
+        return $runtimeRule;
+      }
+
+      $copyUpdateStmt = $db->prepare('UPDATE book_copies SET status = :status WHERE id = :id');
+      $copyUpdateStmt->execute([
+        ':status' => 'loaned',
+        ':id' => $copyId,
+      ]);
+
+      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanCopyColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
+      $insertValues = [':user_id', ':book_copy_id', ':loan_status', ':due_at'];
+      $insertParams = [
+        ':user_id' => $borrowerUserId,
+        ':book_copy_id' => $copyId,
+        ':loan_status' => 'active',
+        ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
+      ];
+
+      if (self::hasColumn($db, 'loans', 'checked_out_at')) {
+        $insertColumns[] = 'checked_out_at';
+        $insertValues[] = ':checked_out_at';
+        $insertParams[':checked_out_at'] = date('Y-m-d H:i:s');
+      }
+
+      if ($reservationId !== null && $reservationId > 0 && self::hasColumn($db, 'loans', 'reservation_id')) {
+        $insertColumns[] = 'reservation_id';
+        $insertValues[] = ':reservation_id';
+        $insertParams[':reservation_id'] = $reservationId;
+      }
+
+      $loanInsertSql = 'INSERT INTO loans (' . implode(', ', $insertColumns) . ') VALUES (' . implode(', ', $insertValues) . ')';
+      $loanInsertStmt = $db->prepare($loanInsertSql);
+      $loanInsertStmt->execute($insertParams);
+      $loanId = (int)$db->lastInsertId();
+
+      if (
+        self::tableExists($db, 'loan_events')
+        && self::hasColumn($db, 'loan_events', 'loan_id')
+        && self::hasColumn($db, 'loan_events', 'event_type')
+      ) {
+        $eventColumns = ['loan_id', 'event_type'];
+        $eventValues = [':loan_id', ':event_type'];
+        $eventParams = [
+          ':loan_id' => $loanId,
+          ':event_type' => 'checkout',
+        ];
+
+        if (self::hasColumn($db, 'loan_events', 'actor_user_id')) {
+          $eventColumns[] = 'actor_user_id';
+          $eventValues[] = ':actor_user_id';
+          $eventParams[':actor_user_id'] = $actorUserId > 0 ? $actorUserId : null;
+        }
+
+        if (self::hasColumn($db, 'loan_events', 'notes')) {
+          $eventColumns[] = 'notes';
+          $eventValues[] = ':notes';
+          $note = $reservationId !== null && $reservationId > 0
+            ? 'Checked out from ready reservation #' . $reservationId
+            : 'Checked out via librarian circulation page';
+          $eventParams[':notes'] = $note;
+        }
+
+        $eventSql = 'INSERT INTO loan_events (' . implode(', ', $eventColumns) . ') VALUES (' . implode(', ', $eventValues) . ')';
+        $eventStmt = $db->prepare($eventSql);
+        $eventStmt->execute($eventParams);
+      }
+
+      $db->commit();
+      return [
+        'ok' => true,
+        'message' => 'Checkout completed successfully.',
+        'loan_id' => $loanId,
+        'copy_id' => $copyId,
+      ];
+    } catch (Exception $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+
+      error_log('LibrarianPortalRepository::checkoutLoan error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to check out loan right now.'];
+    }
+  }
+
+  /**
+   * @return array{ok: bool, message: string, loan_id?: int, reservation_id?: int}
+   */
+  public static function checkoutReadyReservation(PDO $db, int $reservationId, int $actorUserId, int $loanDays = self::DEFAULT_LOAN_DAYS): array
+  {
+    $preCheck = self::evaluateReadyReservationCheckoutRules([
+      'reservation_id' => $reservationId,
+      'reservation_exists' => true,
+      'reservation_status' => 'ready_for_pickup',
+      'borrower_user_id' => 1,
+      'book_id' => 1,
+      'has_available_copy' => true,
+    ]);
+    if (!$preCheck['ok']) {
+      return $preCheck;
+    }
+
+    if (!self::tableExists($db, 'reservations') || !self::hasColumn($db, 'reservations', 'status')) {
+      return ['ok' => false, 'message' => 'Reservation checkout bridge is unavailable due to schema mismatch.'];
+    }
+
+    if (!self::hasColumn($db, 'reservations', 'user_id') || !self::hasColumn($db, 'reservations', 'book_id')) {
+      return ['ok' => false, 'message' => 'Reservation checkout bridge requires user_id and book_id columns.'];
+    }
+
+    try {
+      $db->beginTransaction();
+
+      $reservationStmt = $db->prepare('SELECT id, user_id, book_id, status FROM reservations WHERE id = :id LIMIT 1 FOR UPDATE');
+      $reservationStmt->execute([':id' => $reservationId]);
+      $reservation = $reservationStmt->fetch(PDO::FETCH_ASSOC);
+
+      $currentStatus = is_array($reservation)
+        ? strtolower(trim((string)($reservation['status'] ?? '')))
+        : '';
+
+      $borrowerUserId = is_array($reservation) ? (int)($reservation['user_id'] ?? 0) : 0;
+      $bookId = is_array($reservation) ? (int)($reservation['book_id'] ?? 0) : 0;
+
+      $copyStmt = $db->prepare('SELECT id FROM book_copies WHERE book_id = :book_id AND status = :status ORDER BY id ASC LIMIT 1 FOR UPDATE');
+      $copyStmt->execute([
+        ':book_id' => $bookId,
+        ':status' => 'available',
+      ]);
+      $copyId = (int)$copyStmt->fetchColumn();
+
+      $runtimeRule = self::evaluateReadyReservationCheckoutRules([
+        'reservation_id' => $reservationId,
+        'reservation_exists' => is_array($reservation),
+        'reservation_status' => $currentStatus,
+        'borrower_user_id' => $borrowerUserId,
+        'book_id' => $bookId,
+        'has_available_copy' => $copyId > 0,
+      ]);
+      if (!$runtimeRule['ok']) {
+        $db->rollBack();
+        return $runtimeRule;
+      }
+
+      $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
+      $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+      $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
+      $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
+      if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
+        $db->rollBack();
+        return ['ok' => false, 'message' => 'Loans schema is incompatible with checkout bridge.'];
+      }
+
+      $copyUpdateStmt = $db->prepare('UPDATE book_copies SET status = :status WHERE id = :id');
+      $copyUpdateStmt->execute([
+        ':status' => 'loaned',
+        ':id' => $copyId,
+      ]);
+
+      $loanDays = max(1, min(60, $loanDays));
+      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanCopyColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
+      $insertValues = [':user_id', ':book_copy_id', ':loan_status', ':due_at'];
+      $insertParams = [
+        ':user_id' => $borrowerUserId,
+        ':book_copy_id' => $copyId,
+        ':loan_status' => 'active',
+        ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
+      ];
+
+      if (self::hasColumn($db, 'loans', 'checked_out_at')) {
+        $insertColumns[] = 'checked_out_at';
+        $insertValues[] = ':checked_out_at';
+        $insertParams[':checked_out_at'] = date('Y-m-d H:i:s');
+      }
+
+      if (self::hasColumn($db, 'loans', 'reservation_id')) {
+        $insertColumns[] = 'reservation_id';
+        $insertValues[] = ':reservation_id';
+        $insertParams[':reservation_id'] = $reservationId;
+      }
+
+      $loanInsertSql = 'INSERT INTO loans (' . implode(', ', $insertColumns) . ') VALUES (' . implode(', ', $insertValues) . ')';
+      $loanInsertStmt = $db->prepare($loanInsertSql);
+      $loanInsertStmt->execute($insertParams);
+      $loanId = (int)$db->lastInsertId();
+
+      $reservationUpdateParts = ['status = :status'];
+      $reservationUpdateParams = [
+        ':status' => 'fulfilled',
+        ':id' => $reservationId,
+      ];
+
+      if (self::hasColumn($db, 'reservations', 'picked_up_at')) {
+        $reservationUpdateParts[] = 'picked_up_at = NOW()';
+      }
+
+      if (self::hasColumn($db, 'reservations', 'ready_until')) {
+        $reservationUpdateParts[] = 'ready_until = NULL';
+      }
+
+      $reservationUpdateSql = 'UPDATE reservations SET ' . implode(', ', $reservationUpdateParts) . ' WHERE id = :id';
+      $reservationUpdateStmt = $db->prepare($reservationUpdateSql);
+      $reservationUpdateStmt->execute($reservationUpdateParams);
+
+      if (
+        self::tableExists($db, 'loan_events')
+        && self::hasColumn($db, 'loan_events', 'loan_id')
+        && self::hasColumn($db, 'loan_events', 'event_type')
+      ) {
+        $eventColumns = ['loan_id', 'event_type'];
+        $eventValues = [':loan_id', ':event_type'];
+        $eventParams = [
+          ':loan_id' => $loanId,
+          ':event_type' => 'checkout',
+        ];
+
+        if (self::hasColumn($db, 'loan_events', 'actor_user_id')) {
+          $eventColumns[] = 'actor_user_id';
+          $eventValues[] = ':actor_user_id';
+          $eventParams[':actor_user_id'] = $actorUserId > 0 ? $actorUserId : null;
+        }
+
+        if (self::hasColumn($db, 'loan_events', 'notes')) {
+          $eventColumns[] = 'notes';
+          $eventValues[] = ':notes';
+          $eventParams[':notes'] = 'Checkout completed from ready reservation #' . $reservationId;
+        }
+
+        $eventSql = 'INSERT INTO loan_events (' . implode(', ', $eventColumns) . ') VALUES (' . implode(', ', $eventValues) . ')';
+        $eventStmt = $db->prepare($eventSql);
+        $eventStmt->execute($eventParams);
+      }
+
+      $db->commit();
+
+      return [
+        'ok' => true,
+        'message' => 'Ready reservation checked out successfully.',
+        'loan_id' => $loanId,
+        'reservation_id' => $reservationId,
+      ];
+    } catch (Exception $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+
+      error_log('LibrarianPortalRepository::checkoutReadyReservation error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to complete ready reservation checkout right now.'];
     }
   }
 

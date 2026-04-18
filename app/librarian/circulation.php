@@ -65,8 +65,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => $result['ok'] ? 'Check-In Complete' : 'Check-In Failed',
         'message' => (string)$result['message'],
       ];
+    } elseif ($action === 'checkout') {
+      $actorUserId = (int)($_SESSION['user_id'] ?? 0);
+      $borrowerUserId = (int)($_POST['borrower_user_id'] ?? 0);
+      $bookId = (int)($_POST['book_id'] ?? 0);
+
+      $result = LibrarianPortalRepository::checkoutLoan($db, $borrowerUserId, $bookId, $actorUserId);
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Checkout Complete' : 'Checkout Failed',
+        'message' => (string)$result['message'],
+      ];
+    } elseif ($action === 'checkout_reservation') {
+      $actorUserId = (int)($_SESSION['user_id'] ?? 0);
+      $reservationId = (int)($_POST['reservation_id'] ?? 0);
+
+      $result = LibrarianPortalRepository::checkoutReadyReservation($db, $reservationId, $actorUserId);
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Reservation Checkout Failed',
+        'message' => (string)$result['message'],
+      ];
     }
   }
+}
+
+$checkoutCandidates = [
+  'rows' => [
+    'borrowers' => [],
+    'books' => [],
+  ],
+  'available' => false,
+  'message' => 'Checkout form data unavailable.',
+];
+
+try {
+  $checkoutCandidates = LibrarianPortalRepository::getCheckoutCandidates($db, 250, 250);
+} catch (Exception $e) {
+  error_log('librarian-circulation checkout candidate error: ' . $e->getMessage());
+  $checkoutCandidates['message'] = 'Unable to load checkout form options right now.';
+}
+
+$readyReservationRows = [
+  'rows' => [],
+  'available' => false,
+  'message' => 'Ready reservations unavailable.',
+];
+
+try {
+  $readyReservationRows = LibrarianPortalRepository::getReadyReservationCheckoutRows($db, 150);
+} catch (Exception $e) {
+  error_log('librarian-circulation ready reservation error: ' . $e->getMessage());
+  $readyReservationRows['message'] = 'Unable to load ready reservations for checkout right now.';
 }
 
 $circulation = [
@@ -140,8 +190,132 @@ foreach ($rows as $row) {
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>Circulation</h1>
-        <p>Active and overdue loan records with check-in action.</p>
+        <p>Checkout, check-in, and reservation pickup workflows.</p>
       </header>
+
+      <section class="admin-card" style="margin-bottom:16px;">
+        <div class="admin-card-header">
+          <h2>Manual Checkout</h2>
+          <p>Create a new loan by assigning an available copy to a borrower.</p>
+        </div>
+
+        <?php if (!$checkoutCandidates['available']): ?>
+          <p class="admin-demo-note"><?php echo htmlspecialchars((string)$checkoutCandidates['message'], ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php endif; ?>
+
+        <form method="POST" class="admin-inline-form" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;max-width:100%;">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+          <input type="hidden" name="action" value="checkout">
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Borrower</span>
+            <select name="borrower_user_id" required>
+              <option value="">Select borrower</option>
+              <?php foreach (($checkoutCandidates['rows']['borrowers'] ?? []) as $borrower): ?>
+                <?php
+                $displayName = trim((string)($borrower['display_name'] ?? ''));
+                $email = trim((string)($borrower['email'] ?? ''));
+                $label = $displayName !== '' ? $displayName : ('User #' . (int)($borrower['id'] ?? 0));
+                if ($email !== '') {
+                  $label .= ' (' . $email . ')';
+                }
+                ?>
+                <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Title</span>
+            <select name="book_id" required>
+              <option value="">Select book with available copies</option>
+              <?php foreach (($checkoutCandidates['rows']['books'] ?? []) as $book): ?>
+                <?php
+                $title = trim((string)($book['title'] ?? 'Unknown title'));
+                $author = trim((string)($book['author'] ?? ''));
+                $label = $title;
+                if ($author !== '') {
+                  $label .= ' - ' . $author;
+                }
+                $label .= ' [' . max(0, (int)($book['available_copies'] ?? 0)) . ' available]';
+                ?>
+                <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+
+          <button type="submit" class="admin-button admin-button-primary">Check Out</button>
+        </form>
+      </section>
+
+      <section class="admin-card" style="margin-bottom:16px;">
+        <div class="admin-card-header">
+          <h2>Ready Reservation Pickup</h2>
+          <p>Bridge ready-for-pickup reservations directly into checkout.</p>
+        </div>
+
+        <?php if (!$readyReservationRows['available']): ?>
+          <p class="admin-demo-note"><?php echo htmlspecialchars((string)$readyReservationRows['message'], ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php endif; ?>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Reservation ID</th>
+                <th>Borrower</th>
+                <th>Book</th>
+                <th>Ready Until</th>
+                <th>Copies</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($readyReservationRows['rows'])): ?>
+                <tr>
+                  <td colspan="6" class="admin-empty-state">No ready reservations for pickup checkout.</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($readyReservationRows['rows'] as $readyRow): ?>
+                  <?php
+                  $borrowerName = trim(((string)($readyRow['borrower_first_name'] ?? '')) . ' ' . ((string)($readyRow['borrower_last_name'] ?? '')));
+                  if ($borrowerName === '') {
+                    $borrowerName = (string)($readyRow['borrower_email'] ?? 'N/A');
+                  }
+                  $bookLabel = trim((string)($readyRow['book_title'] ?? ''));
+                  if ($bookLabel === '') {
+                    $bookLabel = 'Unknown title';
+                  }
+                  $bookAuthor = trim((string)($readyRow['book_author'] ?? ''));
+                  if ($bookAuthor !== '') {
+                    $bookLabel .= ' - ' . $bookAuthor;
+                  }
+                  ?>
+                  <tr>
+                    <td>#<?php echo (int)($readyRow['id'] ?? 0); ?></td>
+                    <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars((string)($readyRow['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo max(0, (int)($readyRow['available_copies'] ?? 0)); ?></td>
+                    <td>
+                      <?php if (!empty($readyRow['can_checkout'])): ?>
+                        <form method="POST" style="margin:0;">
+                          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                          <input type="hidden" name="action" value="checkout_reservation">
+                          <input type="hidden" name="reservation_id" value="<?php echo (int)($readyRow['id'] ?? 0); ?>">
+                          <button type="submit" class="admin-button admin-button-primary">Pick Up + Checkout</button>
+                        </form>
+                      <?php else: ?>
+                        <span class="admin-demo-note">No copies available</span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <?php if (!$circulation['available']): ?>
         <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">

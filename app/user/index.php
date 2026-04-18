@@ -285,12 +285,6 @@ $flash = getFlash();
       color: white;
     }
 
-    .action-btn.is-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
     .overview-note {
       margin-top: 20px;
       font-size: 0.92rem;
@@ -378,6 +372,21 @@ $flash = getFlash();
             <span class="nav-icon">⚙</span>
             <span>Settings</span>
           </a>
+          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="nav-icon">📚</span>
+            <span>Catalog</span>
+          </a>
+          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="nav-icon">🏷</span>
+            <span>Reservations</span>
+          </a>
+<<<<<<< ours
+=======
+          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="nav-icon">🕘</span>
+            <span>Loan History</span>
+          </a>
+>>>>>>> theirs
           <a class="nav-item" href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">↪</span>
             <span>Log Out</span>
@@ -470,18 +479,34 @@ $flash = getFlash();
           </div>
           <div class="panel-content">
             <div class="action-buttons">
-              <span class="action-btn secondary is-disabled" aria-disabled="true" title="Reservation workflow coming soon">
+              <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>📌</span>
-                <span>Reserve Book (Soon)</span>
-              </span>
+<<<<<<< ours
+                <span>Reserve Book</span>
+              </a>
               <span class="action-btn secondary is-disabled" aria-disabled="true" title="Renewal workflow coming soon">
                 <span>♻</span>
                 <span>Renew Loan (Soon)</span>
               </span>
-              <span class="action-btn secondary is-disabled" aria-disabled="true" title="Borrowing history detail page coming soon">
+              <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
+                <span>🏷</span>
+                <span>My Reservations</span>
+=======
+                <span>Browse Catalog</span>
+              </a>
+              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
+                <span>♻</span>
+                <span>Renew Active Loans</span>
+              </a>
+              <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
+                <span>🏷</span>
+                <span>Manage Reservations</span>
+              </a>
+              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>🕘</span>
-                <span>View History (Soon)</span>
-              </span>
+                <span>View Loan History</span>
+>>>>>>> theirs
+              </a>
               <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn primary">
                 <span>📝</span>
                 <span>Edit Profile</span>
@@ -616,7 +641,7 @@ $flash = getFlash();
         </div>
 
         <nav class="footer-nav">
-          <a href="#">Browse Catalog</a>
+          <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>">Browse Catalog</a>
           <a href="<?php echo htmlspecialchars(appPath('login.php'), ENT_QUOTES, 'UTF-8'); ?>">Log In</a>
           <a href="<?php echo htmlspecialchars(appPath('register.php'), ENT_QUOTES, 'UTF-8'); ?>">Register</a>
         </nav>
