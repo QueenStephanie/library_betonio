@@ -121,52 +121,16 @@ if (isset($_SESSION['show_password_success'])) {
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/dashboard.css">
+  <link rel="stylesheet" href="public/css/borrower.css">
   <style>
-    /* Account Page Specific Styles */
-    .account-header {
-      background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
-      padding: 40px 0;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 40px;
-    }
-
-    .account-header h1 {
-      font-size: 2.8rem;
-      margin-bottom: 8px;
-      color: var(--text);
-    }
-
-    .account-header p {
-      font-size: 1.1rem;
-      color: var(--muted);
-    }
-
-    .account-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
     .settings-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 32px;
-      margin-bottom: 48px;
+      gap: 20px;
     }
 
     .settings-card {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: 0 2px 8px rgba(43, 28, 16, 0.04);
-      transition: all 0.3s ease;
-    }
-
-    .settings-card:hover {
-      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
-      border-color: var(--accent);
+      padding: 24px;
     }
 
     .settings-card h2 {
@@ -232,38 +196,11 @@ if (isset($_SESSION['show_password_success'])) {
       cursor: not-allowed;
     }
 
-    .btn {
-      display: inline-block;
-      padding: 12px 28px;
-      border: none;
-      border-radius: 12px;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-align: center;
-      width: 100%;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #b83d14);
-      color: white;
-      box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
-    }
-
-    .btn-primary:active {
-      transform: translateY(0);
-    }
-
     .back-link-section {
       text-align: center;
-      padding: 40px 0;
+      padding: 28px 0 8px;
       border-top: 1px solid var(--line);
+      margin-top: 24px;
     }
 
     .back-link {
@@ -281,125 +218,56 @@ if (isset($_SESSION['show_password_success'])) {
       transform: translateX(-4px);
     }
 
-    .alert {
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      border-left: 4px solid;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .alert-success {
-      background: var(--success-bg);
-      color: var(--success-text);
-      border-left-color: #5d8049;
-    }
-
-    .alert-error {
-      background: #fff2ef;
-      color: #a62f0d;
-      border-left-color: #d24718;
-    }
-
-    .alert::before {
-      font-size: 1.3rem;
-    }
-
-    .alert-success::before {
-      content: '✓';
-    }
-
-    .alert-error::before {
-      content: '✕';
-    }
-
     @media (max-width: 768px) {
-      .account-header {
-        padding: 24px 0;
-        margin-bottom: 24px;
-      }
-
-      .account-header h1 {
-        font-size: 2rem;
-      }
-
       .settings-grid {
         grid-template-columns: 1fr;
-        gap: 24px;
-        margin-bottom: 24px;
+        gap: 16px;
       }
 
       .settings-card {
-        padding: 24px;
-      }
-
-      .btn {
-        padding: 14px 20px;
-        font-size: 0.95rem;
+        padding: 20px;
       }
     }
   </style>
 </head>
 
 <body>
-  <!-- Navigation -->
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <a href="index.php" class="logo">QueenLib</a>
-    </div>
-    <div class="navbar-menu">
-      <div class="user-menu">
-        <span class="user-greeting">Welcome, <?php echo htmlspecialchars($user['first_name']); ?>!</span>
-        <a href="index.php" class="nav-link">Dashboard</a>
-        <a href="logout.php" class="nav-link logout">Logout</a>
-      </div>
+  <nav class="borrower-navbar" aria-label="Borrower navigation">
+    <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
+    <div class="borrower-nav-right">
+      <span class="borrower-greeting">Welcome, <?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?>!</span>
+      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Dashboard</a>
+      <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Catalog</a>
+      <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Reservations</a>
+      <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Loan History</a>
+      <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-active" aria-current="page">Settings</a>
+      <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-logout">Logout</a>
     </div>
   </nav>
 
-  <!-- Page Header -->
-  <div class="account-header">
-    <div class="account-container">
+  <main class="borrower-page">
+    <div class="borrower-shell">
+      <header class="borrower-page-header">
       <h1>Account Settings</h1>
-      <p>Manage your profile and security preferences</p>
-    </div>
-  </div>
+      <p class="borrower-page-subtitle">Manage your profile and security preferences</p>
+      </header>
 
-  <!-- Main Content -->
-  <main class="account-container">
-    <!-- Flash Messages -->
     <?php if ($flash): ?>
-      <div class="alert alert-<?php echo htmlspecialchars($flash['type']); ?>" role="alert">
+      <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
         <?php echo htmlspecialchars($flash['message']); ?>
       </div>
     <?php endif; ?>
 
     <?php if ($error): ?>
-      <div class="alert alert-error" role="alert">
+      <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
         <?php echo htmlspecialchars($error); ?>
       </div>
     <?php endif; ?>
 
-    <!-- Settings Grid -->
     <div class="settings-grid">
-      <!-- Profile Settings Card -->
-      <section class="settings-card">
+      <section class="settings-card borrower-card">
         <h2>Profile Information</h2>
-        <form method="POST" action="account.php">
+        <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
           <input type="hidden" name="action" value="update_profile">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -424,14 +292,13 @@ if (isset($_SESSION['show_password_success'])) {
             </p>
           </div>
 
-          <button type="submit" class="btn btn-primary" style="margin-top: 24px;">Save Changes</button>
+          <button type="submit" class="borrower-btn borrower-btn-primary" style="margin-top: 24px; width: 100%;">Save Changes</button>
         </form>
       </section>
 
-      <!-- Change Password Card -->
-      <section class="settings-card">
+      <section class="settings-card borrower-card">
         <h2>Change Password</h2>
-        <form method="POST" action="account.php">
+        <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
           <input type="hidden" name="action" value="change_password">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -453,17 +320,17 @@ if (isset($_SESSION['show_password_success'])) {
               autocomplete="new-password" required>
           </div>
 
-          <button type="submit" class="btn btn-primary" style="margin-top: 24px;">Change Password</button>
+          <button type="submit" class="borrower-btn borrower-btn-primary" style="margin-top: 24px; width: 100%;">Change Password</button>
         </form>
       </section>
     </div>
 
-    <!-- Back Link -->
     <div class="back-link-section">
-      <a href="index.php" class="back-link">
+      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="back-link">
         <span>←</span>
         <span>Back to Dashboard</span>
       </a>
+    </div>
     </div>
   </main>
 

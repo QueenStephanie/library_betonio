@@ -1,0 +1,230 @@
+.borrower-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(253, 247, 239, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.borrower-brand {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.borrower-nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.borrower-greeting {
+  margin-right: 8px;
+  padding: 6px 10px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.borrower-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.borrower-nav-link:hover {
+  color: var(--accent);
+  background: rgba(196, 77, 27, 0.08);
+}
+
+.borrower-nav-link.is-active {
+  color: var(--accent);
+  border-color: rgba(196, 77, 27, 0.25);
+  background: rgba(196, 77, 27, 0.12);
+}
+
+.borrower-nav-link.is-logout {
+  color: #9b3920;
+  border-color: #efc9bc;
+  background: #fff2ef;
+}
+
+.borrower-nav-link.is-logout:hover {
+  background: #fbe7e1;
+  color: #892f19;
+}
+
+.borrower-page {
+  padding: 28px 24px 48px;
+}
+
+.borrower-shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.borrower-page-header {
+  margin-bottom: 18px;
+}
+
+.borrower-page-header h1 {
+  margin-bottom: 4px;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+}
+
+.borrower-page-subtitle {
+  color: var(--muted);
+}
+
+.borrower-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(43, 28, 16, 0.04);
+}
+
+.borrower-table-wrap {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: auto;
+}
+
+.borrower-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.borrower-table th,
+.borrower-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.borrower-table th {
+  font-size: 0.86rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.borrower-alert {
+  margin-bottom: 16px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border-left: 4px solid;
+}
+
+.borrower-alert-success {
+  background: #edf6ea;
+  border-left-color: #5d8049;
+  color: #335d24;
+}
+
+.borrower-alert-error {
+  background: #fff2ef;
+  border-left-color: #c64c2a;
+  color: #8f3219;
+}
+
+.borrower-empty {
+  background: #fff;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  color: var(--muted);
+}
+
+.borrower-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.borrower-btn-primary {
+  color: #fff;
+  background: var(--accent);
+}
+
+.borrower-btn-primary:hover {
+  background: var(--accent-dark);
+}
+
+.borrower-btn-secondary {
+  border-color: #d2bca2;
+  background: #f7f1e4;
+  color: #5a4028;
+}
+
+.borrower-btn-secondary:hover {
+  background: #efe4cf;
+}
+
+.borrower-btn-danger {
+  border-color: #dcb4a7;
+  background: #fff3ef;
+  color: #9b3920;
+}
+
+.borrower-btn-danger:hover {
+  background: #fce6df;
+}
+
+@media (max-width: 960px) {
+  .borrower-navbar {
+    padding: 12px 16px;
+  }
+
+  .borrower-page {
+    padding: 22px 16px 36px;
+  }
+}
+
+@media (max-width: 760px) {
+  .borrower-brand {
+    font-size: 1.8rem;
+  }
+
+  .borrower-greeting {
+    width: 100%;
+    padding: 2px 0;
+  }
+
+  .borrower-nav-right {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .borrower-nav-link {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 0.9rem;
+  }
+}

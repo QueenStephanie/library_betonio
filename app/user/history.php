@@ -97,6 +97,7 @@ $flash = getFlash();
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+<<<<<<< ours
   <link rel="stylesheet" href="public/css/dashboard.css">
   <style>
     .history-wrap {
@@ -141,6 +142,14 @@ $flash = getFlash();
       text-transform: uppercase;
     }
 
+=======
+  <link rel="stylesheet" href="public/css/borrower.css">
+  <style>
+    .history-table {
+      min-width: 900px;
+    }
+
+>>>>>>> theirs
     .badge {
       display: inline-flex;
       align-items: center;
@@ -156,6 +165,7 @@ $flash = getFlash();
       color: #365f29;
     }
 
+<<<<<<< ours
     .btn-renew {
       border: 1px solid #d2bca2;
       background: #f7f1e4;
@@ -196,12 +206,30 @@ $flash = getFlash();
       border: 1px dashed var(--line);
       border-radius: 12px;
       padding: 18px;
+=======
+    .history-section {
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .history-section h2 {
+      margin-top: 0;
+    }
+
+    .history-note {
+      color: var(--muted);
+      margin-top: 0;
+    }
+
+    .history-muted {
+>>>>>>> theirs
       color: var(--muted);
     }
   </style>
 </head>
 
 <body>
+<<<<<<< ours
   <nav class="navbar">
     <div class="navbar-brand">
       <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="logo">QueenLib</a>
@@ -225,16 +253,45 @@ $flash = getFlash();
 
     <?php if ($flash): ?>
       <div class="alert alert-<?php echo htmlspecialchars((string)$flash['type'], ENT_QUOTES, 'UTF-8'); ?>" role="status" aria-live="polite">
+=======
+  <nav class="borrower-navbar" aria-label="Borrower navigation">
+    <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
+    <div class="borrower-nav-right">
+      <span class="borrower-greeting">Welcome, <?php echo htmlspecialchars((string)($user['first_name'] ?? 'Borrower'), ENT_QUOTES, 'UTF-8'); ?>!</span>
+      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Dashboard</a>
+      <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Catalog</a>
+      <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Reservations</a>
+      <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-active" aria-current="page">Loan History</a>
+      <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Settings</a>
+      <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-logout">Logout</a>
+    </div>
+  </nav>
+
+  <main class="borrower-page">
+    <div class="borrower-shell">
+    <header class="borrower-page-header">
+      <h1>Loan History &amp; Renewals</h1>
+      <p class="borrower-page-subtitle">Review active loans, renew eligible items, and view returned/closed borrowing records.</p>
+    </header>
+
+    <?php if ($flash): ?>
+      <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+>>>>>>> theirs
         <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
       </div>
     <?php endif; ?>
 
     <?php if (!$activeLoans['available']): ?>
+<<<<<<< ours
       <div class="alert alert-error" role="status" aria-live="polite">
+=======
+      <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+>>>>>>> theirs
         <?php echo htmlspecialchars((string)$activeLoans['message'], ENT_QUOTES, 'UTF-8'); ?>
       </div>
     <?php endif; ?>
 
+<<<<<<< ours
     <section id="active-loans" class="section-card">
       <h2 style="margin-top:0;">Active Loans</h2>
       <p style="color:var(--muted);margin-top:0;">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
@@ -244,6 +301,17 @@ $flash = getFlash();
       <?php else: ?>
         <div class="history-table-wrap">
           <table class="history-table">
+=======
+    <section id="active-loans" class="borrower-card history-section">
+      <h2>Active Loans</h2>
+      <p class="history-note">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
+
+      <?php if (empty($activeLoans['rows'])): ?>
+        <div class="borrower-empty">You have no active loans to renew.</div>
+      <?php else: ?>
+        <div class="borrower-table-wrap">
+          <table class="borrower-table history-table">
+>>>>>>> theirs
             <thead>
               <tr>
                 <th>Loan ID</th>
@@ -283,10 +351,17 @@ $flash = getFlash();
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($renewToken, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="action" value="renew">
                         <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+<<<<<<< ours
                         <button type="submit" class="btn-renew">Renew (+<?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?>d)</button>
                       </form>
                     <?php else: ?>
                       <span style="color:var(--muted);">Not eligible</span>
+=======
+                        <button type="submit" class="borrower-btn borrower-btn-secondary">Renew (+<?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?>d)</button>
+                      </form>
+                    <?php else: ?>
+                      <span class="history-muted">Not eligible</span>
+>>>>>>> theirs
                     <?php endif; ?>
                   </td>
                 </tr>
@@ -298,11 +373,16 @@ $flash = getFlash();
     </section>
 
     <?php if (!$loanHistory['available']): ?>
+<<<<<<< ours
       <div class="alert alert-error" role="status" aria-live="polite">
+=======
+      <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+>>>>>>> theirs
         <?php echo htmlspecialchars((string)$loanHistory['message'], ENT_QUOTES, 'UTF-8'); ?>
       </div>
     <?php endif; ?>
 
+<<<<<<< ours
     <section id="borrowing-history" class="section-card">
       <h2 style="margin-top:0;">Borrowing History</h2>
 
@@ -311,6 +391,16 @@ $flash = getFlash();
       <?php else: ?>
         <div class="history-table-wrap">
           <table class="history-table">
+=======
+    <section id="borrowing-history" class="borrower-card history-section">
+      <h2>Borrowing History</h2>
+
+      <?php if (empty($loanHistory['rows'])): ?>
+        <div class="borrower-empty">No returned or closed loans yet.</div>
+      <?php else: ?>
+        <div class="borrower-table-wrap">
+          <table class="borrower-table history-table">
+>>>>>>> theirs
             <thead>
               <tr>
                 <th>Loan ID</th>
@@ -351,6 +441,10 @@ $flash = getFlash();
         </div>
       <?php endif; ?>
     </section>
+<<<<<<< ours
+=======
+    </div>
+>>>>>>> theirs
   </main>
 </body>
 

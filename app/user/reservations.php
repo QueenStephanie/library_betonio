@@ -73,6 +73,7 @@ $flash = getFlash();
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
+<<<<<<< ours
   <link rel="stylesheet" href="public/css/dashboard.css">
   <style>
     .reservations-wrap {
@@ -109,6 +110,14 @@ $flash = getFlash();
       text-transform: uppercase;
     }
 
+=======
+  <link rel="stylesheet" href="public/css/borrower.css">
+  <style>
+    .reservations-table {
+      min-width: 820px;
+    }
+
+>>>>>>> theirs
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -119,6 +128,7 @@ $flash = getFlash();
       color: #6a4e37;
     }
 
+<<<<<<< ours
     .btn-cancel {
       border: 1px solid #dcb4a7;
       background: #fff3ef;
@@ -159,11 +169,17 @@ $flash = getFlash();
       border-radius: 12px;
       padding: 20px;
       color: var(--muted);
+=======
+    .reservations-page-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+>>>>>>> theirs
     }
   </style>
 </head>
 
 <body>
+<<<<<<< ours
   <nav class="navbar">
     <div class="navbar-brand">
       <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="logo">QueenLib</a>
@@ -190,21 +206,56 @@ $flash = getFlash();
 
     <?php if ($flash): ?>
       <div class="alert alert-<?php echo htmlspecialchars((string)$flash['type'], ENT_QUOTES, 'UTF-8'); ?>" role="status" aria-live="polite">
+=======
+  <nav class="borrower-navbar" aria-label="Borrower navigation">
+    <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
+    <div class="borrower-nav-right">
+      <span class="borrower-greeting">Welcome, <?php echo htmlspecialchars((string)($user['first_name'] ?? 'Borrower'), ENT_QUOTES, 'UTF-8'); ?>!</span>
+      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Dashboard</a>
+      <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Catalog</a>
+      <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-active" aria-current="page">Reservations</a>
+      <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Loan History</a>
+      <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Settings</a>
+      <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-logout">Logout</a>
+    </div>
+  </nav>
+
+  <main class="borrower-page">
+    <div class="borrower-shell">
+    <header class="borrower-page-header">
+      <h1>My Active Reservations</h1>
+      <p class="borrower-page-subtitle">Track reservation status and cancel active queue entries.</p>
+    </header>
+
+    <?php if ($flash): ?>
+      <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+>>>>>>> theirs
         <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
       </div>
     <?php endif; ?>
 
     <?php if (!$activeReservations['available']): ?>
+<<<<<<< ours
       <div class="alert alert-error" role="status" aria-live="polite">
+=======
+      <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+>>>>>>> theirs
         <?php echo htmlspecialchars((string)$activeReservations['message'], ENT_QUOTES, 'UTF-8'); ?>
       </div>
     <?php endif; ?>
 
     <?php if (empty($activeReservations['rows'])): ?>
+<<<<<<< ours
       <div class="empty-note">You have no active reservations.</div>
     <?php else: ?>
       <div class="reservations-table-wrap">
         <table class="reservations-table">
+=======
+      <div class="borrower-empty">You have no active reservations.</div>
+    <?php else: ?>
+      <div class="borrower-table-wrap">
+        <table class="borrower-table reservations-table">
+>>>>>>> theirs
           <thead>
             <tr>
               <th>Book</th>
@@ -220,7 +271,11 @@ $flash = getFlash();
               <tr>
                 <td>
                   <strong><?php echo htmlspecialchars((string)($row['book_title'] ?? 'Unknown Title'), ENT_QUOTES, 'UTF-8'); ?></strong><br>
+<<<<<<< ours
                   <span style="font-size: 0.88rem; color: var(--muted);">
+=======
+                  <span class="reservations-page-note">
+>>>>>>> theirs
                     <?php echo htmlspecialchars((string)($row['book_author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?>
                   </span>
                 </td>
@@ -234,6 +289,7 @@ $flash = getFlash();
                     <form method="POST" action="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
                       <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cancelToken, ENT_QUOTES, 'UTF-8'); ?>">
                       <input type="hidden" name="reservation_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+<<<<<<< ours
                       <button type="submit" class="btn-cancel">Cancel</button>
                     </form>
                   <?php else: ?>
@@ -241,6 +297,12 @@ $flash = getFlash();
                     <span style="color: var(--muted);">Not available</span>
 =======
                     <span style="color: var(--muted);">Cannot cancel in this status</span>
+>>>>>>> theirs
+=======
+                      <button type="submit" class="borrower-btn borrower-btn-danger">Cancel</button>
+                    </form>
+                  <?php else: ?>
+                    <span class="reservations-page-note">Cannot cancel in this status</span>
 >>>>>>> theirs
                   <?php endif; ?>
                 </td>
@@ -250,6 +312,10 @@ $flash = getFlash();
         </table>
       </div>
     <?php endif; ?>
+<<<<<<< ours
+=======
+    </div>
+>>>>>>> theirs
   </main>
 </body>
 

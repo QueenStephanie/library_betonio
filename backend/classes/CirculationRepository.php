@@ -8,6 +8,11 @@ class CirculationRepository
 {
   const BORROWER_MAX_ACTIVE_RESERVATIONS = 5;
 <<<<<<< ours
+<<<<<<< ours
+=======
+  const BORROWER_MAX_RENEWALS = 2;
+  const BORROWER_RENEWAL_EXTENSION_DAYS = 7;
+>>>>>>> theirs
 =======
   const BORROWER_MAX_RENEWALS = 2;
   const BORROWER_RENEWAL_EXTENSION_DAYS = 7;
@@ -17,6 +22,12 @@ class CirculationRepository
   const ACTIVE_RESERVATION_STATUSES = ['pending', 'ready_for_pickup', 'ready'];
 
 <<<<<<< ours
+<<<<<<< ours
+=======
+  /** @var list<string> */
+  const ACTIVE_LOAN_STATUSES = ['active', 'overdue', 'borrowed'];
+
+>>>>>>> theirs
 =======
   /** @var list<string> */
   const ACTIVE_LOAN_STATUSES = ['active', 'overdue', 'borrowed'];
@@ -31,7 +42,10 @@ class CirculationRepository
   }
 
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   public static function getBorrowerMaxRenewals(): int
   {
     return self::BORROWER_MAX_RENEWALS;
@@ -42,6 +56,9 @@ class CirculationRepository
     return self::BORROWER_RENEWAL_EXTENSION_DAYS;
   }
 
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   public static function isActiveReservationStatus(string $status): bool
   {
@@ -54,7 +71,10 @@ class CirculationRepository
   }
 
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   public static function isActiveLoanStatus(string $status): bool
   {
     return in_array(strtolower(trim($status)), self::ACTIVE_LOAN_STATUSES, true);
@@ -70,6 +90,9 @@ class CirculationRepository
     return !self::isActiveLoanStatus($normalized);
   }
 
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   /**
    * Evaluate creation business rules from resolved context values.
@@ -118,7 +141,10 @@ class CirculationRepository
   }
 
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   /**
    * Evaluate renewal business rules from resolved facts.
    *
@@ -171,6 +197,9 @@ class CirculationRepository
     return ['ok' => true, 'message' => 'Loan can be renewed.'];
   }
 
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   private static function getColumnMap(PDO $db, string $table): array
   {
@@ -634,7 +663,10 @@ class CirculationRepository
   }
 
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   public static function getBorrowerActiveLoans(PDO $db, int $userId, int $limit = 120): array
   {
     $result = [
@@ -1031,6 +1063,9 @@ class CirculationRepository
     }
   }
 
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   public static function getBorrowerOverview(PDO $db, int $userId): array
   {

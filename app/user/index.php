@@ -381,11 +381,17 @@ $flash = getFlash();
             <span>Reservations</span>
           </a>
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
           <a class="nav-item" href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">🕘</span>
             <span>Loan History</span>
           </a>
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
           <a class="nav-item" href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <span class="nav-icon">↪</span>
@@ -482,6 +488,7 @@ $flash = getFlash();
               <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>📌</span>
 <<<<<<< ours
+<<<<<<< ours
                 <span>Reserve Book</span>
               </a>
               <span class="action-btn secondary is-disabled" aria-disabled="true" title="Renewal workflow coming soon">
@@ -496,6 +503,12 @@ $flash = getFlash();
               </a>
               <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>♻</span>
+=======
+                <span>Browse Catalog</span>
+              </a>
+              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
+                <span>♻</span>
+>>>>>>> theirs
                 <span>Renew Active Loans</span>
               </a>
               <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
@@ -505,6 +518,9 @@ $flash = getFlash();
               <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
                 <span>🕘</span>
                 <span>View Loan History</span>
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
               </a>
               <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn primary">

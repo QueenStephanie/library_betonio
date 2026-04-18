@@ -9,6 +9,11 @@ $testFiles = [
   __DIR__ . '/test_permission_gate.php',
   __DIR__ . '/test_borrower_reservations.php',
 <<<<<<< ours
+<<<<<<< ours
+=======
+  __DIR__ . '/test_librarian_checkout_rules.php',
+  __DIR__ . '/test_borrower_renewal_rules.php',
+>>>>>>> theirs
 =======
   __DIR__ . '/test_librarian_checkout_rules.php',
   __DIR__ . '/test_borrower_renewal_rules.php',
