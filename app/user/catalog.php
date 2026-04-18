@@ -83,6 +83,7 @@ try {
 }
 
 $flash = getFlash();
+$currentPage = 'catalog';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -96,89 +97,10 @@ $flash = getFlash();
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <link rel="stylesheet" href="public/css/borrower.css">
-  <style>
-    .catalog-search {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr auto;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .catalog-search input,
-    .catalog-search select {
-      width: 100%;
-      padding: 11px 14px;
-      border: 1.5px solid var(--line);
-      border-radius: 10px;
-      font: inherit;
-      background: #fff;
-    }
-
-    .catalog-grid {
-      display: grid;
-      gap: 14px;
-    }
-
-    .catalog-item {
-      padding: 16px;
-      display: grid;
-      grid-template-columns: 1.8fr auto;
-      gap: 14px;
-      align-items: center;
-    }
-
-    .catalog-meta {
-      color: var(--muted);
-      font-size: 0.92rem;
-      margin-top: 4px;
-    }
-
-    .catalog-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      min-width: 180px;
-    }
-
-    .availability {
-      font-size: 0.92rem;
-      color: var(--muted);
-    }
-
-    .availability strong {
-      color: var(--text);
-    }
-
-    @media (max-width: 760px) {
-      .catalog-search {
-        grid-template-columns: 1fr;
-      }
-
-      .catalog-item {
-        grid-template-columns: 1fr;
-      }
-
-      .catalog-actions {
-        align-items: flex-start;
-      }
-    }
-  </style>
 </head>
 
 <body>
-  <nav class="borrower-navbar" aria-label="Borrower navigation">
-    <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
-    <div class="borrower-nav-right">
-      <span class="borrower-greeting">Welcome, <?php echo htmlspecialchars((string)($user['first_name'] ?? 'Borrower'), ENT_QUOTES, 'UTF-8'); ?>!</span>
-      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Dashboard</a>
-      <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-active" aria-current="page">Catalog</a>
-      <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Reservations</a>
-      <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Loan History</a>
-      <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Settings</a>
-      <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-logout">Logout</a>
-    </div>
-  </nav>
+  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
 
   <main class="borrower-page">
     <div class="borrower-shell">

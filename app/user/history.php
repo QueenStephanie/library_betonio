@@ -85,6 +85,7 @@ try {
 }
 
 $flash = getFlash();
+$currentPage = 'history';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -98,59 +99,10 @@ $flash = getFlash();
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <link rel="stylesheet" href="public/css/borrower.css">
-  <style>
-    .history-table {
-      min-width: 900px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 0.8rem;
-      background: #f4efe4;
-      color: #6a4e37;
-    }
-
-    .badge.closed {
-      background: #eaf4ea;
-      color: #365f29;
-    }
-
-    .history-section {
-      padding: 16px;
-      margin-bottom: 18px;
-    }
-
-    .history-section h2 {
-      margin-top: 0;
-    }
-
-    .history-note {
-      color: var(--muted);
-      margin-top: 0;
-    }
-
-    .history-muted {
-      color: var(--muted);
-    }
-  </style>
 </head>
 
 <body>
-  <nav class="borrower-navbar" aria-label="Borrower navigation">
-    <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
-    <div class="borrower-nav-right">
-      <span class="borrower-greeting">Welcome, <?php echo htmlspecialchars((string)($user['first_name'] ?? 'Borrower'), ENT_QUOTES, 'UTF-8'); ?>!</span>
-      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Dashboard</a>
-      <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Catalog</a>
-      <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Reservations</a>
-      <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-active" aria-current="page">Loan History</a>
-      <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link">Settings</a>
-      <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-nav-link is-logout">Logout</a>
-    </div>
-  </nav>
+  <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
 
   <main class="borrower-page">
     <div class="borrower-shell">

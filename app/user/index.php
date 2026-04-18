@@ -52,6 +52,7 @@ if ($is_logged_in && $user && isset($user['id'])) {
   }
 }
 $flash = getFlash();
+$currentPage = 'dashboard';
 
 // If logged in, show dashboard view, else show landing page
 ?>
@@ -67,447 +68,95 @@ $flash = getFlash();
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
   <?php if ($is_logged_in): ?>
-    <link rel="stylesheet" href="public/css/dashboard.css">
+    <link rel="stylesheet" href="public/css/borrower.css">
   <?php endif; ?>
-  <style>
-    <?php if ($is_logged_in): ?>
-
-    /* Dashboard Specific Styles */
-    .dashboard-header {
-      background: linear-gradient(135deg, #f5f0e6 0%, #fff9f5 100%);
-      border-bottom: 1px solid var(--line);
-      padding: 40px 0;
-      margin-bottom: 32px;
-    }
-
-    .dashboard-header h1 {
-      font-size: 2.8rem;
-      margin-bottom: 8px;
-    }
-
-    .dashboard-header p {
-      font-size: 1.1rem;
-      color: var(--muted);
-    }
-
-    .dashboard-main {
-      padding: 0 32px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
-    }
-
-    .stat-card {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 24px;
-      text-align: center;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: var(--accent);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.3s ease;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
-      border-color: var(--accent);
-    }
-
-    .stat-card:hover::before {
-      transform: scaleX(1);
-    }
-
-    .stat-icon {
-      font-size: 2rem;
-      margin-bottom: 12px;
-    }
-
-    .stat-card strong {
-      display: block;
-      font-size: 1.3rem;
-      margin-bottom: 4px;
-      color: var(--text);
-    }
-
-    .stat-card span {
-      display: block;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .panel {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      margin-bottom: 24px;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .panel:hover {
-      box-shadow: 0 8px 24px rgba(43, 28, 16, 0.08);
-      border-color: var(--accent);
-    }
-
-    .panel-heading {
-      padding: 28px 32px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(to right, rgba(242, 240, 236, 0.5), transparent);
-    }
-
-    .panel-heading h2 {
-      font-size: 1.6rem;
-      color: var(--text);
-      margin: 0;
-    }
-
-    .history-link {
-      color: var(--accent);
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .history-link:hover {
-      gap: 10px;
-    }
-
-    .panel-content {
-      padding: 32px;
-    }
-
-    .profile-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .profile-item:last-child {
-      border-bottom: none;
-    }
-
-    .profile-label {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .profile-value {
-      color: var(--muted);
-    }
-
-    .profile-value.verified {
-      color: #5d8049;
-      font-weight: 600;
-    }
-
-    .profile-value.pending {
-      color: #ca8616;
-      font-weight: 600;
-    }
-
-    .action-buttons {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .action-btn {
-      padding: 14px 24px;
-      border: none;
-      border-radius: 12px;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .action-btn.primary {
-      background: linear-gradient(135deg, var(--accent), #b83d14);
-      color: white;
-      box-shadow: 0 4px 12px rgba(210, 71, 24, 0.3);
-    }
-
-    .action-btn.primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(210, 71, 24, 0.4);
-    }
-
-    .action-btn.secondary {
-      background: var(--neutral-bg);
-      color: var(--text);
-      border: 1.5px solid var(--line);
-    }
-
-    .action-btn.secondary:hover {
-      background: white;
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .action-btn.danger {
-      background: #fff2ef;
-      color: #a62f0d;
-      border: 1.5px solid #f0b7a7;
-    }
-
-    .action-btn.danger:hover {
-      background: #a62f0d;
-      color: white;
-    }
-
-    .overview-note {
-      margin-top: 20px;
-      font-size: 0.92rem;
-      color: var(--muted);
-      padding: 12px 14px;
-      border: 1px dashed var(--line);
-      border-radius: 10px;
-      background: #fcfbf8;
-    }
-
-    @media (max-width: 1024px) {
-      .dashboard-main {
-        padding: 0 24px;
-      }
-
-      .panel-heading {
-        padding: 20px 24px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
-      .panel-content {
-        padding: 24px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .dashboard-header {
-        padding: 24px 0;
-        margin-bottom: 24px;
-      }
-
-      .dashboard-header h1 {
-        font-size: 2rem;
-      }
-
-      .dashboard-main {
-        padding: 0 16px;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-
-      .stat-card {
-        padding: 16px;
-      }
-
-      .stat-card strong {
-        font-size: 1.1rem;
-      }
-
-      .action-buttons {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    <?php endif; ?>
-  </style>
 </head>
 
 <body>
 
   <?php if ($is_logged_in && $user): ?>
-    <!-- LOGGED IN - DASHBOARD VIEW -->
-    <div class="dashboard-layout">
-      <!-- SIDEBAR -->
-      <aside class="sidebar" role="navigation" aria-label="Main navigation">
-        <a class="sidebar-brand" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">QueenLib</a>
+    <?php require APP_ROOT . '/app/user/partials/borrower-navbar.php'; ?>
 
-        <div class="sidebar-user" id="userProfile">
-          <div class="avatar"><?php echo strtoupper(substr($user['first_name'], 0, 1)); ?></div>
-          <p class="user-greeting">Hi, <?php echo htmlspecialchars($user['first_name']); ?></p>
-        </div>
+    <main class="borrower-page">
+      <div class="borrower-shell borrower-dashboard-shell">
+        <header class="borrower-page-header borrower-dashboard-header">
+          <h1>Borrower Dashboard</h1>
+          <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars((string)($user['first_name'] . ' ' . $user['last_name']), ENT_QUOTES, 'UTF-8'); ?>. Review account activity and take your next action.</p>
+        </header>
 
-        <nav class="sidebar-nav">
-          <a class="nav-item is-active" href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">⌂</span>
-            <span>My Account</span>
-          </a>
-          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">⚙</span>
-            <span>Settings</span>
-          </a>
-          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">📚</span>
-            <span>Catalog</span>
-          </a>
-          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">🏷</span>
-            <span>Reservations</span>
-          </a>
-          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">🕘</span>
-            <span>Loan History</span>
-          </a>
-          <a class="nav-item" href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="nav-icon">↪</span>
-            <span>Log Out</span>
-          </a>
-        </nav>
-      </aside>
-
-      <!-- MAIN CONTENT -->
-      <main class="dashboard-main">
-        <!-- Header -->
-        <div class="dashboard-header">
-          <h1>My Account</h1>
-          <p>Welcome back, <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
-        </div>
-
-        <!-- Flash Messages -->
         <?php if ($flash): ?>
-          <div style="padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; background: var(--success-bg); color: var(--success-text); border-left: 4px solid #5d8049; display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 1.3rem;">✓</span>
-            <?php echo htmlspecialchars($flash['message']); ?>
+          <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+            <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
           </div>
         <?php endif; ?>
 
-        <!-- STATS SECTION -->
-        <section class="stats-grid" aria-label="Account statistics">
-          <!-- Current Loans -->
-          <article class="stat-card">
-            <div class="stat-icon">📚</div>
-            <strong><?php echo (int)$circulationOverview['current_loans']; ?></strong>
-            <span>Current Loans</span>
+        <section class="borrower-dashboard-stats" aria-label="Borrower statistics">
+          <article class="borrower-card borrower-stat-card">
+            <p class="borrower-stat-label">Current Loans</p>
+            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['current_loans']; ?></p>
           </article>
-
-          <!-- Due Soon -->
-          <article class="stat-card">
-            <div class="stat-icon">⏰</div>
-            <strong><?php echo (int)$circulationOverview['due_soon']; ?></strong>
-            <span>Due in 3 Days</span>
+          <article class="borrower-card borrower-stat-card">
+            <p class="borrower-stat-label">Due in 3 Days</p>
+            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['due_soon']; ?></p>
           </article>
-
-          <!-- Active Reservations -->
-          <article class="stat-card">
-            <div class="stat-icon">🏷</div>
-            <strong><?php echo (int)$circulationOverview['active_reservations']; ?></strong>
-            <span>Active Reservations</span>
+          <article class="borrower-card borrower-stat-card">
+            <p class="borrower-stat-label">Active Reservations</p>
+            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['active_reservations']; ?></p>
           </article>
-
-          <!-- Outstanding Fines -->
-          <article class="stat-card">
-            <div class="stat-icon">💳</div>
-            <strong>₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></strong>
-            <span>Active Loan Fines</span>
+          <article class="borrower-card borrower-stat-card">
+            <p class="borrower-stat-label">Active Loan Fines</p>
+            <p class="borrower-stat-value">₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></p>
           </article>
         </section>
 
-        <!-- PROFILE INFO SECTION -->
-        <section class="panel">
-          <div class="panel-heading">
+        <section class="borrower-card borrower-dashboard-panel">
+          <div class="borrower-panel-heading">
             <h2>Profile Information</h2>
-            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="history-link">
-              <span>Edit Profile</span>
-              <span>→</span>
-            </a>
+            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-inline-link">Edit profile</a>
           </div>
-          <div class="panel-content">
-            <div class="profile-item">
-              <span class="profile-label">First Name</span>
-              <span class="profile-value"><?php echo htmlspecialchars($user['first_name']); ?></span>
+          <div class="borrower-panel-content">
+            <div class="borrower-profile-row">
+              <span class="borrower-profile-label">First Name</span>
+              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
-            <div class="profile-item">
-              <span class="profile-label">Last Name</span>
-              <span class="profile-value"><?php echo htmlspecialchars($user['last_name']); ?></span>
+            <div class="borrower-profile-row">
+              <span class="borrower-profile-label">Last Name</span>
+              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['last_name'], ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
-            <div class="profile-item">
-              <span class="profile-label">Email Address</span>
-              <span class="profile-value"><?php echo htmlspecialchars($user['email']); ?></span>
+            <div class="borrower-profile-row">
+              <span class="borrower-profile-label">Email Address</span>
+              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
-            <div class="profile-item">
-              <span class="profile-label">Account Status</span>
-              <span class="profile-value <?php echo $user['is_verified'] ? 'verified' : 'pending'; ?>">
-                <?php echo $user['is_verified'] ? '✓ Verified' : '⚠ Not Verified'; ?>
+            <div class="borrower-profile-row">
+              <span class="borrower-profile-label">Account Status</span>
+              <span class="borrower-profile-value <?php echo !empty($user['is_verified']) ? 'is-verified' : 'is-pending'; ?>">
+                <?php echo !empty($user['is_verified']) ? 'Verified' : 'Not Verified'; ?>
               </span>
             </div>
           </div>
         </section>
 
-        <!-- ACCOUNT ACTIONS SECTION -->
-        <section class="panel">
-          <div class="panel-heading">
+        <section class="borrower-card borrower-dashboard-panel">
+          <div class="borrower-panel-heading">
             <h2>Quick Actions</h2>
           </div>
-          <div class="panel-content">
-            <div class="action-buttons">
-              <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
-                <span>📌</span>
-                <span>Browse Catalog</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
-                <span>♻</span>
-                <span>Renew Active Loans</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
-                <span>🏷</span>
-                <span>Manage Reservations</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="action-btn secondary">
-                <span>🕘</span>
-                <span>View Loan History</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn primary">
-                <span>📝</span>
-                <span>Edit Profile</span>
-              </a>
-              <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="action-btn danger">
-                <span>🚪</span>
-                <span>Logout</span>
-              </a>
+          <div class="borrower-panel-content">
+            <div class="borrower-action-grid">
+              <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-primary borrower-action-link">Browse Catalog</a>
+              <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Manage Reservations</a>
+              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Renew Active Loans</a>
+              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">View Loan History</a>
+              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Update Settings</a>
+              <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-danger borrower-action-link">Logout</a>
             </div>
+
             <?php if (!$circulationDataAvailable): ?>
-              <p class="overview-note"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+              <p class="borrower-note"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
             <?php endif; ?>
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
 
   <?php else: ?>
     <!-- NOT LOGGED IN - LANDING PAGE VIEW -->
