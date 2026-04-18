@@ -73,51 +73,12 @@ $flash = getFlash();
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="public/css/main.css">
-<<<<<<< ours
-  <link rel="stylesheet" href="public/css/dashboard.css">
-  <style>
-    .reservations-wrap {
-      max-width: 1050px;
-      margin: 0 auto;
-      padding: 30px 24px 48px;
-    }
-
-    .reservations-table-wrap {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      overflow: auto;
-    }
-
-    .reservations-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 820px;
-    }
-
-    .reservations-table th,
-    .reservations-table td {
-      padding: 12px 14px;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
-      vertical-align: middle;
-    }
-
-    .reservations-table th {
-      font-size: 0.88rem;
-      letter-spacing: 0.02em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-=======
   <link rel="stylesheet" href="public/css/borrower.css">
   <style>
     .reservations-table {
       min-width: 820px;
     }
 
->>>>>>> theirs
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -128,85 +89,14 @@ $flash = getFlash();
       color: #6a4e37;
     }
 
-<<<<<<< ours
-    .btn-cancel {
-      border: 1px solid #dcb4a7;
-      background: #fff3ef;
-      color: #9b3920;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font: inherit;
-      font-size: 0.88rem;
-      cursor: pointer;
-    }
-
-    .btn-cancel:hover {
-      background: #fce6df;
-    }
-
-    .alert {
-      margin-bottom: 18px;
-      border-radius: 10px;
-      padding: 12px 14px;
-      border-left: 4px solid;
-    }
-
-    .alert-success {
-      background: #edf6ea;
-      border-left-color: #5d8049;
-      color: #335d24;
-    }
-
-    .alert-error {
-      background: #fff2ef;
-      border-left-color: #c64c2a;
-      color: #8f3219;
-    }
-
-    .empty-note {
-      background: #fff;
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      padding: 20px;
-      color: var(--muted);
-=======
     .reservations-page-note {
       color: var(--muted);
       font-size: 0.88rem;
->>>>>>> theirs
     }
   </style>
 </head>
 
 <body>
-<<<<<<< ours
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="logo">QueenLib</a>
-    </div>
-    <div class="navbar-menu">
-      <div class="user-menu">
-        <span class="user-greeting">Welcome, <?php echo htmlspecialchars((string)($user['first_name'] ?? 'Borrower'), ENT_QUOTES, 'UTF-8'); ?>!</span>
-        <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="nav-link">Catalog</a>
-<<<<<<< ours
-=======
-        <a href="<?php echo htmlspecialchars(appPath('history.php'), ENT_QUOTES, 'UTF-8'); ?>" class="nav-link">Loan History</a>
->>>>>>> theirs
-        <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="nav-link">Dashboard</a>
-        <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="nav-link logout">Logout</a>
-      </div>
-    </div>
-  </nav>
-
-  <main class="reservations-wrap">
-    <header style="margin-bottom: 18px;">
-      <h1>My Active Reservations</h1>
-      <p>Track reservation status and cancel active queue entries.</p>
-    </header>
-
-    <?php if ($flash): ?>
-      <div class="alert alert-<?php echo htmlspecialchars((string)$flash['type'], ENT_QUOTES, 'UTF-8'); ?>" role="status" aria-live="polite">
-=======
   <nav class="borrower-navbar" aria-label="Borrower navigation">
     <a href="<?php echo htmlspecialchars(appPath('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-brand">QueenLib</a>
     <div class="borrower-nav-right">
@@ -222,100 +112,70 @@ $flash = getFlash();
 
   <main class="borrower-page">
     <div class="borrower-shell">
-    <header class="borrower-page-header">
-      <h1>My Active Reservations</h1>
-      <p class="borrower-page-subtitle">Track reservation status and cancel active queue entries.</p>
-    </header>
+      <header class="borrower-page-header">
+        <h1>My Active Reservations</h1>
+        <p class="borrower-page-subtitle">Track reservation status and cancel active queue entries.</p>
+      </header>
 
-    <?php if ($flash): ?>
-      <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
->>>>>>> theirs
-        <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-      </div>
-    <?php endif; ?>
+      <?php if ($flash): ?>
+        <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+          <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+      <?php endif; ?>
 
-    <?php if (!$activeReservations['available']): ?>
-<<<<<<< ours
-      <div class="alert alert-error" role="status" aria-live="polite">
-=======
-      <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
->>>>>>> theirs
-        <?php echo htmlspecialchars((string)$activeReservations['message'], ENT_QUOTES, 'UTF-8'); ?>
-      </div>
-    <?php endif; ?>
+      <?php if (!$activeReservations['available']): ?>
+        <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+          <?php echo htmlspecialchars((string)$activeReservations['message'], ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+      <?php endif; ?>
 
-    <?php if (empty($activeReservations['rows'])): ?>
-<<<<<<< ours
-      <div class="empty-note">You have no active reservations.</div>
-    <?php else: ?>
-      <div class="reservations-table-wrap">
-        <table class="reservations-table">
-=======
-      <div class="borrower-empty">You have no active reservations.</div>
-    <?php else: ?>
-      <div class="borrower-table-wrap">
-        <table class="borrower-table reservations-table">
->>>>>>> theirs
-          <thead>
-            <tr>
-              <th>Book</th>
-              <th>Status</th>
-              <th>Queued At</th>
-              <th>Ready Until</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($activeReservations['rows'] as $row): ?>
-              <?php $status = strtolower(trim((string)($row['status'] ?? ''))); ?>
+      <?php if (empty($activeReservations['rows'])): ?>
+        <div class="borrower-empty">You have no active reservations.</div>
+      <?php else: ?>
+        <div class="borrower-table-wrap">
+          <table class="borrower-table reservations-table">
+            <thead>
               <tr>
-                <td>
-                  <strong><?php echo htmlspecialchars((string)($row['book_title'] ?? 'Unknown Title'), ENT_QUOTES, 'UTF-8'); ?></strong><br>
-<<<<<<< ours
-                  <span style="font-size: 0.88rem; color: var(--muted);">
-=======
-                  <span class="reservations-page-note">
->>>>>>> theirs
-                    <?php echo htmlspecialchars((string)($row['book_author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?>
-                  </span>
-                </td>
-                <td>
-                  <span class="status-badge"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></span>
-                </td>
-                <td><?php echo htmlspecialchars((string)($row['queued_at'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                <td><?php echo htmlspecialchars((string)($row['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                <td>
-                  <?php if (CirculationRepository::canBorrowerCancelReservationStatus($status)): ?>
-                    <form method="POST" action="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
-                      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cancelToken, ENT_QUOTES, 'UTF-8'); ?>">
-                      <input type="hidden" name="reservation_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-<<<<<<< ours
-                      <button type="submit" class="btn-cancel">Cancel</button>
-                    </form>
-                  <?php else: ?>
-<<<<<<< ours
-                    <span style="color: var(--muted);">Not available</span>
-=======
-                    <span style="color: var(--muted);">Cannot cancel in this status</span>
->>>>>>> theirs
-=======
-                      <button type="submit" class="borrower-btn borrower-btn-danger">Cancel</button>
-                    </form>
-                  <?php else: ?>
-                    <span class="reservations-page-note">Cannot cancel in this status</span>
->>>>>>> theirs
-                  <?php endif; ?>
-                </td>
+                <th>Book</th>
+                <th>Status</th>
+                <th>Queued At</th>
+                <th>Ready Until</th>
+                <th>Action</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    <?php endif; ?>
-<<<<<<< ours
-=======
+            </thead>
+            <tbody>
+              <?php foreach ($activeReservations['rows'] as $row): ?>
+                <?php $status = strtolower(trim((string)($row['status'] ?? ''))); ?>
+                <tr>
+                  <td>
+                    <strong><?php echo htmlspecialchars((string)($row['book_title'] ?? 'Unknown Title'), ENT_QUOTES, 'UTF-8'); ?></strong><br>
+                    <span class="reservations-page-note">
+                      <?php echo htmlspecialchars((string)($row['book_author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></span>
+                  </td>
+                  <td><?php echo htmlspecialchars((string)($row['queued_at'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars((string)($row['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td>
+                    <?php if (CirculationRepository::canBorrowerCancelReservationStatus($status)): ?>
+                      <form method="POST" action="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cancelToken, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="reservation_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                        <button type="submit" class="borrower-btn borrower-btn-danger">Cancel</button>
+                      </form>
+                    <?php else: ?>
+                      <span class="reservations-page-note">Cannot cancel in this status</span>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
     </div>
->>>>>>> theirs
   </main>
 </body>
 
