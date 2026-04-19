@@ -33,6 +33,63 @@ if (is_array($flash) && isset($flash['type'], $flash['message'])) {
   ];
 }
 
+$csrfToken = getAdminCsrfToken();
+$bookForm = [
+  'title' => '',
+  'author' => '',
+  'isbn' => '',
+  'publication_date' => '',
+  'genre' => '',
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
+  $submittedToken = $_POST['csrf_token'] ?? '';
+  $action = strtolower(trim((string)($_POST['action'] ?? '')));
+
+  if ($action === 'add_book') {
+    $bookForm['title'] = trim((string)($_POST['title'] ?? ''));
+    $bookForm['author'] = trim((string)($_POST['author'] ?? ''));
+    $bookForm['isbn'] = trim((string)($_POST['isbn'] ?? ''));
+    $bookForm['publication_date'] = trim((string)($_POST['publication_date'] ?? ''));
+    $bookForm['genre'] = trim((string)($_POST['genre'] ?? ''));
+
+    if (!$originCheck['valid']) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      error_log('Blocked librarian-books POST due to origin validation: ' . json_encode($originCheck));
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Origin validation failed. Please refresh and try again.',
+      ];
+    } elseif (!validateAdminCsrfToken($submittedToken)) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Invalid or missing security token. Please refresh and try again.',
+      ];
+    } else {
+      $result = LibrarianPortalRepository::addBook($db, $bookForm);
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
+        'message' => (string)$result['message'],
+      ];
+
+      if (!empty($result['ok'])) {
+        $bookForm = [
+          'title' => '',
+          'author' => '',
+          'isbn' => '',
+          'publication_date' => '',
+          'genre' => '',
+        ];
+      }
+    }
+  }
+}
+
 $search = trim((string)($_GET['q'] ?? ''));
 $catalog = [
   'rows' => [],
@@ -122,8 +179,49 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
     <main class="admin-main">
       <header class="admin-page-hero">
         <h1>Books Catalog</h1>
-        <p>Catalog listing with lightweight search by title, author, ISBN, and category.</p>
+        <p>Add and manage catalog entries with search by title, author, ISBN, and category.</p>
       </header>
+
+      <section class="admin-card" style="margin-bottom:16px;">
+        <div class="admin-card-header">
+          <h2>Add Book</h2>
+          <p>Enter core bibliographic details to add a new catalog title.</p>
+        </div>
+
+        <form method="POST" class="admin-inline-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+          <input type="hidden" name="action" value="add_book">
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Title</span>
+            <input type="text" name="title" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['title'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Book title">
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Author</span>
+            <input type="text" name="author" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['author'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Author name">
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">ISBN</span>
+            <input type="text" name="isbn" required maxlength="32" value="<?php echo htmlspecialchars((string)$bookForm['isbn'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="ISBN-10 or ISBN-13">
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Publication Date</span>
+            <input type="date" name="publication_date" required value="<?php echo htmlspecialchars((string)$bookForm['publication_date'], ENT_QUOTES, 'UTF-8'); ?>">
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span class="admin-demo-note">Genre</span>
+            <input type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
+          </label>
+
+          <div>
+            <button type="submit" class="admin-button admin-button-primary">Add Book</button>
+          </div>
+        </form>
+      </section>
 
       <?php if (!$catalog['available']): ?>
         <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">

@@ -70,6 +70,263 @@ class LibrarianPortalRepository
     return null;
   }
 
+  private static function normalizeIsbn(string $isbn): string
+  {
+    $normalized = preg_replace('/[^0-9Xx]/', '', $isbn);
+    if (!is_string($normalized)) {
+      return '';
+    }
+
+    return strtoupper($normalized);
+  }
+
+  private static function isValidIsbn(string $isbn): bool
+  {
+    $normalized = self::normalizeIsbn($isbn);
+
+    if ($normalized === '') {
+      return false;
+    }
+
+    if (strlen($normalized) === 10) {
+      if (preg_match('/^[0-9]{9}[0-9X]$/', $normalized) !== 1) {
+        return false;
+      }
+
+      $sum = 0;
+      for ($i = 0; $i < 10; $i++) {
+        $digit = $normalized[$i] === 'X' ? 10 : (int)$normalized[$i];
+        $sum += $digit * (10 - $i);
+      }
+
+      return $sum % 11 === 0;
+    }
+
+    if (strlen($normalized) === 13) {
+      if (preg_match('/^[0-9]{13}$/', $normalized) !== 1) {
+        return false;
+      }
+
+      $sum = 0;
+      for ($i = 0; $i < 12; $i++) {
+        $weight = $i % 2 === 0 ? 1 : 3;
+        $sum += ((int)$normalized[$i]) * $weight;
+      }
+
+      $checkDigit = (10 - ($sum % 10)) % 10;
+      return $checkDigit === (int)$normalized[12];
+    }
+
+    return false;
+  }
+
+  /**
+   * @param array<string,mixed> $facts
+   * @return array{ok: bool, message: string, normalized?: array<string,mixed>}
+   */
+  public static function evaluateBookCreationRules(array $facts): array
+  {
+    $title = trim((string)($facts['title'] ?? ''));
+    $author = trim((string)($facts['author'] ?? ''));
+    $isbn = trim((string)($facts['isbn'] ?? ''));
+    $publicationDate = trim((string)($facts['publication_date'] ?? ''));
+    $genre = trim((string)($facts['genre'] ?? ''));
+
+    if ($title === '') {
+      return ['ok' => false, 'message' => 'Title is required.'];
+    }
+
+    if ($author === '') {
+      return ['ok' => false, 'message' => 'Author is required.'];
+    }
+
+    if ($isbn === '') {
+      return ['ok' => false, 'message' => 'ISBN is required.'];
+    }
+
+    if (!self::isValidIsbn($isbn)) {
+      return ['ok' => false, 'message' => 'ISBN must be a valid ISBN-10 or ISBN-13 value.'];
+    }
+
+    if ($publicationDate === '') {
+      return ['ok' => false, 'message' => 'Publication date is required.'];
+    }
+
+    $publishedAt = DateTimeImmutable::createFromFormat('Y-m-d', $publicationDate);
+    $publishedAtErrors = DateTimeImmutable::getLastErrors();
+    $hasDateErrors = is_array($publishedAtErrors)
+      && (($publishedAtErrors['warning_count'] ?? 0) > 0 || ($publishedAtErrors['error_count'] ?? 0) > 0);
+
+    if (!$publishedAt instanceof DateTimeImmutable || $hasDateErrors || $publishedAt->format('Y-m-d') !== $publicationDate) {
+      return ['ok' => false, 'message' => 'Publication date must use YYYY-MM-DD format.'];
+    }
+
+    $today = new DateTimeImmutable('today');
+    if ($publishedAt > $today) {
+      return ['ok' => false, 'message' => 'Publication date cannot be in the future.'];
+    }
+
+    if ($genre === '') {
+      return ['ok' => false, 'message' => 'Genre is required.'];
+    }
+
+    $titleLength = function_exists('mb_strlen') ? (int)mb_strlen($title) : strlen($title);
+    $authorLength = function_exists('mb_strlen') ? (int)mb_strlen($author) : strlen($author);
+    $genreLength = function_exists('mb_strlen') ? (int)mb_strlen($genre) : strlen($genre);
+
+    if ($titleLength > 255) {
+      return ['ok' => false, 'message' => 'Title must be 255 characters or fewer.'];
+    }
+
+    if ($authorLength > 255) {
+      return ['ok' => false, 'message' => 'Author must be 255 characters or fewer.'];
+    }
+
+    if ($genreLength > 100) {
+      return ['ok' => false, 'message' => 'Genre must be 100 characters or fewer.'];
+    }
+
+    return [
+      'ok' => true,
+      'message' => 'Book details are valid.',
+      'normalized' => [
+        'title' => $title,
+        'author' => $author,
+        'isbn' => $isbn,
+        'isbn_normalized' => self::normalizeIsbn($isbn),
+        'publication_date' => $publicationDate,
+        'published_year' => (int)$publishedAt->format('Y'),
+        'genre' => $genre,
+      ],
+    ];
+  }
+
+  /**
+   * @param array<string,mixed> $input
+   * @return array{ok: bool, message: string, book_id?: int}
+   */
+  public static function addBook(PDO $db, array $input): array
+  {
+    if (!self::tableExists($db, 'books')) {
+      return ['ok' => false, 'message' => 'Books table is missing. Run circulation migration first.'];
+    }
+
+    $validation = self::evaluateBookCreationRules($input);
+    if (!$validation['ok']) {
+      return $validation;
+    }
+
+    $normalized = (array)($validation['normalized'] ?? []);
+    $title = (string)($normalized['title'] ?? '');
+    $author = (string)($normalized['author'] ?? '');
+    $isbnNormalized = (string)($normalized['isbn_normalized'] ?? '');
+    $publishedYear = (int)($normalized['published_year'] ?? 0);
+    $genre = (string)($normalized['genre'] ?? '');
+
+    if (!self::hasColumn($db, 'books', 'title') || !self::hasColumn($db, 'books', 'author')) {
+      return ['ok' => false, 'message' => 'Books schema is incompatible with add-book requirements.'];
+    }
+
+    $hasIsbn = self::hasColumn($db, 'books', 'isbn');
+    $hasCategory = self::hasColumn($db, 'books', 'category');
+    $hasPublicationDate = self::hasColumn($db, 'books', 'publication_date');
+    $hasPublishedYear = self::hasColumn($db, 'books', 'published_year');
+    $hasIsActive = self::hasColumn($db, 'books', 'is_active');
+
+    try {
+      if ($hasIsbn && $isbnNormalized !== '') {
+        $existingIsbnStmt = $db->query("SELECT id, isbn FROM books WHERE COALESCE(isbn, '') <> ''");
+        $existingIsbnRows = $existingIsbnStmt ? $existingIsbnStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        foreach ($existingIsbnRows as $existingIsbnRow) {
+          $existingIsbn = self::normalizeIsbn((string)($existingIsbnRow['isbn'] ?? ''));
+          if ($existingIsbn !== '' && hash_equals($existingIsbn, $isbnNormalized)) {
+            return ['ok' => false, 'message' => 'Duplicate entry: ISBN already exists in the catalog.'];
+          }
+        }
+      }
+
+      $duplicateSql = 'SELECT id FROM books WHERE LOWER(TRIM(title)) = :title AND LOWER(TRIM(author)) = :author';
+      $duplicateParams = [
+        ':title' => strtolower($title),
+        ':author' => strtolower($author),
+      ];
+
+      if ($hasPublishedYear) {
+        $duplicateSql .= ' AND COALESCE(published_year, 0) = :published_year';
+        $duplicateParams[':published_year'] = $publishedYear;
+      }
+
+      $duplicateSql .= ' LIMIT 1';
+
+      $duplicateStmt = $db->prepare($duplicateSql);
+      $duplicateStmt->execute($duplicateParams);
+      $duplicateByIdentityId = (int)$duplicateStmt->fetchColumn();
+      if ($duplicateByIdentityId > 0) {
+        return ['ok' => false, 'message' => 'Duplicate entry: the same title/author/publication year already exists.'];
+      }
+
+      $columns = ['title', 'author'];
+      $values = [':title', ':author'];
+      $params = [
+        ':title' => $title,
+        ':author' => $author,
+      ];
+
+      if ($hasIsbn) {
+        $columns[] = 'isbn';
+        $values[] = ':isbn';
+        $params[':isbn'] = $isbnNormalized;
+      }
+
+      if ($hasCategory) {
+        $columns[] = 'category';
+        $values[] = ':category';
+        $params[':category'] = $genre;
+      }
+
+      if ($hasPublishedYear) {
+        $columns[] = 'published_year';
+        $values[] = ':published_year';
+        $params[':published_year'] = $publishedYear;
+      }
+
+      if ($hasPublicationDate) {
+        $columns[] = 'publication_date';
+        $values[] = ':publication_date';
+        $params[':publication_date'] = (string)($normalized['publication_date'] ?? '');
+      }
+
+      if ($hasIsActive) {
+        $columns[] = 'is_active';
+        $values[] = ':is_active';
+        $params[':is_active'] = 1;
+      }
+
+      $insertSql = 'INSERT INTO books (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ')';
+      $insertStmt = $db->prepare($insertSql);
+      $insertStmt->execute($params);
+
+      $bookId = (int)$db->lastInsertId();
+      return [
+        'ok' => true,
+        'message' => 'Book added successfully.',
+        'book_id' => $bookId,
+      ];
+    } catch (PDOException $e) {
+      $sqlState = (string)$e->getCode();
+      if ($sqlState === '23000') {
+        return ['ok' => false, 'message' => 'Duplicate entry detected while saving this book.'];
+      }
+
+      error_log('LibrarianPortalRepository::addBook error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to add book right now.'];
+    } catch (Exception $e) {
+      error_log('LibrarianPortalRepository::addBook error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to add book right now.'];
+    }
+  }
+
   /**
    * @param array<string,mixed> $facts
    * @return array{ok: bool, message: string}
