@@ -34,6 +34,7 @@ if (is_array($flash) && isset($flash['type'], $flash['message'])) {
 }
 
 $csrfToken = getAdminCsrfToken();
+$openAddBookModal = false;
 $bookForm = [
   'title' => '',
   'author' => '',
@@ -55,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bookForm['genre'] = trim((string)($_POST['genre'] ?? ''));
 
     if (!$originCheck['valid']) {
+      $openAddBookModal = true;
       logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
       error_log('Blocked librarian-books POST due to origin validation: ' . json_encode($originCheck));
       $page_alerts[] = [
@@ -63,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'message' => 'Origin validation failed. Please refresh and try again.',
       ];
     } elseif (!validateAdminCsrfToken($submittedToken)) {
+      $openAddBookModal = true;
       logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
       $page_alerts[] = [
         'type' => 'error',
@@ -76,6 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
         'message' => (string)$result['message'],
       ];
+
+      if (empty($result['ok'])) {
+        $openAddBookModal = true;
+      }
 
       if (!empty($result['ok'])) {
         $bookForm = [
@@ -183,45 +190,58 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
       </header>
 
       <section class="admin-card" style="margin-bottom:16px;">
-        <div class="admin-card-header">
-          <h2>Add Book</h2>
-          <p>Enter core bibliographic details to add a new catalog title.</p>
+        <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+          <div>
+            <h2>Add Book</h2>
+            <p>Enter core bibliographic details to add a new catalog title.</p>
+          </div>
+          <button type="button" class="admin-button admin-button-primary" data-open-modal="#addBookModal">Add Book</button>
         </div>
+      </section>
 
-        <form method="POST" class="admin-inline-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;">
+      <div id="addBookModal" class="admin-modal-backdrop" aria-hidden="true">
+        <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="addBookTitle">
+          <div class="admin-modal-header">
+            <h2 id="addBookTitle">Add Book</h2>
+            <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
+          </div>
+
+          <form method="POST" class="admin-form-grid">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
           <input type="hidden" name="action" value="add_book">
 
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Title</span>
-            <input type="text" name="title" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['title'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Book title">
-          </label>
+          <div class="admin-form-field">
+            <label for="add_book_title">Title</label>
+            <input id="add_book_title" type="text" name="title" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['title'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Book title">
+          </div>
 
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Author</span>
-            <input type="text" name="author" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['author'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Author name">
-          </label>
+          <div class="admin-form-field">
+            <label for="add_book_author">Author</label>
+            <input id="add_book_author" type="text" name="author" required maxlength="255" value="<?php echo htmlspecialchars((string)$bookForm['author'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Author name">
+          </div>
 
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">ISBN</span>
-            <input type="text" name="isbn" required maxlength="32" value="<?php echo htmlspecialchars((string)$bookForm['isbn'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="ISBN-10 or ISBN-13">
-          </label>
+          <div class="admin-form-field">
+            <label for="add_book_isbn">ISBN</label>
+            <input id="add_book_isbn" type="text" name="isbn" required maxlength="32" value="<?php echo htmlspecialchars((string)$bookForm['isbn'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="ISBN-10 or ISBN-13">
+          </div>
 
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Publication Date</span>
-            <input type="date" name="publication_date" required value="<?php echo htmlspecialchars((string)$bookForm['publication_date'], ENT_QUOTES, 'UTF-8'); ?>">
-          </label>
+          <div class="admin-form-field">
+            <label for="add_book_publication_date">Publication Date</label>
+            <input id="add_book_publication_date" type="date" name="publication_date" required value="<?php echo htmlspecialchars((string)$bookForm['publication_date'], ENT_QUOTES, 'UTF-8'); ?>">
+          </div>
 
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Genre</span>
-            <input type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
-          </label>
+          <div class="admin-form-field admin-span-2">
+            <label for="add_book_genre">Genre</label>
+            <input id="add_book_genre" type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
+          </div>
 
-          <div>
+          <div class="admin-modal-actions">
+            <button type="button" class="admin-button admin-button-ghost" data-close-modal>Cancel</button>
             <button type="submit" class="admin-button admin-button-primary">Add Book</button>
           </div>
-        </form>
-      </section>
+          </form>
+        </div>
+      </div>
 
       <?php if (!$catalog['available']): ?>
         <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">
@@ -329,6 +349,63 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
 
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
+
+  <script>
+    function openModal(target) {
+      if (!target) {
+        return;
+      }
+
+      target.classList.add('is-open');
+      target.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modal) {
+      if (!modal) {
+        return;
+      }
+
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-open-modal]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var target = document.querySelector(button.getAttribute('data-open-modal'));
+        openModal(target);
+      });
+    });
+
+    document.querySelectorAll('[data-close-modal]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        closeModal(button.closest('.admin-modal-backdrop'));
+      });
+    });
+
+    document.querySelectorAll('.admin-modal-backdrop').forEach(function(backdrop) {
+      backdrop.addEventListener('click', function(event) {
+        if (event.target === backdrop) {
+          closeModal(backdrop);
+        }
+      });
+    });
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      document.querySelectorAll('.admin-modal-backdrop.is-open').forEach(function(openBackdrop) {
+        closeModal(openBackdrop);
+      });
+    });
+
+    <?php if ($openAddBookModal): ?>
+    openModal(document.getElementById('addBookModal'));
+    <?php endif; ?>
+  </script>
 </body>
 
 </html>
