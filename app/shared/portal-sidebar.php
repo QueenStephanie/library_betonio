@@ -6,7 +6,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath((strin
 }
 
 $portalRole = strtolower(trim((string)($portalRole ?? 'borrower')));
-if (!in_array($portalRole, ['borrower', 'librarian'], true)) {
+if (!in_array($portalRole, ['borrower', 'librarian', 'admin'], true)) {
   $portalRole = 'borrower';
 }
 
@@ -16,11 +16,23 @@ $portalIdentityMeta = trim((string)($portalIdentityMeta ?? ''));
 $portalBrandSub = trim((string)($portalBrandSub ?? ''));
 
 if ($portalIdentityName === '') {
-  $portalIdentityName = $portalRole === 'librarian' ? 'Librarian User' : 'Borrower User';
+  if ($portalRole === 'admin') {
+    $portalIdentityName = 'Administrator';
+  } elseif ($portalRole === 'librarian') {
+    $portalIdentityName = 'Librarian User';
+  } else {
+    $portalIdentityName = 'Borrower User';
+  }
 }
 
 if ($portalBrandSub === '') {
-  $portalBrandSub = $portalRole === 'librarian' ? 'Librarian Portal' : 'Borrower Portal';
+  if ($portalRole === 'admin') {
+    $portalBrandSub = 'Admin Portal';
+  } elseif ($portalRole === 'librarian') {
+    $portalBrandSub = 'Librarian Portal';
+  } else {
+    $portalBrandSub = 'Borrower Portal';
+  }
 }
 
 $navByRole = [
@@ -40,6 +52,13 @@ $navByRole = [
     ['key' => 'fines', 'label' => 'Fines', 'path' => 'librarian-fines.php', 'icon' => 'fines'],
     ['key' => 'logout', 'label' => 'Log Out', 'path' => 'admin-logout.php', 'icon' => 'logout', 'logout' => true],
   ],
+  'admin' => [
+    ['key' => 'dashboard', 'label' => 'Dashboard', 'path' => 'admin-dashboard.php', 'icon' => 'dashboard'],
+    ['key' => 'users', 'label' => 'User Management', 'path' => 'admin-users.php', 'icon' => 'users'],
+    ['key' => 'change-password', 'label' => 'Change Password', 'path' => 'admin-change-password.php', 'icon' => 'password'],
+    ['key' => 'fines', 'label' => 'Fines Report', 'path' => 'admin-fines.php', 'icon' => 'fines'],
+    ['key' => 'logout', 'label' => 'Log Out', 'path' => 'admin-logout.php', 'icon' => 'logout', 'logout' => true],
+  ],
 ];
 
 $renderPortalIcon = static function ($icon) {
@@ -56,6 +75,10 @@ $renderPortalIcon = static function ($icon) {
       return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V12L15 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     case 'account':
       return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8"/><path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    case 'users':
+      return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 13C18.21 13 20 11.21 20 9C20 6.79 18.21 5 16 5" stroke="currentColor" stroke-width="1.6"/><path d="M4 20C4.9 17.3 7.7 15.5 11 15.5C14.3 15.5 17.1 17.3 18 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M11 13C13.21 13 15 11.21 15 9C15 6.79 13.21 5 11 5C8.79 5 7 6.79 7 9C7 11.21 8.79 13 11 13Z" stroke="currentColor" stroke-width="1.6"/></svg>';
+    case 'password':
+      return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V8C6 5.79 7.79 4 10 4H14C16.21 4 18 5.79 18 8V10" stroke="currentColor" stroke-width="1.6"/><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>';
     case 'fines':
       return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
     case 'logout':

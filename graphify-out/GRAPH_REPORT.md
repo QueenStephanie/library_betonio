@@ -1,7 +1,11 @@
-# Graph Report - C:\xampp\htdocs\library_betonio  (2026-04-19)
+# Graph Report - C:\xampp\htdocs\library_betonio\.kilo\worktrees\cottony-weeder  (2026-04-20)
 
 ## Corpus Check
+<<<<<<< ours
 - 170 files · ~157,934 words
+=======
+- 170 files · ~152,885 words
+>>>>>>> theirs
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -183,7 +187,7 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `AuthSupport` --calls--> `enforceAuthenticatedSessionTimeout()`  [INFERRED]
-  C:\xampp\htdocs\library_betonio\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\includes\functions.php
+  C:\xampp\htdocs\library_betonio\.kilo\worktrees\cottony-weeder\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\.kilo\worktrees\cottony-weeder\includes\functions.php
 
 ## Communities
 
