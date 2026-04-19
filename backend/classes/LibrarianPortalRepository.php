@@ -228,9 +228,9 @@ class LibrarianPortalRepository
     }
 
     $hasIsbn = self::hasColumn($db, 'books', 'isbn');
-    $hasCategory = self::hasColumn($db, 'books', 'category');
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
     $hasPublicationDate = self::hasColumn($db, 'books', 'publication_date');
-    $hasPublishedYear = self::hasColumn($db, 'books', 'published_year');
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year']);
     $hasIsActive = self::hasColumn($db, 'books', 'is_active');
 
     try {
@@ -252,8 +252,8 @@ class LibrarianPortalRepository
         ':author' => strtolower($author),
       ];
 
-      if ($hasPublishedYear) {
-        $duplicateSql .= ' AND COALESCE(published_year, 0) = :published_year';
+      if ($publishedYearColumn !== null) {
+        $duplicateSql .= ' AND COALESCE(`' . $publishedYearColumn . '`, 0) = :published_year';
         $duplicateParams[':published_year'] = $publishedYear;
       }
 
@@ -279,14 +279,14 @@ class LibrarianPortalRepository
         $params[':isbn'] = $isbnNormalized;
       }
 
-      if ($hasCategory) {
-        $columns[] = 'category';
+      if ($categoryColumn !== null) {
+        $columns[] = $categoryColumn;
         $values[] = ':category';
         $params[':category'] = $genre;
       }
 
-      if ($hasPublishedYear) {
-        $columns[] = 'published_year';
+      if ($publishedYearColumn !== null) {
+        $columns[] = $publishedYearColumn;
         $values[] = ':published_year';
         $params[':published_year'] = $publishedYear;
       }
@@ -740,32 +740,43 @@ class LibrarianPortalRepository
       return $response;
     }
 
-    if (!self::hasColumn($db, 'reservations', 'status')) {
+    $reservationIdColumn = self::resolveColumn($db, 'reservations', ['id']);
+    $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
+    $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
+    $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
+
+    if ($reservationIdColumn === null || $reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null) {
       $response['available'] = false;
       $response['message'] = 'Reservations schema is incompatible with checkout bridge.';
       return $response;
     }
 
     $limit = max(1, min(300, $limit));
-    $hasUsers = self::tableExists($db, 'users') && self::hasColumn($db, 'reservations', 'user_id');
-    $hasBooks = self::tableExists($db, 'books') && self::hasColumn($db, 'reservations', 'book_id');
+    $hasUsers = self::tableExists($db, 'users');
+    $hasBooks = self::tableExists($db, 'books');
     $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id') && self::hasColumn($db, 'book_copies', 'status');
 
-    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
-    $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.book_id' : '';
+    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.`' . $reservationUserColumn . '`' : '';
+    $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.`' . $reservationBookColumn . '`' : '';
+
+    $queuedExpr = $reservationQueuedColumn !== null ? 'r.`' . $reservationQueuedColumn . '`' : 'NULL';
+    $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
+    $orderByExpr = $reservationQueuedColumn !== null ? $queuedExpr : 'r.`' . $reservationIdColumn . '`';
 
     $availableCopiesExpr = '0';
     if ($hasCopies) {
-      $availableCopiesExpr = '(SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = r.book_id AND bc.status = \'available\')';
+      $availableCopiesExpr = '(SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = r.`' . $reservationBookColumn . '` AND bc.status = \'available\')';
     }
 
     $sql = "SELECT
-      r.id,
-      r.user_id,
-      r.book_id,
-      r.status,
-      r.queued_at,
-      r.ready_until,
+      r.`{$reservationIdColumn}` AS id,
+      r.`{$reservationUserColumn}` AS user_id,
+      r.`{$reservationBookColumn}` AS book_id,
+      r.`{$reservationStatusColumn}` AS status,
+      {$queuedExpr} AS queued_at,
+      {$readyUntilExpr} AS ready_until,
       {$availableCopiesExpr} AS available_copies,
       " . ($hasUsers ? 'u.first_name' : "''") . " AS borrower_first_name,
       " . ($hasUsers ? 'u.last_name' : "''") . " AS borrower_last_name,
@@ -775,8 +786,8 @@ class LibrarianPortalRepository
       FROM reservations r
       {$userJoin}
       {$bookJoin}
-      WHERE r.status IN ('ready_for_pickup', 'ready')
-      ORDER BY r.queued_at ASC, r.id ASC
+      WHERE r.`{$reservationStatusColumn}` IN ('ready_for_pickup', 'ready')
+      ORDER BY {$orderByExpr} ASC, r.`{$reservationIdColumn}` ASC
       LIMIT {$limit}";
 
     $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -947,6 +958,14 @@ class LibrarianPortalRepository
       return ['ok' => false, 'message' => 'Reservation checkout bridge requires user_id and book_id columns.'];
     }
 
+    if (!self::tableExists($db, 'book_copies')) {
+      return ['ok' => false, 'message' => 'Reservation checkout bridge is unavailable because book copies table is missing.'];
+    }
+
+    if (!self::hasColumn($db, 'book_copies', 'book_id') || !self::hasColumn($db, 'book_copies', 'status')) {
+      return ['ok' => false, 'message' => 'Reservation checkout bridge is unavailable due to incompatible copies schema.'];
+    }
+
     try {
       $db->beginTransaction();
 
@@ -1105,21 +1124,37 @@ class LibrarianPortalRepository
       return $response;
     }
 
+    $isbnColumn = self::resolveColumn($db, 'books', ['isbn']);
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year']);
+    $isActiveColumn = self::resolveColumn($db, 'books', ['is_active']);
+
     $search = trim($search);
     $limit = max(1, min(500, $limit));
     $where = '';
     $params = [];
 
     if ($search !== '') {
-      $where = ' WHERE (b.title LIKE :term OR b.author LIKE :term OR COALESCE(b.isbn, \'\') LIKE :term OR COALESCE(b.category, \'\') LIKE :term)';
+      $searchParts = ['b.title LIKE :term', 'b.author LIKE :term'];
+      if ($isbnColumn !== null) {
+        $searchParts[] = 'COALESCE(b.`' . $isbnColumn . '`, \'\') LIKE :term';
+      }
+      if ($categoryColumn !== null) {
+        $searchParts[] = 'COALESCE(b.`' . $categoryColumn . '`, \'\') LIKE :term';
+      }
+      $where = ' WHERE (' . implode(' OR ', $searchParts) . ')';
       $params[':term'] = '%' . $search . '%';
     }
 
-    if (self::hasColumn($db, 'books', 'is_active')) {
-      $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'b.is_active = 1';
+    if ($isActiveColumn !== null) {
+      $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'b.`' . $isActiveColumn . '` = 1';
     }
 
     $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id');
+    $isbnExpr = $isbnColumn !== null ? 'b.`' . $isbnColumn . '`' : "''";
+    $categoryExpr = $categoryColumn !== null ? 'b.`' . $categoryColumn . '`' : "''";
+    $publishedYearExpr = $publishedYearColumn !== null ? 'b.`' . $publishedYearColumn . '`' : 'NULL';
+    $isActiveExpr = $isActiveColumn !== null ? 'b.`' . $isActiveColumn . '`' : '1';
 
     if ($hasCopies && self::hasColumn($db, 'book_copies', 'status')) {
       $descriptionExpr = self::hasColumn($db, 'books', 'description')
@@ -1148,20 +1183,20 @@ class LibrarianPortalRepository
 
       $sql = "SELECT
         b.id,
-        b.isbn,
+        {$isbnExpr} AS isbn,
         b.title,
         b.author,
-        b.category,
-        b.published_year,
+        {$categoryExpr} AS category,
+        {$publishedYearExpr} AS published_year,
         {$descriptionExpr} AS description,
         {$coverExpr} AS cover_image_url,
-        b.is_active,
+        {$isActiveExpr} AS is_active,
         COUNT(bc.id) AS total_copies,
         SUM(CASE WHEN bc.status = 'available' THEN 1 ELSE 0 END) AS available_copies
       FROM books b
       LEFT JOIN book_copies bc ON bc.book_id = b.id
       {$where}
-      GROUP BY b.id, b.isbn, b.title, b.author, b.category, b.published_year, {$descriptionExpr}, {$coverExpr}, b.is_active
+      GROUP BY b.id, {$isbnExpr}, b.title, b.author, {$categoryExpr}, {$publishedYearExpr}, {$descriptionExpr}, {$coverExpr}, {$isActiveExpr}
       ORDER BY b.title ASC
       LIMIT {$limit}";
     } else {
@@ -1191,14 +1226,14 @@ class LibrarianPortalRepository
 
       $sql = "SELECT
         b.id,
-        b.isbn,
+        {$isbnExpr} AS isbn,
         b.title,
         b.author,
-        b.category,
-        b.published_year,
+        {$categoryExpr} AS category,
+        {$publishedYearExpr} AS published_year,
         {$descriptionExpr} AS description,
         {$coverExpr} AS cover_image_url,
-        b.is_active,
+        {$isActiveExpr} AS is_active,
         0 AS total_copies,
         0 AS available_copies
       FROM books b
@@ -1230,27 +1265,42 @@ class LibrarianPortalRepository
       return $response;
     }
 
-    if (!self::hasColumn($db, 'reservations', 'status')) {
+    $reservationIdColumn = self::resolveColumn($db, 'reservations', ['id']);
+    $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
+    $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
+    $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
+    $reservationPickedUpColumn = self::resolveColumn($db, 'reservations', ['picked_up_at']);
+
+    if ($reservationIdColumn === null || $reservationStatusColumn === null) {
       $response['available'] = false;
       $response['message'] = 'Reservations schema is incompatible with queue management.';
       return $response;
     }
 
     $limit = max(1, min(500, $limit));
-    $hasUsers = self::tableExists($db, 'users') && self::hasColumn($db, 'reservations', 'user_id');
-    $hasBooks = self::tableExists($db, 'books') && self::hasColumn($db, 'reservations', 'book_id');
+    $hasUsers = self::tableExists($db, 'users') && $reservationUserColumn !== null;
+    $hasBooks = self::tableExists($db, 'books') && $reservationBookColumn !== null;
 
-    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
-    $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.book_id' : '';
+    $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.`' . $reservationUserColumn . '`' : '';
+    $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.`' . $reservationBookColumn . '`' : '';
+
+    $userExpr = $reservationUserColumn !== null ? 'r.`' . $reservationUserColumn . '`' : 'NULL';
+    $bookExpr = $reservationBookColumn !== null ? 'r.`' . $reservationBookColumn . '`' : 'NULL';
+    $queuedExpr = $reservationQueuedColumn !== null ? 'r.`' . $reservationQueuedColumn . '`' : 'NULL';
+    $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
+    $pickedUpExpr = $reservationPickedUpColumn !== null ? 'r.`' . $reservationPickedUpColumn . '`' : 'NULL';
+    $orderByExpr = $reservationQueuedColumn !== null ? $queuedExpr : 'r.`' . $reservationIdColumn . '`';
 
     $sql = "SELECT
-      r.id,
-      r.user_id,
-      r.book_id,
-      r.status,
-      r.queued_at,
-      r.ready_until,
-      r.picked_up_at,
+      r.`{$reservationIdColumn}` AS id,
+      {$userExpr} AS user_id,
+      {$bookExpr} AS book_id,
+      r.`{$reservationStatusColumn}` AS status,
+      {$queuedExpr} AS queued_at,
+      {$readyUntilExpr} AS ready_until,
+      {$pickedUpExpr} AS picked_up_at,
       " . ($hasUsers ? 'u.first_name' : "''") . " AS borrower_first_name,
       " . ($hasUsers ? 'u.last_name' : "''") . " AS borrower_last_name,
       " . ($hasUsers ? 'u.email' : "''") . " AS borrower_email,
@@ -1259,8 +1309,8 @@ class LibrarianPortalRepository
     FROM reservations r
     {$userJoin}
     {$bookJoin}
-    WHERE r.status IN ('pending', 'ready_for_pickup', 'ready')
-    ORDER BY r.queued_at ASC, r.id ASC
+    WHERE r.`{$reservationStatusColumn}` IN ('pending', 'ready_for_pickup', 'ready')
+    ORDER BY {$orderByExpr} ASC, r.`{$reservationIdColumn}` ASC
     LIMIT {$limit}";
 
     $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);

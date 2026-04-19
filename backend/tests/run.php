@@ -8,17 +8,15 @@ $testFiles = [
   __DIR__ . '/test_csrf_origin_helpers.php',
   __DIR__ . '/test_permission_gate.php',
   __DIR__ . '/test_borrower_reservations.php',
-<<<<<<< ours
-<<<<<<< ours
-=======
   __DIR__ . '/test_librarian_checkout_rules.php',
+  __DIR__ . '/test_librarian_add_book_rules.php',
   __DIR__ . '/test_borrower_renewal_rules.php',
->>>>>>> theirs
-=======
-  __DIR__ . '/test_librarian_checkout_rules.php',
-  __DIR__ . '/test_borrower_renewal_rules.php',
->>>>>>> theirs
 ];
+
+$includeDbTests = getenv('RUN_DB_TESTS') === '1';
+if ($includeDbTests) {
+  $testFiles[] = __DIR__ . '/test_librarian_add_book_persistence.php';
+}
 
 $results = [];
 $passed = 0;
