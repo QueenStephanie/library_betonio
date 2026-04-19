@@ -5,7 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../functions.php';
 require_once __DIR__ . '/../../backend/classes/PasswordRecovery.php';
-require_once __DIR__ . '/../../backend/mail/MailHandler.php';
 
 /**
  * Canonical authentication service for public auth flows.
@@ -67,7 +66,7 @@ class AuthService
         'success' => false,
         'error' => 'Registration failed because verification email could not be sent. Please check SMTP settings.',
       ];
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
       if ($this->db->inTransaction()) {
         $this->db->rollBack();
       }
@@ -87,9 +86,32 @@ class AuthService
 
   public function requestPasswordReset(string $email): array
   {
-    $mailHandler = new MailHandler($this->db);
-    $passwordRecovery = new PasswordRecovery($this->db, $mailHandler);
-    return $passwordRecovery->requestPasswordReset($email);
+    try {
+      $mailHandler = $this->createMailHandler();
+      $passwordRecovery = new PasswordRecovery($this->db, $mailHandler);
+      return $passwordRecovery->requestPasswordReset($email);
+    } catch (Throwable $e) {
+      error_log('AuthService::requestPasswordReset error: ' . $e->getMessage());
+      return ['success' => false, 'error' => 'Password reset request failed'];
+    }
+  }
+
+  private function createMailHandler()
+  {
+    $composerAutoloadPath = __DIR__ . '/../../backend/vendor/autoload.php';
+    if (!file_exists($composerAutoloadPath)) {
+      throw new RuntimeException('Composer autoload not found at backend/vendor/autoload.php. Run composer install in backend/.');
+    }
+
+    $mailHandlerPath = __DIR__ . '/../../backend/mail/MailHandler.php';
+    if (!file_exists($mailHandlerPath)) {
+      throw new RuntimeException('Mail handler not found at backend/mail/MailHandler.php.');
+    }
+
+    require_once $composerAutoloadPath;
+    require_once $mailHandlerPath;
+
+    return new MailHandler($this->db);
   }
 
   public function verifyResetToken(string $email, string $token): array

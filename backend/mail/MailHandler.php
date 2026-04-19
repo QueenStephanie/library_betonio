@@ -5,8 +5,14 @@
  * Safe error handling and template-based email sending
  */
 
+$composerAutoloadPath = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($composerAutoloadPath)) {
+    throw new RuntimeException('Composer autoload not found at backend/vendor/autoload.php. Run composer install in backend/.');
+}
+
+require_once $composerAutoloadPath;
+
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 class MailHandler
 {
@@ -14,7 +20,7 @@ class MailHandler
     private $config;
     private $db;
 
-    private function errorResponse($fallbackMessage, Exception $e)
+    private function errorResponse($fallbackMessage, Throwable $e)
     {
         $message = $fallbackMessage;
         if (defined('APP_DEBUG') && APP_DEBUG) {
@@ -106,7 +112,7 @@ class MailHandler
 
             // Default sender
             $this->mail->setFrom($this->config['smtp']['from_email'], $this->config['smtp']['from_name']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("PHPMailer initialization error: " . $e->getMessage());
             throw $e;
         }
@@ -138,7 +144,7 @@ class MailHandler
             $this->mail->send();
 
             return ['success' => true, 'message' => 'Verification email sent successfully'];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error sending verification email: " . $e->getMessage());
             return $this->errorResponse('Failed to send verification email', $e);
         } finally {
@@ -171,7 +177,7 @@ class MailHandler
             $this->mail->send();
 
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error sending password reset email: " . $e->getMessage());
             return $this->errorResponse('Failed to send password reset email', $e);
         } finally {
@@ -198,7 +204,7 @@ class MailHandler
             $this->mail->send();
 
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error sending password reset email by link: " . $e->getMessage());
             return $this->errorResponse('Failed to send password reset email', $e);
         } finally {
@@ -375,7 +381,7 @@ class MailHandler
             $this->mail->clearAddresses();
 
             return ['success' => true, 'message' => 'Test email sent successfully'];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error sending test email: " . $e->getMessage());
             return $this->errorResponse('Failed to send test email', $e);
         }

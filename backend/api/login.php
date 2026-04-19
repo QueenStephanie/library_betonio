@@ -65,7 +65,7 @@ try {
   }
 
   echo json_encode($login_result);
-} catch (Exception $e) {
+} catch (Throwable $e) {
   error_log("Login error: " . $e->getMessage());
   http_response_code(500);
   echo json_encode(['success' => false, 'error' => 'Login failed']);

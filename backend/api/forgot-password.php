@@ -42,7 +42,7 @@ try {
   // Always return success message for security (don't reveal if email exists)
   http_response_code(200);
   echo json_encode($result);
-} catch (Exception $e) {
+} catch (Throwable $e) {
   error_log("Forgot password error: " . $e->getMessage());
   http_response_code(500);
   echo json_encode(['success' => false, 'error' => 'Password reset request failed']);

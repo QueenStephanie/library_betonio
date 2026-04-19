@@ -75,6 +75,25 @@ function requireLogin()
 }
 
 /**
+ * Resolve authenticated landing page based on active session role.
+ */
+function resolveAuthenticatedHomePath()
+{
+  $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+  $isSuperadmin = !empty($_SESSION['is_superadmin']);
+
+  if ($role === 'admin' || $isSuperadmin) {
+    return 'admin-dashboard.php#about-me';
+  }
+
+  if ($role === 'librarian') {
+    return 'librarian-dashboard.php';
+  }
+
+  return 'index.php';
+}
+
+/**
  * Check whether an authenticated user has admin role.
  */
 function isAdminAuthenticated()
@@ -727,8 +746,18 @@ function getMailHandler()
 
   global $db;
 
-  require_once __DIR__ . '/../backend/vendor/autoload.php';
-  require_once __DIR__ . '/../backend/mail/MailHandler.php';
+  $autoloadPath = __DIR__ . '/../backend/vendor/autoload.php';
+  if (!file_exists($autoloadPath)) {
+    throw new RuntimeException('Composer autoload not found at backend/vendor/autoload.php. Run composer install in backend/.');
+  }
+
+  $mailHandlerPath = __DIR__ . '/../backend/mail/MailHandler.php';
+  if (!file_exists($mailHandlerPath)) {
+    throw new RuntimeException('MailHandler class file not found at backend/mail/MailHandler.php.');
+  }
+
+  require_once $autoloadPath;
+  require_once $mailHandlerPath;
 
   $mail_handler = new MailHandler($db ?? null);
   return $mail_handler;
@@ -742,7 +771,7 @@ function sendVerificationEmail($email, $name = '', $verification_token = '')
   try {
     $result = getMailHandler()->sendVerificationEmail($email, $name, $verification_token);
     return $result;
-  } catch (Exception $e) {
+  } catch (Throwable $e) {
     error_log("Error sending verification email: " . $e->getMessage());
     $message = 'Failed to send verification email';
     if (defined('APP_DEBUG') && APP_DEBUG) {
@@ -760,7 +789,7 @@ function sendPasswordResetEmail($email, $reset_link, $name = '')
   try {
     $result = getMailHandler()->sendPasswordResetEmailByLink($email, $reset_link, $name);
     return !empty($result['success']);
-  } catch (Exception $e) {
+  } catch (Throwable $e) {
     error_log("Email sending error: " . $e->getMessage());
     return false;
   }

@@ -22,21 +22,6 @@ $csrf_token = getPublicCsrfToken($csrf_scope);
 
 $forceLogin = isset($_GET['force']) && $_GET['force'] === '1';
 
-$resolveLoginRedirect = static function (): string {
-  $role = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
-  $isSuperadmin = !empty($_SESSION['is_superadmin']);
-
-  if ($role === 'admin' || $isSuperadmin) {
-    return 'admin-dashboard.php#about-me';
-  }
-
-  if ($role === 'librarian') {
-    return 'librarian-dashboard.php';
-  }
-
-  return 'index.php';
-};
-
 if (isset($_GET['logout']) && $_GET['logout'] === '1') {
   AuthSupport::clearSession();
   redirect('login.php');
@@ -44,7 +29,7 @@ if (isset($_GET['logout']) && $_GET['logout'] === '1') {
 
 // Check if already logged in
 if (isset($_SESSION['user_id']) && !$forceLogin) {
-  redirect($resolveLoginRedirect());
+  redirect(resolveAuthenticatedHomePath());
 }
 
 // Handle form submission
@@ -77,10 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($result['success']) {
         logVerificationAttempt($email, 'login_attempt', true);
         setFlash('success', $result['message']);
-        if (strpos($resolveLoginRedirect(), 'admin-dashboard.php') === 0) {
+        $postLoginRedirect = resolveAuthenticatedHomePath();
+        if (strpos($postLoginRedirect, 'admin-dashboard.php') === 0) {
           $_SESSION['show_admin_welcome'] = true;
         }
-        redirect($resolveLoginRedirect());
+        redirect($postLoginRedirect);
       } else {
         logVerificationAttempt($email, 'login_attempt', false);
         if (isset($result['unverified']) && $result['unverified']) {

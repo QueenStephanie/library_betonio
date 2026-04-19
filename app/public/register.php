@@ -22,16 +22,19 @@ $csrf_token = getPublicCsrfToken($csrf_scope);
 
 // Check if already logged in
 if (isset($_SESSION['user_id'])) {
-  redirect('index.php');
+  redirect(resolveAuthenticatedHomePath());
 }
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('register_post');
+  $originReason = (string)($originCheck['reason'] ?? '');
+  // Some clients/proxies omit Origin/Referer on same-site form POSTs; allow that case only when CSRF token validation succeeds.
+  $allowMissingOriginFallback = !$originCheck['valid'] && $originReason === 'missing_origin_headers';
   $submittedToken = (string)($_POST['csrf_token'] ?? '');
-   $email = getPost('email');
+  $email = getPost('email');
 
-  if (!$originCheck['valid']) {
+  if (!$originCheck['valid'] && !$allowMissingOriginFallback) {
     logVerificationAttempt($email, 'csrf_reject', false);
     error_log('Blocked register POST due to origin validation: ' . json_encode($originCheck));
     $error = 'Security check failed. Please refresh and try again.';
