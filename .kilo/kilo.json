@@ -1,5 +1,8 @@
 {
   "$schema": "https://app.kilo.ai/config.json",
+  "instructions": [
+    ".kilo/custom-instructions.md"
+  ],
   "agent": {
     "frontend-specialist": {
       "mode": "primary",

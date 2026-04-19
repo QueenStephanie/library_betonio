@@ -119,12 +119,14 @@ For every task:
 ## 8. When to ask, when to proceed
 
 **Ask before proceeding when:**
+
 - The request has two plausible interpretations and the choice materially affects the output.
 - The change touches something you've been told is load-bearing, versioned, or has a migration path.
 - You need a credential, a secret, or a production resource you don't have access to.
 - The user's stated goal and the literal request appear to conflict.
 
 **Proceed without asking when:**
+
 - The task is trivial and reversible (typo, rename a local variable, add a log line).
 - The ambiguity can be resolved by reading the code or running a command.
 - The user has already answered the question once in this session.
@@ -148,15 +150,51 @@ Boris Cherny (creator of Claude Code) keeps his team's file around 100 lines. Un
 
 ## 10. Project context
 
-**Fill this in per project. Keep it specific. Delete sections that don't apply.**
-
 ### Stack
+
 - Language and version: PHP 8.1+; SQL (MySQL/MariaDB)
 - Framework(s): Vanilla PHP (no framework detected in this repo)
 - Package manager: Composer (`backend/composer.json`); npm for `.kilo` tooling (`.kilo/package.json`)
 - Runtime / deployment target: Apache + MySQL (XAMPP local), InfinityFree shared hosting (production)
 
 ### Commands
+
+- Install: `composer install --working-dir=backend`
+- Build: _none (vanilla PHP)_
+- Test (all): `php backend/tests/run.php`
+- Test (single file): _TODO_
+- Lint: _TODO_
+- Typecheck: _TODO_
+- Run locally: `php backend/setup-db.php` then run Apache/MySQL in XAMPP and open `http://localhost/library_betonio/`
+
+Prefer single-file or single-test runs during iteration. Full suites are for the final verification pass.
+
+### Layout
+
+- Source lives in: `app/`, `backend/`, `includes/`, `public/`, and root compatibility `*.php` entry loaders
+- Tests live in: `backend/tests/`
+- Do not modify: `backend/vendor/` (Composer vendored dependencies)
+
+### Conventions specific to this repo
+
+- Naming: _TODO_
+- Import style: _TODO_
+- Error handling pattern: _TODO_
+- Testing pattern and framework: _TODO_
+
+### Forbidden
+
+- _TODO_: things that look reasonable but will break this project.
+
+### Stack
+
+- Language and version: PHP 8.1+; SQL (MySQL/MariaDB)
+- Framework(s): Vanilla PHP (no framework detected in this repo)
+- Package manager: Composer (`backend/composer.json`); npm for `.kilo` tooling (`.kilo/package.json`)
+- Runtime / deployment target: Apache + MySQL (XAMPP local), InfinityFree shared hosting (production)
+
+### Commands
+
 - Install: `composer install --working-dir=backend`
 - Build: `TODO`
 - Test (all): `php backend/tests/run.php`
@@ -168,17 +206,20 @@ Boris Cherny (creator of Claude Code) keeps his team's file around 100 lines. Un
 Prefer single-file or single-test runs during iteration. Full suites are for the final verification pass.
 
 ### Layout
+
 - Source lives in: `app/`, `backend/`, `includes/`, `public/`, and root compatibility `*.php` entry loaders
 - Tests live in: `backend/tests/`
 - Do not modify: `backend/vendor/` (Composer vendored dependencies)
 
 ### Conventions specific to this repo
+
 - Naming: `TODO`
 - Import style: `TODO`
 - Error handling pattern: `TODO`
 - Testing pattern and framework: `TODO`
 
 ### Forbidden
+
 - `TODO`: things that look reasonable but will break this project.
 
 ---
@@ -196,6 +237,7 @@ When the user corrects your approach, append a one-line rule here before ending 
 ## 12. How this file was built
 
 This boilerplate synthesizes:
+
 - Sean Donahoe's IJFW ("It Just F\*cking Works") principles: one install, working code, no ceremony.
 - Andrej Karpathy's observations on LLM coding pitfalls (the four principles: think-first, simplicity, surgical changes, goal-driven execution).
 - Boris Cherny's public Claude Code workflow (reactive pruning, keep it ~100 lines, only rules that fix real mistakes).
