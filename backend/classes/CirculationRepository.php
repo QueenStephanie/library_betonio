@@ -19,6 +19,46 @@ class CirculationRepository
   /** @var array<string, array<string, bool>> */
   private static $columnCache = [];
 
+  private static function loadReceiptRepository(): void
+  {
+    if (!class_exists('ReceiptRepository')) {
+      require_once __DIR__ . '/ReceiptRepository.php';
+    }
+  }
+
+  private static function buildReceiptPrintUrl(int $receiptId): string
+  {
+    return 'librarian-receipt.php?receipt_id=' . rawurlencode((string)$receiptId);
+  }
+
+  /**
+   * @param array<string,mixed> $payload
+   * @return array<string,mixed>
+   */
+  private static function createTransactionReceipt(PDO $db, string $transactionType, int $transactionRefId, int $borrowerUserId, int $actorUserId, array $payload): array
+  {
+    self::loadReceiptRepository();
+
+    $receipt = ReceiptRepository::createForTransaction($db, [
+      'transaction_type' => $transactionType,
+      'transaction_ref_id' => $transactionRefId,
+      'borrower_user_id' => $borrowerUserId > 0 ? $borrowerUserId : null,
+      'actor_user_id' => $actorUserId > 0 ? $actorUserId : null,
+      'payload' => $payload,
+    ]);
+
+    $receiptId = (int)($receipt['id'] ?? 0);
+    if ($receiptId <= 0) {
+      throw new RuntimeException('Receipt creation returned an invalid receipt ID.');
+    }
+
+    return [
+      'receipt_id' => $receiptId,
+      'receipt_code' => (string)($receipt['receipt_code'] ?? ''),
+      'receipt_print_url' => self::buildReceiptPrintUrl($receiptId),
+    ];
+  }
+
   public static function getBorrowerMaxActiveReservations(): int
   {
     return self::BORROWER_MAX_ACTIVE_RESERVATIONS;
@@ -475,6 +515,23 @@ class CirculationRepository
       $insertStmt->execute($insertParams);
 
       $reservationId = (int)$db->lastInsertId();
+
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'reservation_create',
+        $reservationId,
+        $userId,
+        $userId,
+        [
+          'reservation_id' => $reservationId,
+          'borrower_user_id' => $userId,
+          'book_id' => $bookId,
+          'queue_position' => $queuePosition,
+          'status' => 'pending',
+          'generated_by' => 'CirculationRepository::createBorrowerReservation',
+        ]
+      );
+
       $db->commit();
 
       return [
@@ -482,6 +539,9 @@ class CirculationRepository
         'message' => 'Reservation created successfully.',
         'reservation_id' => $reservationId,
         'queue_position' => $queuePosition,
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
       ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {
@@ -609,10 +669,28 @@ class CirculationRepository
         ':reservation_id' => $reservationId,
       ]);
 
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'reservation_cancel',
+        $reservationId,
+        $userId,
+        $userId,
+        [
+          'reservation_id' => $reservationId,
+          'borrower_user_id' => $userId,
+          'status_before' => $status,
+          'status_after' => 'cancelled',
+          'generated_by' => 'CirculationRepository::cancelBorrowerReservation',
+        ]
+      );
+
       $db->commit();
       return [
         'ok' => true,
         'message' => 'Reservation cancelled successfully.',
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
       ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {
@@ -1001,6 +1079,22 @@ class CirculationRepository
         $eventStmt->execute($eventParams);
       }
 
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'renewal',
+        $loanId,
+        $userId,
+        $userId,
+        [
+          'loan_id' => $loanId,
+          'borrower_user_id' => $userId,
+          'renewal_count' => $renewalCount + 1,
+          'due_at' => $newDueAt,
+          'extension_days' => $extensionDays,
+          'generated_by' => 'CirculationRepository::renewBorrowerLoan',
+        ]
+      );
+
       $db->commit();
 
       return [
@@ -1009,6 +1103,9 @@ class CirculationRepository
         'loan_id' => $loanId,
         'renewal_count' => $renewalCount + 1,
         'due_at' => $newDueAt,
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
       ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {

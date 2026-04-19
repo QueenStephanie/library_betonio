@@ -69,7 +69,7 @@ foreach ($reservationRows as $reservationSummary) {
   $reservationStatus = strtolower(trim((string)($reservationSummary['status'] ?? '')));
   if ($reservationStatus === 'ready_for_pickup') {
     $readyReservations++;
-  } elseif ($reservationStatus === 'queued') {
+  } elseif ($reservationStatus === 'pending') {
     $queuedReservations++;
   }
 }

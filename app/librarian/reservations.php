@@ -61,14 +61,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = strtolower(trim((string)($_POST['action'] ?? '')));
     $reservationId = (int)($_POST['reservation_id'] ?? 0);
 
+    $appendReceiptAlertMeta = static function (array &$alert, array $result): void {
+      if (empty($result['ok'])) {
+        return;
+      }
+
+      $receiptId = (int)($result['receipt_id'] ?? 0);
+      if ($receiptId <= 0) {
+        return;
+      }
+
+      $receiptPrintUrl = trim((string)($result['receipt_print_url'] ?? ''));
+      if ($receiptPrintUrl === '') {
+        $receiptPrintUrl = appPath('librarian-receipt.php', [
+          'receipt_id' => $receiptId,
+          'auto_print' => 1,
+        ]);
+      } else {
+        $separator = strpos($receiptPrintUrl, '?') === false ? '?' : '&';
+        $receiptPrintUrl .= $separator . 'auto_print=1';
+      }
+
+      $alert['onConfirmOpen'] = $receiptPrintUrl;
+
+      $receiptCode = trim((string)($result['receipt_code'] ?? ''));
+      if ($receiptCode !== '') {
+        $alert['message'] .= ' Receipt: ' . $receiptCode . '.';
+      }
+    };
+
     if ($action === 'checkout') {
       $actorUserId = (int)($_SESSION['user_id'] ?? 0);
       $result = LibrarianPortalRepository::checkoutReadyReservation($db, $reservationId, $actorUserId);
-      $page_alerts[] = [
+      $alert = [
         'type' => $result['ok'] ? 'success' : 'error',
         'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Action Failed',
         'message' => (string)$result['message'],
       ];
+      $appendReceiptAlertMeta($alert, $result);
+      $page_alerts[] = $alert;
     } else {
       $result = LibrarianPortalRepository::updateReservationStatus($db, $reservationId, $action);
 

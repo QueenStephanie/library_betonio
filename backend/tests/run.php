@@ -11,6 +11,10 @@ $testFiles = [
   __DIR__ . '/test_librarian_checkout_rules.php',
   __DIR__ . '/test_librarian_add_book_rules.php',
   __DIR__ . '/test_borrower_renewal_rules.php',
+<<<<<<< ours
+=======
+  __DIR__ . '/test_receipt_repository.php',
+>>>>>>> theirs
 ];
 
 $includeDbTests = getenv('RUN_DB_TESTS') === '1';

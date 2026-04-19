@@ -1,12 +1,16 @@
-# Graph Report - C:\xampp\htdocs\library_betonio  (2026-04-19)
+# Graph Report - C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon  (2026-04-19)
 
 ## Corpus Check
+<<<<<<< ours
 - 166 files · ~153,153 words
+=======
+- 170 files · ~151,764 words
+>>>>>>> theirs
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 665 nodes · 882 edges · 156 communities detected
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 102 edges (avg confidence: 0.8)
+- 688 nodes · 905 edges · 158 communities detected
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 104 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -166,27 +170,29 @@
 - [[_COMMUNITY_Community 153|Community 153]]
 - [[_COMMUNITY_Community 154|Community 154]]
 - [[_COMMUNITY_Community 155|Community 155]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `PHPMailer` - 129 edges
 2. `SMTP` - 44 edges
-3. `UserRepository` - 27 edges
-4. `ClassLoader` - 26 edges
-5. `CirculationRepository` - 24 edges
-6. `LibrarianPortalRepository` - 22 edges
+3. `CirculationRepository` - 27 edges
+4. `UserRepository` - 27 edges
+5. `ClassLoader` - 26 edges
+6. `LibrarianPortalRepository` - 25 edges
 7. `PermissionGate` - 16 edges
 8. `InstalledVersions` - 16 edges
-9. `AppBootstrap` - 13 edges
-10. `AuthSupport` - 12 edges
+9. `ReceiptRepository` - 13 edges
+10. `AppBootstrap` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `AuthSupport` --calls--> `enforceAuthenticatedSessionTimeout()`  [INFERRED]
-  C:\xampp\htdocs\library_betonio\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\includes\functions.php
+  C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon\includes\functions.php
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.04
+Cohesion: 0.03
 Nodes (1): PHPMailer
 
 ### Community 1 - "Community 1"
@@ -194,36 +200,36 @@ Cohesion: 0.05
 Nodes (38): appPath(), appUrl(), checkSessionTimeout(), clearPublicCsrfToken(), denyWithFlashRedirect(), displayFlash(), enforceAuthenticatedSessionTimeout(), ensureAdminCsrfToken() (+30 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (6): AdminUserManagementService, Auth, AuthManager, AuthSupport, ComposerAutoloaderInit2185d2f99bcd56787481d9357a5972d3, UserRepository
+Cohesion: 0.06
+Nodes (5): AdminUserManagementService, Auth, AuthManager, AuthSupport, UserRepository
 
 ### Community 3 - "Community 3"
-Cohesion: 0.08
+Cohesion: 0.1
 Nodes (1): SMTP
 
 ### Community 4 - "Community 4"
-Cohesion: 0.07
-Nodes (2): renderCooldown(), ClassLoader
+Cohesion: 0.04
+Nodes (3): renderCooldown(), ClassLoader, InstalledVersions
 
 ### Community 5 - "Community 5"
+Cohesion: 0.05
+Nodes (2): LibrarianPortalRepository, ReceiptRepository
+
+### Community 6 - "Community 6"
 Cohesion: 0.09
 Nodes (11): AppBootstrap, apiBuildAllowedOrigins(), apiEnforceStateChangingRequestOrigin(), apiGetDatabaseConnection(), apiHandleCorsAndMethod(), apiNormalizeOriginUrl(), apiResolveRequestOriginCandidate(), apiValidateStateChangingRequestOrigin() (+3 more)
 
-### Community 6 - "Community 6"
-Cohesion: 0.08
-Nodes (1): CirculationRepository
-
 ### Community 7 - "Community 7"
-Cohesion: 0.09
-Nodes (1): LibrarianPortalRepository
+Cohesion: 0.07
+Nodes (1): CirculationRepository
 
 ### Community 8 - "Community 8"
 Cohesion: 0.25
 Nodes (1): MailHandler
 
 ### Community 9 - "Community 9"
-Cohesion: 0.12
-Nodes (1): InstalledVersions
+Cohesion: 0.14
+Nodes (2): AuthService, ComposerAutoloaderInit2185d2f99bcd56787481d9357a5972d3
 
 ### Community 10 - "Community 10"
 Cohesion: 0.24
@@ -234,56 +240,56 @@ Cohesion: 0.35
 Nodes (1): POP3
 
 ### Community 12 - "Community 12"
-Cohesion: 0.25
-Nodes (1): AuthService
-
-### Community 13 - "Community 13"
 Cohesion: 0.39
 Nodes (6): buildGeneratedSuperadminEmail(), ensureAdminDashboardSchema(), ensureColumn(), ensureIndex(), ensureSuperadminAccount(), normalizeSuperadminUsername()
 
-### Community 14 - "Community 14"
+### Community 13 - "Community 13"
 Cohesion: 0.29
 Nodes (2): applyMigration(), splitSqlStatements()
+
+### Community 14 - "Community 14"
+Cohesion: 0.57
+Nodes (7): asString(), openWindow(), redirectTo(), run(), runSingleAlert(), runWithSwalFallback(), runWithSweetAlerts()
 
 ### Community 15 - "Community 15"
 Cohesion: 0.29
 Nodes (1): AdminProfileRepository
 
 ### Community 16 - "Community 16"
-Cohesion: 0.62
-Nodes (6): asString(), redirectTo(), run(), runSingleAlert(), runWithSwalFallback(), runWithSweetAlerts()
-
-### Community 17 - "Community 17"
 Cohesion: 0.47
 Nodes (1): OAuth
 
-### Community 18 - "Community 18"
+### Community 17 - "Community 17"
 Cohesion: 0.4
 Nodes (2): setUserSession(), updateDashboardData()
 
-### Community 19 - "Community 19"
+### Community 18 - "Community 18"
 Cohesion: 0.4
 Nodes (1): AccountService
 
-### Community 20 - "Community 20"
+### Community 19 - "Community 19"
 Cohesion: 0.6
 Nodes (4): nextSlide(), resetAutoPlay(), showSlide(), startAutoPlay()
 
-### Community 21 - "Community 21"
+### Community 20 - "Community 20"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 22 - "Community 22"
+### Community 21 - "Community 21"
 Cohesion: 0.67
 Nodes (1): FineReporting
 
-### Community 23 - "Community 23"
+### Community 22 - "Community 22"
 Cohesion: 0.67
 Nodes (1): ComposerStaticInit2185d2f99bcd56787481d9357a5972d3
 
-### Community 24 - "Community 24"
+### Community 23 - "Community 23"
 Cohesion: 0.67
 Nodes (1): Exception
+
+### Community 24 - "Community 24"
+Cohesion: 1.0
+Nodes (0): 
 
 ### Community 25 - "Community 25"
 Cohesion: 1.0
@@ -809,9 +815,19 @@ Nodes (0):
 Cohesion: 1.0
 Nodes (0): 
 
+### Community 156 - "Community 156"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 157 - "Community 157"
+Cohesion: 1.0
+Nodes (0): 
+
 ## Knowledge Gaps
 - **1 isolated node(s):** `Database`
   These have ≤1 connection - possible missing edges or undocumented components.
+- **Thin community `Community 24`** (2 nodes): `receipt.php`, `receiptValue()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 25`** (2 nodes): `e2e-role-auth-check.php`, `addResult()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 26`** (2 nodes): `run-create-circulation-core.php`, `assertSchemaCompatibility()`
@@ -846,249 +862,253 @@ Nodes (0):
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 41`** (1 nodes): `librarian-fines.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (1 nodes): `librarian-reservations.php`
+- **Thin community `Community 42`** (1 nodes): `librarian-receipt.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (1 nodes): `login.php`
+- **Thin community `Community 43`** (1 nodes): `librarian-reservations.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (1 nodes): `logout.php`
+- **Thin community `Community 44`** (1 nodes): `login.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (1 nodes): `register.php`
+- **Thin community `Community 45`** (1 nodes): `logout.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (1 nodes): `reservations.php`
+- **Thin community `Community 46`** (1 nodes): `register.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (1 nodes): `verify-otp.php`
+- **Thin community `Community 47`** (1 nodes): `reservations.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (1 nodes): `upload-avatar.php`
+- **Thin community `Community 48`** (1 nodes): `verify-otp.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (1 nodes): `create.php`
+- **Thin community `Community 49`** (1 nodes): `upload-avatar.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (1 nodes): `reprint.php`
+- **Thin community `Community 50`** (1 nodes): `create.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (1 nodes): `admin-dashboard.php`
+- **Thin community `Community 51`** (1 nodes): `reprint.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (1 nodes): `admin-fines.php`
+- **Thin community `Community 52`** (1 nodes): `admin-dashboard.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (1 nodes): `admin-login.php`
+- **Thin community `Community 53`** (1 nodes): `admin-fines.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (1 nodes): `admin-logout.php`
+- **Thin community `Community 54`** (1 nodes): `admin-login.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (1 nodes): `admin-profile.php`
+- **Thin community `Community 55`** (1 nodes): `admin-logout.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 56`** (1 nodes): `books.php`
+- **Thin community `Community 56`** (1 nodes): `admin-profile.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (1 nodes): `circulation.php`
+- **Thin community `Community 57`** (1 nodes): `books.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (1 nodes): `fines.php`
+- **Thin community `Community 58`** (1 nodes): `circulation.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (1 nodes): `index.php`
+- **Thin community `Community 59`** (1 nodes): `fines.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (1 nodes): `reservations.php`
+- **Thin community `Community 60`** (1 nodes): `index.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `login.php`
+- **Thin community `Community 61`** (1 nodes): `reservations.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (1 nodes): `register.php`
+- **Thin community `Community 62`** (1 nodes): `login.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 63`** (1 nodes): `verify-otp.php`
+- **Thin community `Community 63`** (1 nodes): `register.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 64`** (1 nodes): `portal-sidebar.php`
+- **Thin community `Community 64`** (1 nodes): `verify-otp.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (1 nodes): `init-database.php`
+- **Thin community `Community 65`** (1 nodes): `portal-sidebar.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (1 nodes): `account.php`
+- **Thin community `Community 66`** (1 nodes): `init-database.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (1 nodes): `catalog.php`
+- **Thin community `Community 67`** (1 nodes): `account.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (1 nodes): `history.php`
+- **Thin community `Community 68`** (1 nodes): `catalog.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (1 nodes): `index.php`
+- **Thin community `Community 69`** (1 nodes): `history.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (1 nodes): `logout.php`
+- **Thin community `Community 70`** (1 nodes): `index.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (1 nodes): `reservations.php`
+- **Thin community `Community 71`** (1 nodes): `logout.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (1 nodes): `borrower-navbar.php`
+- **Thin community `Community 72`** (1 nodes): `reservations.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 73`** (1 nodes): `login.php`
+- **Thin community `Community 73`** (1 nodes): `borrower-navbar.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 74`** (1 nodes): `logout.php`
+- **Thin community `Community 74`** (1 nodes): `login.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 75`** (1 nodes): `register.php`
+- **Thin community `Community 75`** (1 nodes): `logout.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (1 nodes): `email.config.php`
+- **Thin community `Community 76`** (1 nodes): `register.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (1 nodes): `run-drop-legacy-admin-auth.php`
+- **Thin community `Community 77`** (1 nodes): `email.config.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (1 nodes): `run-expand-verification-attempt-types.php`
+- **Thin community `Community 78`** (1 nodes): `run-drop-legacy-admin-auth.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (1 nodes): `run-harden-verification-attempt-types.php`
+- **Thin community `Community 79`** (1 nodes): `run-expand-verification-attempt-types.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (1 nodes): `seed-default-superadmin.php`
+- **Thin community `Community 80`** (1 nodes): `run-harden-verification-attempt-types.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (1 nodes): `run.php`
+- **Thin community `Community 81`** (1 nodes): `seed-default-superadmin.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 82`** (1 nodes): `test_auth_session_helpers.php`
+- **Thin community `Community 82`** (1 nodes): `run.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 83`** (1 nodes): `test_borrower_renewal_rules.php`
+- **Thin community `Community 83`** (1 nodes): `test_auth_session_helpers.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 84`** (1 nodes): `test_borrower_reservations.php`
+- **Thin community `Community 84`** (1 nodes): `test_borrower_renewal_rules.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 85`** (1 nodes): `test_csrf_origin_helpers.php`
+- **Thin community `Community 85`** (1 nodes): `test_borrower_reservations.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 86`** (1 nodes): `test_librarian_add_book_persistence.php`
+- **Thin community `Community 86`** (1 nodes): `test_csrf_origin_helpers.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (1 nodes): `test_librarian_add_book_rules.php`
+- **Thin community `Community 87`** (1 nodes): `test_librarian_add_book_persistence.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (1 nodes): `test_librarian_checkout_rules.php`
+- **Thin community `Community 88`** (1 nodes): `test_librarian_add_book_rules.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (1 nodes): `test_migration_runner.php`
+- **Thin community `Community 89`** (1 nodes): `test_librarian_checkout_rules.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (1 nodes): `test_permission_gate.php`
+- **Thin community `Community 90`** (1 nodes): `test_migration_runner.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 91`** (1 nodes): `autoload.php`
+- **Thin community `Community 91`** (1 nodes): `test_permission_gate.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 92`** (1 nodes): `autoload_classmap.php`
+- **Thin community `Community 92`** (1 nodes): `test_receipt_repository.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (1 nodes): `autoload_namespaces.php`
+- **Thin community `Community 93`** (1 nodes): `autoload.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 94`** (1 nodes): `autoload_psr4.php`
+- **Thin community `Community 94`** (1 nodes): `autoload_classmap.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 95`** (1 nodes): `installed.php`
+- **Thin community `Community 95`** (1 nodes): `autoload_namespaces.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 96`** (1 nodes): `platform_check.php`
+- **Thin community `Community 96`** (1 nodes): `autoload_psr4.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (1 nodes): `phpmailer.lang-af.php`
+- **Thin community `Community 97`** (1 nodes): `installed.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 98`** (1 nodes): `phpmailer.lang-ar.php`
+- **Thin community `Community 98`** (1 nodes): `platform_check.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (1 nodes): `phpmailer.lang-as.php`
+- **Thin community `Community 99`** (1 nodes): `phpmailer.lang-af.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 100`** (1 nodes): `phpmailer.lang-az.php`
+- **Thin community `Community 100`** (1 nodes): `phpmailer.lang-ar.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 101`** (1 nodes): `phpmailer.lang-ba.php`
+- **Thin community `Community 101`** (1 nodes): `phpmailer.lang-as.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (1 nodes): `phpmailer.lang-be.php`
+- **Thin community `Community 102`** (1 nodes): `phpmailer.lang-az.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (1 nodes): `phpmailer.lang-bg.php`
+- **Thin community `Community 103`** (1 nodes): `phpmailer.lang-ba.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (1 nodes): `phpmailer.lang-bn.php`
+- **Thin community `Community 104`** (1 nodes): `phpmailer.lang-be.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (1 nodes): `phpmailer.lang-ca.php`
+- **Thin community `Community 105`** (1 nodes): `phpmailer.lang-bg.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (1 nodes): `phpmailer.lang-cs.php`
+- **Thin community `Community 106`** (1 nodes): `phpmailer.lang-bn.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 107`** (1 nodes): `phpmailer.lang-da.php`
+- **Thin community `Community 107`** (1 nodes): `phpmailer.lang-ca.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (1 nodes): `phpmailer.lang-de.php`
+- **Thin community `Community 108`** (1 nodes): `phpmailer.lang-cs.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 109`** (1 nodes): `phpmailer.lang-el.php`
+- **Thin community `Community 109`** (1 nodes): `phpmailer.lang-da.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 110`** (1 nodes): `phpmailer.lang-eo.php`
+- **Thin community `Community 110`** (1 nodes): `phpmailer.lang-de.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (1 nodes): `phpmailer.lang-es.php`
+- **Thin community `Community 111`** (1 nodes): `phpmailer.lang-el.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 112`** (1 nodes): `phpmailer.lang-et.php`
+- **Thin community `Community 112`** (1 nodes): `phpmailer.lang-eo.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 113`** (1 nodes): `phpmailer.lang-fa.php`
+- **Thin community `Community 113`** (1 nodes): `phpmailer.lang-es.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 114`** (1 nodes): `phpmailer.lang-fi.php`
+- **Thin community `Community 114`** (1 nodes): `phpmailer.lang-et.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 115`** (1 nodes): `phpmailer.lang-fo.php`
+- **Thin community `Community 115`** (1 nodes): `phpmailer.lang-fa.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 116`** (1 nodes): `phpmailer.lang-fr.php`
+- **Thin community `Community 116`** (1 nodes): `phpmailer.lang-fi.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 117`** (1 nodes): `phpmailer.lang-gl.php`
+- **Thin community `Community 117`** (1 nodes): `phpmailer.lang-fo.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 118`** (1 nodes): `phpmailer.lang-he.php`
+- **Thin community `Community 118`** (1 nodes): `phpmailer.lang-fr.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 119`** (1 nodes): `phpmailer.lang-hi.php`
+- **Thin community `Community 119`** (1 nodes): `phpmailer.lang-gl.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 120`** (1 nodes): `phpmailer.lang-hr.php`
+- **Thin community `Community 120`** (1 nodes): `phpmailer.lang-he.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 121`** (1 nodes): `phpmailer.lang-hu.php`
+- **Thin community `Community 121`** (1 nodes): `phpmailer.lang-hi.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 122`** (1 nodes): `phpmailer.lang-hy.php`
+- **Thin community `Community 122`** (1 nodes): `phpmailer.lang-hr.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 123`** (1 nodes): `phpmailer.lang-id.php`
+- **Thin community `Community 123`** (1 nodes): `phpmailer.lang-hu.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 124`** (1 nodes): `phpmailer.lang-it.php`
+- **Thin community `Community 124`** (1 nodes): `phpmailer.lang-hy.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 125`** (1 nodes): `phpmailer.lang-ja.php`
+- **Thin community `Community 125`** (1 nodes): `phpmailer.lang-id.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 126`** (1 nodes): `phpmailer.lang-ka.php`
+- **Thin community `Community 126`** (1 nodes): `phpmailer.lang-it.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 127`** (1 nodes): `phpmailer.lang-ko.php`
+- **Thin community `Community 127`** (1 nodes): `phpmailer.lang-ja.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 128`** (1 nodes): `phpmailer.lang-ku.php`
+- **Thin community `Community 128`** (1 nodes): `phpmailer.lang-ka.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 129`** (1 nodes): `phpmailer.lang-lt.php`
+- **Thin community `Community 129`** (1 nodes): `phpmailer.lang-ko.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 130`** (1 nodes): `phpmailer.lang-lv.php`
+- **Thin community `Community 130`** (1 nodes): `phpmailer.lang-ku.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 131`** (1 nodes): `phpmailer.lang-mg.php`
+- **Thin community `Community 131`** (1 nodes): `phpmailer.lang-lt.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 132`** (1 nodes): `phpmailer.lang-mn.php`
+- **Thin community `Community 132`** (1 nodes): `phpmailer.lang-lv.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 133`** (1 nodes): `phpmailer.lang-ms.php`
+- **Thin community `Community 133`** (1 nodes): `phpmailer.lang-mg.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 134`** (1 nodes): `phpmailer.lang-nb.php`
+- **Thin community `Community 134`** (1 nodes): `phpmailer.lang-mn.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 135`** (1 nodes): `phpmailer.lang-nl.php`
+- **Thin community `Community 135`** (1 nodes): `phpmailer.lang-ms.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 136`** (1 nodes): `phpmailer.lang-pl.php`
+- **Thin community `Community 136`** (1 nodes): `phpmailer.lang-nb.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 137`** (1 nodes): `phpmailer.lang-pt.php`
+- **Thin community `Community 137`** (1 nodes): `phpmailer.lang-nl.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 138`** (1 nodes): `phpmailer.lang-pt_br.php`
+- **Thin community `Community 138`** (1 nodes): `phpmailer.lang-pl.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 139`** (1 nodes): `phpmailer.lang-ro.php`
+- **Thin community `Community 139`** (1 nodes): `phpmailer.lang-pt.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 140`** (1 nodes): `phpmailer.lang-ru.php`
+- **Thin community `Community 140`** (1 nodes): `phpmailer.lang-pt_br.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 141`** (1 nodes): `phpmailer.lang-si.php`
+- **Thin community `Community 141`** (1 nodes): `phpmailer.lang-ro.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 142`** (1 nodes): `phpmailer.lang-sk.php`
+- **Thin community `Community 142`** (1 nodes): `phpmailer.lang-ru.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 143`** (1 nodes): `phpmailer.lang-sl.php`
+- **Thin community `Community 143`** (1 nodes): `phpmailer.lang-si.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 144`** (1 nodes): `phpmailer.lang-sr.php`
+- **Thin community `Community 144`** (1 nodes): `phpmailer.lang-sk.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 145`** (1 nodes): `phpmailer.lang-sr_latn.php`
+- **Thin community `Community 145`** (1 nodes): `phpmailer.lang-sl.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 146`** (1 nodes): `phpmailer.lang-sv.php`
+- **Thin community `Community 146`** (1 nodes): `phpmailer.lang-sr.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 147`** (1 nodes): `phpmailer.lang-tl.php`
+- **Thin community `Community 147`** (1 nodes): `phpmailer.lang-sr_latn.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 148`** (1 nodes): `phpmailer.lang-tr.php`
+- **Thin community `Community 148`** (1 nodes): `phpmailer.lang-sv.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 149`** (1 nodes): `phpmailer.lang-uk.php`
+- **Thin community `Community 149`** (1 nodes): `phpmailer.lang-tl.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 150`** (1 nodes): `phpmailer.lang-ur.php`
+- **Thin community `Community 150`** (1 nodes): `phpmailer.lang-tr.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 151`** (1 nodes): `phpmailer.lang-vi.php`
+- **Thin community `Community 151`** (1 nodes): `phpmailer.lang-uk.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 152`** (1 nodes): `phpmailer.lang-zh.php`
+- **Thin community `Community 152`** (1 nodes): `phpmailer.lang-ur.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 153`** (1 nodes): `phpmailer.lang-zh_cn.php`
+- **Thin community `Community 153`** (1 nodes): `phpmailer.lang-vi.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 154`** (1 nodes): `verify.php`
+- **Thin community `Community 154`** (1 nodes): `phpmailer.lang-zh.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 155`** (1 nodes): `sweetalert-config.js`
+- **Thin community `Community 155`** (1 nodes): `phpmailer.lang-zh_cn.php`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 156`** (1 nodes): `verify.php`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 157`** (1 nodes): `sweetalert-config.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PHPMailer` connect `Community 0` to `Community 8`, `Community 10`, `Community 3`?**
-  _High betweenness centrality (0.185) - this node is a cross-community bridge._
+  _High betweenness centrality (0.173) - this node is a cross-community bridge._
 - **Why does `sendPasswordResetEmail()` connect `Community 1` to `Community 8`?**
-  _High betweenness centrality (0.139) - this node is a cross-community bridge._
+  _High betweenness centrality (0.130) - this node is a cross-community bridge._
 - **Why does `AuthSupport` connect `Community 2` to `Community 1`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Are the 11 inferred relationships involving `UserRepository` (e.g. with `.register()` and `.login()`) actually correct?**
   _`UserRepository` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Database` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._

@@ -73,7 +73,7 @@ class AuthService
       error_log('AuthService::registerBorrower error: ' . $e->getMessage());
       return [
         'success' => false,
-        'error' => 'Registration failed: ' . $e->getMessage(),
+        'error' => 'Registration failed. Please try again later.',
       ];
     }
   }

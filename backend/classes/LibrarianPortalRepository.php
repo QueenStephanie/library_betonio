@@ -15,6 +15,46 @@ class LibrarianPortalRepository
   /** @var array<string, array<string, bool>> */
   private static $columnCache = [];
 
+  private static function loadReceiptRepository(): void
+  {
+    if (!class_exists('ReceiptRepository')) {
+      require_once __DIR__ . '/ReceiptRepository.php';
+    }
+  }
+
+  private static function buildReceiptPrintUrl(int $receiptId): string
+  {
+    return 'librarian-receipt.php?receipt_id=' . rawurlencode((string)$receiptId);
+  }
+
+  /**
+   * @param array<string,mixed> $receiptPayload
+   * @return array<string,mixed>
+   */
+  private static function createTransactionReceipt(PDO $db, string $transactionType, int $transactionRefId, int $borrowerUserId, int $actorUserId, array $receiptPayload): array
+  {
+    self::loadReceiptRepository();
+
+    $receipt = ReceiptRepository::createForTransaction($db, [
+      'transaction_type' => $transactionType,
+      'transaction_ref_id' => $transactionRefId,
+      'borrower_user_id' => $borrowerUserId > 0 ? $borrowerUserId : null,
+      'actor_user_id' => $actorUserId > 0 ? $actorUserId : null,
+      'payload' => $receiptPayload,
+    ]);
+
+    $receiptId = (int)($receipt['id'] ?? 0);
+    if ($receiptId <= 0) {
+      throw new RuntimeException('Receipt creation returned an invalid receipt ID.');
+    }
+
+    return [
+      'receipt_id' => $receiptId,
+      'receipt_code' => (string)($receipt['receipt_code'] ?? ''),
+      'receipt_print_url' => self::buildReceiptPrintUrl($receiptId),
+    ];
+  }
+
   private static function tableExists(PDO $db, string $table): bool
   {
     if (isset(self::$tableCache[$table])) {
@@ -528,7 +568,7 @@ class LibrarianPortalRepository
   }
 
   /**
-   * @return array{ok: bool, message: string}
+   * @return array{ok: bool, message: string, receipt_id?: int, receipt_code?: string, receipt_print_url?: string}
    */
   public static function checkInLoan(PDO $db, int $loanId, int $actorUserId): array
   {
@@ -629,8 +669,30 @@ class LibrarianPortalRepository
         $eventStmt->execute($eventParams);
       }
 
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'checkin',
+        $loanId,
+        0,
+        $actorUserId,
+        [
+          'loan_id' => $loanId,
+          'book_copy_id' => $copyId > 0 ? $copyId : null,
+          'action' => 'checkin',
+          'status_before' => $currentStatus,
+          'status_after' => 'returned',
+          'generated_by' => 'LibrarianPortalRepository::checkInLoan',
+        ]
+      );
+
       $db->commit();
-      return ['ok' => true, 'message' => 'Loan checked in successfully.'];
+      return [
+        'ok' => true,
+        'message' => 'Loan checked in successfully.',
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
+      ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {
         $db->rollBack();
@@ -801,7 +863,7 @@ class LibrarianPortalRepository
   }
 
   /**
-   * @return array{ok: bool, message: string, loan_id?: int, copy_id?: int}
+   * @return array{ok: bool, message: string, loan_id?: int, copy_id?: int, receipt_id?: int, receipt_code?: string, receipt_print_url?: string}
    */
   public static function checkoutLoan(PDO $db, int $borrowerUserId, int $bookId, int $actorUserId, ?int $reservationId = null, int $loanDays = self::DEFAULT_LOAN_DAYS): array
   {
@@ -916,12 +978,33 @@ class LibrarianPortalRepository
         $eventStmt->execute($eventParams);
       }
 
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        $reservationId !== null && $reservationId > 0 ? 'reservation_checkout' : 'checkout',
+        $loanId,
+        $borrowerUserId,
+        $actorUserId,
+        [
+          'loan_id' => $loanId,
+          'borrower_user_id' => $borrowerUserId,
+          'book_id' => $bookId,
+          'book_copy_id' => $copyId,
+          'reservation_id' => $reservationId,
+          'loan_days' => $loanDays,
+          'due_at' => $insertParams[':due_at'],
+          'generated_by' => 'LibrarianPortalRepository::checkoutLoan',
+        ]
+      );
+
       $db->commit();
       return [
         'ok' => true,
         'message' => 'Checkout completed successfully.',
         'loan_id' => $loanId,
         'copy_id' => $copyId,
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
       ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {
@@ -934,7 +1017,7 @@ class LibrarianPortalRepository
   }
 
   /**
-   * @return array{ok: bool, message: string, loan_id?: int, reservation_id?: int}
+   * @return array{ok: bool, message: string, loan_id?: int, reservation_id?: int, receipt_id?: int, receipt_code?: string, receipt_print_url?: string}
    */
   public static function checkoutReadyReservation(PDO $db, int $reservationId, int $actorUserId, int $loanDays = self::DEFAULT_LOAN_DAYS): array
   {
@@ -1089,6 +1172,24 @@ class LibrarianPortalRepository
         $eventStmt->execute($eventParams);
       }
 
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'reservation_checkout',
+        $loanId,
+        $borrowerUserId,
+        $actorUserId,
+        [
+          'loan_id' => $loanId,
+          'reservation_id' => $reservationId,
+          'borrower_user_id' => $borrowerUserId,
+          'book_id' => $bookId,
+          'book_copy_id' => $copyId,
+          'loan_days' => $loanDays,
+          'due_at' => $insertParams[':due_at'],
+          'generated_by' => 'LibrarianPortalRepository::checkoutReadyReservation',
+        ]
+      );
+
       $db->commit();
 
       return [
@@ -1096,6 +1197,9 @@ class LibrarianPortalRepository
         'message' => 'Ready reservation checked out successfully.',
         'loan_id' => $loanId,
         'reservation_id' => $reservationId,
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
       ];
     } catch (Exception $e) {
       if ($db->inTransaction()) {

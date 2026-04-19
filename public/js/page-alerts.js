@@ -19,6 +19,14 @@
     }
   }
 
+  function openWindow(path) {
+    if (typeof path !== 'string' || path.length === 0) {
+      return;
+    }
+
+    window.open(path, '_blank', 'noopener');
+  }
+
   function runWithSweetAlerts(alert) {
     return new Promise(function (resolve) {
       if (typeof window.SweetAlerts !== 'object' || window.SweetAlerts === null) {
@@ -45,6 +53,7 @@
           function () {
             redirectTo(alert.redirect);
             redirectTo(alert.onConfirmRedirect);
+            openWindow(alert.onConfirmOpen);
             resolve(true);
           },
           function () {
@@ -61,6 +70,7 @@
           asString(alert.message, ''),
           function () {
             redirectTo(alert.redirect);
+            openWindow(alert.onConfirmOpen);
             resolve(true);
           }
         );
@@ -87,6 +97,8 @@
         confirmButtonText: asString(alert.confirmText, 'OK')
       }).then(function () {
         redirectTo(alert.redirect);
+        redirectTo(alert.onConfirmRedirect);
+        openWindow(alert.onConfirmOpen);
         resolve();
       });
     });
