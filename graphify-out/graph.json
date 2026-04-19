@@ -349,9 +349,12 @@
       "label": "receiptValue()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\app\\librarian\\receipt.php",
       "source_location": "L51",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\app\\librarian\\receipt.php",
       "source_location": "L38",
 >>>>>>> theirs
@@ -482,9 +485,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\setup-db.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_setup_db_php",
       "community": 13,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_setup_db_php",
       "community": 12,
 >>>>>>> theirs
@@ -739,9 +745,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\classes\\Auth.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_classes_auth_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_classes_auth_php",
       "community": 3,
 >>>>>>> theirs
@@ -843,9 +852,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\classes\\AuthSupport.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_classes_authsupport_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_classes_authsupport_php",
       "community": 3,
 >>>>>>> theirs
@@ -1676,9 +1688,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\classes\\UserRepository.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_classes_userrepository_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_classes_userrepository_php",
       "community": 3,
 >>>>>>> theirs
@@ -2122,9 +2137,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\migrations\\migrate.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_migrations_migrate_php",
       "community": 14,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_migrations_migrate_php",
       "community": 13,
 >>>>>>> theirs
@@ -2388,9 +2406,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\vendor\\composer\\autoload_real.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_vendor_composer_autoload_real_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_vendor_composer_autoload_real_php",
       "community": 9,
 >>>>>>> theirs
@@ -4823,9 +4844,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_backend_vendor_phpmailer_phpmailer_src_smtp_php",
       "community": 3,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_backend_vendor_phpmailer_phpmailer_src_smtp_php",
       "community": 2,
 >>>>>>> theirs
@@ -5233,9 +5257,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\includes\\auth.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_includes_auth_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_includes_auth_php",
       "community": 3,
 >>>>>>> theirs
@@ -5850,9 +5877,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_includes_services_adminusermanagementservice_php",
       "community": 2,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_includes_services_adminusermanagementservice_php",
       "community": 3,
 >>>>>>> theirs
@@ -5927,9 +5957,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\includes\\services\\AuthService.php",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_includes_services_authservice_php",
       "community": 12,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_includes_services_authservice_php",
       "community": 9,
 >>>>>>> theirs
@@ -6193,9 +6226,12 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L1",
 <<<<<<< ours
+<<<<<<< ours
       "id": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "community": 9,
 =======
+=======
+>>>>>>> theirs
       "id": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
       "community": 14,
 >>>>>>> theirs
@@ -6222,8 +6258,13 @@
     {
       "label": "redirectTo()",
       "file_type": "code",
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L26",
+=======
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
+      "source_location": "L16",
+>>>>>>> theirs
       "id": "page_alerts_redirectto",
       "community": 9,
       "norm_label": "redirectto()"
@@ -6232,9 +6273,12 @@
       "label": "openWindow()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L32",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L22",
 >>>>>>> theirs
@@ -6291,9 +6335,12 @@
       "label": "runWithSweetAlerts()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L159",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L30",
 >>>>>>> theirs
@@ -6305,9 +6352,12 @@
       "label": "runWithSwalFallback()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L221",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L84",
 >>>>>>> theirs
@@ -6319,9 +6369,12 @@
       "label": "runSingleAlert()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L248",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L107",
 >>>>>>> theirs
@@ -6333,9 +6386,12 @@
       "label": "run()",
       "file_type": "code",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L262",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L117",
 >>>>>>> theirs
@@ -6382,9 +6438,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\app\\librarian\\receipt.php",
       "source_location": "L51",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\app\\librarian\\receipt.php",
       "source_location": "L38",
 >>>>>>> theirs
@@ -17082,6 +17141,7 @@
       "source_location": "L16",
       "weight": 1.0,
 <<<<<<< ours
+<<<<<<< ours
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_escapehtml",
       "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
@@ -17098,6 +17158,9 @@
 =======
       "_src": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
 >>>>>>> theirs
+=======
+      "_src": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
+>>>>>>> theirs
       "_tgt": "page_alerts_redirectto",
       "source": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
       "target": "page_alerts_redirectto",
@@ -17107,9 +17170,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L32",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L22",
 >>>>>>> theirs
@@ -17123,6 +17189,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+<<<<<<< ours
 <<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L40",
@@ -17191,6 +17258,11 @@
       "source_location": "L30",
 >>>>>>> theirs
       "weight": 1.0,
+=======
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
+      "source_location": "L30",
+      "weight": 1.0,
+>>>>>>> theirs
       "_src": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
       "_tgt": "page_alerts_runwithsweetalerts",
       "source": "c_xampp_htdocs_library_betonio_kilo_worktrees_cottony_weeder_public_js_page_alerts_js",
@@ -17201,9 +17273,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L221",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L84",
 >>>>>>> theirs
@@ -17218,9 +17293,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L248",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L107",
 >>>>>>> theirs
@@ -17235,9 +17313,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L262",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L117",
 >>>>>>> theirs
@@ -17251,6 +17332,7 @@
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
+<<<<<<< ours
 <<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L17",
@@ -17279,6 +17361,8 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L174",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L45",
 >>>>>>> theirs
@@ -17293,9 +17377,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L229",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L92",
 >>>>>>> theirs
@@ -17309,6 +17396,7 @@
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
+<<<<<<< ours
 <<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L130",
@@ -17337,6 +17425,8 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L168",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L39",
 >>>>>>> theirs
@@ -17351,9 +17441,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L224",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L87",
 >>>>>>> theirs
@@ -17367,6 +17460,7 @@
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
+<<<<<<< ours
 <<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L97",
@@ -17383,6 +17477,8 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L187",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L56",
 >>>>>>> theirs
@@ -17397,9 +17493,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L240",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L101",
 >>>>>>> theirs
@@ -17413,6 +17512,7 @@
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
+<<<<<<< ours
 <<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L76",
@@ -17513,6 +17613,8 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L253",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L108",
 >>>>>>> theirs
@@ -17527,9 +17629,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L258",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L113",
 >>>>>>> theirs
@@ -17544,9 +17649,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
 <<<<<<< ours
+<<<<<<< ours
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L268",
 =======
+=======
+>>>>>>> theirs
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\.kilo\\worktrees\\cottony-weeder\\public\\js\\page-alerts.js",
       "source_location": "L123",
 >>>>>>> theirs

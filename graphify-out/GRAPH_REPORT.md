@@ -2,9 +2,13 @@
 
 ## Corpus Check
 <<<<<<< ours
+<<<<<<< ours
 - 170 files · ~157,934 words
 =======
 - 170 files · ~152,885 words
+>>>>>>> theirs
+=======
+- 170 files · ~152,886 words
 >>>>>>> theirs
 - Verdict: corpus is large enough that graph structure adds value.
 

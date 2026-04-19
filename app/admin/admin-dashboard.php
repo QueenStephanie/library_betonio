@@ -90,7 +90,11 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
+<<<<<<< ours
   <body class="admin-portal-body">
+=======
+<body class="admin-portal-body portal-role-admin">
+>>>>>>> theirs
   <div class="admin-shell">
     <?php
     $portalRole = 'admin';
