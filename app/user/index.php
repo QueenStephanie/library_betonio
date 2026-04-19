@@ -53,6 +53,12 @@ if ($is_logged_in && $user && isset($user['id'])) {
 }
 $flash = getFlash();
 $currentPage = 'dashboard';
+$borrowerFullName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+if ($borrowerFullName === '') {
+  $borrowerFullName = 'Borrower User';
+}
+$accountStatusLabel = !empty($user['is_verified']) ? 'Verified Account' : 'Verification Pending';
+$accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending';
 
 // If logged in, show dashboard view, else show landing page
 ?>
@@ -91,82 +97,131 @@ $currentPage = 'dashboard';
       <main class="admin-main borrower-main">
         <div class="borrower-page">
           <div class="borrower-shell borrower-dashboard-shell">
-        <header class="borrower-page-header borrower-dashboard-header">
-          <h1>Borrower Dashboard</h1>
-          <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars((string)($user['first_name'] . ' ' . $user['last_name']), ENT_QUOTES, 'UTF-8'); ?>. Review account activity and take your next action.</p>
-        </header>
+            <section class="borrower-hero borrower-dashboard-hero">
+              <div class="borrower-hero-copy">
+                <span class="borrower-eyebrow">Borrower dashboard</span>
+                <h1>Keep every loan, reservation, and account task in one clear view.</h1>
+                <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars($borrowerFullName, ENT_QUOTES, 'UTF-8'); ?>. Review account activity, catch upcoming due dates, and jump straight to the next borrower action.</p>
+                <div class="borrower-hero-actions">
+                  <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-primary">Browse Catalog</a>
+                  <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary">Manage Loans</a>
+                </div>
+              </div>
+              <aside class="borrower-hero-card">
+                <span class="borrower-hero-card-label">Account snapshot</span>
+                <strong><?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+                <p><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
+                <ul class="borrower-hero-list">
+                  <li><?php echo (int)$circulationOverview['current_loans']; ?> active loans on file</li>
+                  <li><?php echo (int)$circulationOverview['active_reservations']; ?> reservation slots in use</li>
+                  <li><?php echo (int)$circulationOverview['loan_history_count']; ?> total borrowing records</li>
+                </ul>
+              </aside>
+            </section>
 
-        <?php if ($flash): ?>
-          <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-            <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-          </div>
-        <?php endif; ?>
-
-        <section class="borrower-dashboard-stats" aria-label="Borrower statistics">
-          <article class="borrower-card borrower-stat-card">
-            <p class="borrower-stat-label">Current Loans</p>
-            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['current_loans']; ?></p>
-          </article>
-          <article class="borrower-card borrower-stat-card">
-            <p class="borrower-stat-label">Due in 3 Days</p>
-            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['due_soon']; ?></p>
-          </article>
-          <article class="borrower-card borrower-stat-card">
-            <p class="borrower-stat-label">Active Reservations</p>
-            <p class="borrower-stat-value"><?php echo (int)$circulationOverview['active_reservations']; ?></p>
-          </article>
-          <article class="borrower-card borrower-stat-card">
-            <p class="borrower-stat-label">Active Loan Fines</p>
-            <p class="borrower-stat-value">₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></p>
-          </article>
-        </section>
-
-        <section class="borrower-card borrower-dashboard-panel">
-          <div class="borrower-panel-heading">
-            <h2>Profile Information</h2>
-            <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-inline-link">Edit profile</a>
-          </div>
-          <div class="borrower-panel-content">
-            <div class="borrower-profile-row">
-              <span class="borrower-profile-label">First Name</span>
-              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?></span>
-            </div>
-            <div class="borrower-profile-row">
-              <span class="borrower-profile-label">Last Name</span>
-              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['last_name'], ENT_QUOTES, 'UTF-8'); ?></span>
-            </div>
-            <div class="borrower-profile-row">
-              <span class="borrower-profile-label">Email Address</span>
-              <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></span>
-            </div>
-            <div class="borrower-profile-row">
-              <span class="borrower-profile-label">Account Status</span>
-              <span class="borrower-profile-value <?php echo !empty($user['is_verified']) ? 'is-verified' : 'is-pending'; ?>">
-                <?php echo !empty($user['is_verified']) ? 'Verified' : 'Not Verified'; ?>
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section class="borrower-card borrower-dashboard-panel">
-          <div class="borrower-panel-heading">
-            <h2>Quick Actions</h2>
-          </div>
-          <div class="borrower-panel-content">
-            <div class="borrower-action-grid">
-              <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-primary borrower-action-link">Browse Catalog</a>
-              <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Manage Reservations</a>
-              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Renew Active Loans</a>
-              <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">View Loan History</a>
-              <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary borrower-action-link">Update Settings</a>
-              <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-danger borrower-action-link">Logout</a>
-            </div>
-
-            <?php if (!$circulationDataAvailable): ?>
-              <p class="borrower-note"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+            <?php if ($flash): ?>
+              <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+                <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+              </div>
             <?php endif; ?>
-          </div>
-        </section>
+
+            <section class="borrower-dashboard-stats borrower-stat-grid" aria-label="Borrower statistics">
+              <article class="borrower-card borrower-stat-card">
+                <p class="borrower-stat-label">Current Loans</p>
+                <p class="borrower-stat-value"><?php echo (int)$circulationOverview['current_loans']; ?></p>
+                <p class="borrower-stat-detail">Checked out items still in your account.</p>
+              </article>
+              <article class="borrower-card borrower-stat-card">
+                <p class="borrower-stat-label">Due in 3 Days</p>
+                <p class="borrower-stat-value"><?php echo (int)$circulationOverview['due_soon']; ?></p>
+                <p class="borrower-stat-detail">Prioritize these renewals or returns first.</p>
+              </article>
+              <article class="borrower-card borrower-stat-card">
+                <p class="borrower-stat-label">Active Reservations</p>
+                <p class="borrower-stat-value"><?php echo (int)$circulationOverview['active_reservations']; ?></p>
+                <p class="borrower-stat-detail">Queued and ready-for-pickup requests.</p>
+              </article>
+              <article class="borrower-card borrower-stat-card">
+                <p class="borrower-stat-label">Active Loan Fines</p>
+                <p class="borrower-stat-value">₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></p>
+                <p class="borrower-stat-detail">Outstanding fines attached to open loans.</p>
+              </article>
+            </section>
+
+            <div class="borrower-dashboard-grid">
+              <section class="borrower-card borrower-surface-card borrower-dashboard-panel">
+                <div class="borrower-panel-heading">
+                  <div>
+                    <span class="borrower-section-kicker">Profile</span>
+                    <h2>Borrower identity</h2>
+                  </div>
+                  <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-inline-link">Edit profile</a>
+                </div>
+                <div class="borrower-panel-content">
+                  <div class="borrower-profile-list">
+                    <div class="borrower-profile-row">
+                      <span class="borrower-profile-label">First Name</span>
+                      <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                    <div class="borrower-profile-row">
+                      <span class="borrower-profile-label">Last Name</span>
+                      <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['last_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                    <div class="borrower-profile-row">
+                      <span class="borrower-profile-label">Email Address</span>
+                      <span class="borrower-profile-value"><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                    <div class="borrower-profile-row">
+                      <span class="borrower-profile-label">Account Status</span>
+                      <span class="borrower-profile-value <?php echo htmlspecialchars($accountStatusClass, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="borrower-card borrower-surface-card borrower-dashboard-panel">
+                <div class="borrower-panel-heading">
+                  <div>
+                    <span class="borrower-section-kicker">Actions</span>
+                    <h2>Next steps</h2>
+                  </div>
+                </div>
+                <div class="borrower-panel-content">
+                  <div class="borrower-action-grid borrower-action-cards">
+                    <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
+                      <strong>Browse Catalog</strong>
+                      <span>Search titles and place a reservation.</span>
+                    </a>
+                    <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
+                      <strong>Manage Reservations</strong>
+                      <span>Track queue status and cancel active requests.</span>
+                    </a>
+                    <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
+                      <strong>Renew Active Loans</strong>
+                      <span>Handle due dates before they become overdue.</span>
+                    </a>
+                    <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
+                      <strong>Review History</strong>
+                      <span>Check returned items and fine records.</span>
+                    </a>
+                    <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
+                      <strong>Update Settings</strong>
+                      <span>Edit your name and change your password.</span>
+                    </a>
+                    <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card is-danger">
+                      <strong>Log Out</strong>
+                      <span>End the current borrower session securely.</span>
+                    </a>
+                  </div>
+
+                  <?php if (!$circulationDataAvailable): ?>
+                    <p class="borrower-note"><?php echo htmlspecialchars($circulationUnavailableMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+                  <?php endif; ?>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </main>

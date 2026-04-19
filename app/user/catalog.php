@@ -94,6 +94,10 @@ foreach ($catalogRows as $catalogRowSummary) {
   }
   $catalogAvailableCopies += $itemAvailableCopies;
 }
+$catalogHeading = 'Discover your next checkout.';
+if ($query !== '' || $category !== '') {
+  $catalogHeading = 'Filtered results for your current catalog search.';
+}
 
 $truncateCatalogText = static function (string $value, int $limit = 180): string {
   $normalized = trim(preg_replace('/\s+/', ' ', $value) ?? '');
@@ -164,62 +168,89 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
     <main class="admin-main borrower-main">
       <div class="borrower-page">
         <div class="borrower-shell">
-      <header class="borrower-page-header">
-        <h1>Book Catalog</h1>
-        <p class="borrower-page-subtitle">Search by title, author, or ISBN and reserve available titles.</p>
-      </header>
+          <section class="borrower-hero borrower-page-hero">
+            <div class="borrower-hero-copy">
+              <span class="borrower-eyebrow">Catalog</span>
+              <h1><?php echo htmlspecialchars($catalogHeading, ENT_QUOTES, 'UTF-8'); ?></h1>
+              <p class="borrower-page-subtitle">Search by title, author, or ISBN and reserve available titles without leaving the borrower portal.</p>
+            </div>
+            <aside class="borrower-hero-card">
+              <span class="borrower-hero-card-label">Search coverage</span>
+              <strong><?php echo (int)$catalogResultCount; ?> titles</strong>
+              <p><?php echo (int)$catalogAvailableCopies; ?> total copies currently available for checkout.</p>
+              <ul class="borrower-hero-list">
+                <li><?php echo (int)$catalogInStockTitles; ?> titles are in stock right now</li>
+                <li><?php echo $category !== '' ? htmlspecialchars($category, ENT_QUOTES, 'UTF-8') : 'All categories'; ?> currently selected</li>
+              </ul>
+            </aside>
+          </section>
 
-      <section class="borrower-dashboard-stats catalog-summary-stats" aria-label="Catalog summary">
-        <article class="borrower-card borrower-stat-card">
-          <p class="borrower-stat-label">Results</p>
-          <p class="borrower-stat-value"><?php echo (int)$catalogResultCount; ?></p>
-        </article>
-        <article class="borrower-card borrower-stat-card">
-          <p class="borrower-stat-label">In-Stock Titles</p>
-          <p class="borrower-stat-value"><?php echo (int)$catalogInStockTitles; ?></p>
-        </article>
-        <article class="borrower-card borrower-stat-card">
-          <p class="borrower-stat-label">Available Copies</p>
-          <p class="borrower-stat-value"><?php echo (int)$catalogAvailableCopies; ?></p>
-        </article>
-      </section>
+          <section class="borrower-dashboard-stats catalog-summary-stats borrower-stat-grid" aria-label="Catalog summary">
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Results</p>
+              <p class="borrower-stat-value"><?php echo (int)$catalogResultCount; ?></p>
+              <p class="borrower-stat-detail">Books matching the current search and category filters.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">In-Stock Titles</p>
+              <p class="borrower-stat-value"><?php echo (int)$catalogInStockTitles; ?></p>
+              <p class="borrower-stat-detail">Distinct titles with at least one ready copy.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Available Copies</p>
+              <p class="borrower-stat-value"><?php echo (int)$catalogAvailableCopies; ?></p>
+              <p class="borrower-stat-detail">Immediate checkout inventory across all results.</p>
+            </article>
+          </section>
 
-      <?php if ($flash): ?>
-        <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if ($flash): ?>
+            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <?php if (!$catalog['available']): ?>
-        <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$catalog['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if (!$catalog['available']): ?>
+            <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$catalog['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <section class="borrower-card catalog-filter-card" aria-label="Catalog search and filters">
-        <form method="GET" action="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="catalog-search">
-          <div class="catalog-filter-group">
-            <label for="catalog-query">Search Catalog</label>
-            <input id="catalog-query" type="search" name="q" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search title, author, ISBN">
-          </div>
-          <div class="catalog-filter-group">
-            <label for="catalog-category">Category</label>
-            <select id="catalog-category" name="category">
-              <option value="">All Categories</option>
-              <?php foreach (($catalog['categories'] ?? []) as $categoryOption): ?>
-                <?php $categoryOption = (string)$categoryOption; ?>
-                <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $categoryOption === $category ? 'selected' : ''; ?>>
-                  <?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="catalog-filter-actions">
-            <button type="submit" class="borrower-btn borrower-btn-primary">Search</button>
-            <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary">Clear Filters</a>
-          </div>
-        </form>
-      </section>
+          <section class="borrower-card borrower-surface-card catalog-filter-card" aria-label="Catalog search and filters">
+            <div class="borrower-panel-heading borrower-panel-heading-tight">
+              <div>
+                <span class="borrower-section-kicker">Filters</span>
+                <h2>Search the collection</h2>
+              </div>
+            </div>
+            <div class="borrower-panel-content">
+              <form method="GET" action="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="catalog-search">
+                <div class="catalog-filter-group">
+                  <label for="catalog-query">Search Catalog</label>
+                  <input id="catalog-query" type="search" name="q" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search title, author, ISBN">
+                </div>
+                <div class="catalog-filter-group">
+                  <label for="catalog-category">Category</label>
+                  <select id="catalog-category" name="category">
+                    <option value="">All Categories</option>
+                    <?php foreach (($catalog['categories'] ?? []) as $categoryOption): ?>
+                      <?php $categoryOption = (string)$categoryOption; ?>
+                      <option value="<?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $categoryOption === $category ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8'); ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <div class="catalog-filter-actions">
+                  <button type="submit" class="borrower-btn borrower-btn-primary">Search</button>
+                  <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary">Clear Filters</a>
+                </div>
+              </form>
+              <div class="catalog-active-filters">
+                <span class="borrower-chip<?php echo $query !== '' ? ' is-active' : ''; ?>">Query: <?php echo htmlspecialchars($query !== '' ? $query : 'None', ENT_QUOTES, 'UTF-8'); ?></span>
+                <span class="borrower-chip<?php echo $category !== '' ? ' is-active' : ''; ?>">Category: <?php echo htmlspecialchars($category !== '' ? $category : 'All', ENT_QUOTES, 'UTF-8'); ?></span>
+              </div>
+            </div>
+          </section>
 
       <?php if (empty($catalogRows)): ?>
         <div class="borrower-empty">No catalog titles matched your filters.</div>
@@ -269,6 +300,10 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
               </div>
 
               <div class="catalog-item-main">
+                <div class="catalog-item-tags">
+                  <span class="borrower-chip"><?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : 'General', ENT_QUOTES, 'UTF-8'); ?></span>
+                  <span class="borrower-chip"><?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : 'Year N/A', ENT_QUOTES, 'UTF-8'); ?></span>
+                </div>
                 <h3><?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
                 <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars($authorLabel, ENT_QUOTES, 'UTF-8'); ?></p>
                 <p class="catalog-description"><?php echo htmlspecialchars($bookDescription, ENT_QUOTES, 'UTF-8'); ?></p>

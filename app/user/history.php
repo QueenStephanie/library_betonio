@@ -86,6 +86,18 @@ try {
 
 $flash = getFlash();
 $currentPage = 'history';
+$activeLoanRows = is_array($activeLoans['rows'] ?? null) ? $activeLoans['rows'] : [];
+$loanHistoryRows = is_array($loanHistory['rows'] ?? null) ? $loanHistory['rows'] : [];
+$renewableLoanCount = 0;
+foreach ($activeLoanRows as $activeLoanSummary) {
+  if (!empty($activeLoanSummary['can_renew'])) {
+    $renewableLoanCount++;
+  }
+}
+$closedFineTotal = 0.0;
+foreach ($loanHistoryRows as $loanHistorySummary) {
+  $closedFineTotal += (float)($loanHistorySummary['fine_amount'] ?? 0);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -118,32 +130,77 @@ $currentPage = 'history';
     <main class="admin-main borrower-main">
       <div class="borrower-page">
         <div class="borrower-shell">
-      <header class="borrower-page-header">
-        <h1>Loan History &amp; Renewals</h1>
-        <p class="borrower-page-subtitle">Review active loans, renew eligible items, and view returned/closed borrowing records.</p>
-      </header>
+          <section class="borrower-hero borrower-page-hero">
+            <div class="borrower-hero-copy">
+              <span class="borrower-eyebrow">Loan history</span>
+              <h1>Watch due dates, renew eligible loans, and review completed borrowing records.</h1>
+              <p class="borrower-page-subtitle">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
+              <div class="borrower-hero-actions">
+                <a href="#active-loans" class="borrower-btn borrower-btn-primary">View Active Loans</a>
+                <a href="#borrowing-history" class="borrower-btn borrower-btn-secondary">Open History</a>
+              </div>
+            </div>
+            <aside class="borrower-hero-card">
+              <span class="borrower-hero-card-label">Loan snapshot</span>
+              <strong><?php echo count($activeLoanRows); ?> active loans</strong>
+              <p><?php echo $renewableLoanCount; ?> currently eligible for renewal.</p>
+              <ul class="borrower-hero-list">
+                <li><?php echo count($loanHistoryRows); ?> closed borrowing records</li>
+                <li>₱<?php echo number_format($closedFineTotal, 2); ?> total fines in closed history</li>
+              </ul>
+            </aside>
+          </section>
 
-      <?php if ($flash): ?>
-        <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <section class="borrower-dashboard-stats borrower-stat-grid history-summary-stats" aria-label="Loan history summary">
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Active Loans</p>
+              <p class="borrower-stat-value"><?php echo count($activeLoanRows); ?></p>
+              <p class="borrower-stat-detail">Current checkouts still open on your account.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Renewable Now</p>
+              <p class="borrower-stat-value"><?php echo $renewableLoanCount; ?></p>
+              <p class="borrower-stat-detail">Loans that meet the current renewal rules.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Closed Records</p>
+              <p class="borrower-stat-value"><?php echo count($loanHistoryRows); ?></p>
+              <p class="borrower-stat-detail">Returned or otherwise closed borrowing transactions.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Closed-Loan Fines</p>
+              <p class="borrower-stat-value">₱<?php echo number_format($closedFineTotal, 2); ?></p>
+              <p class="borrower-stat-detail">Fine totals recorded in your history table.</p>
+            </article>
+          </section>
 
-      <?php if (!$activeLoans['available']): ?>
-        <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$activeLoans['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if ($flash): ?>
+            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <section id="active-loans" class="borrower-card history-section">
-        <h2>Active Loans</h2>
-        <p class="history-note">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
+          <?php if (!$activeLoans['available']): ?>
+            <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$activeLoans['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-        <?php if (empty($activeLoans['rows'])): ?>
-          <div class="borrower-empty">You have no active loans to renew.</div>
-        <?php else: ?>
-          <div class="borrower-table-wrap">
-            <table class="borrower-table history-table">
+          <section id="active-loans" class="borrower-card borrower-surface-card history-section">
+            <div class="borrower-panel-heading">
+              <div>
+                <span class="borrower-section-kicker">Active loans</span>
+                <h2>Renew and monitor current checkouts</h2>
+              </div>
+            </div>
+            <div class="borrower-panel-content">
+              <p class="history-note">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
+
+              <?php if (empty($activeLoanRows)): ?>
+                <div class="borrower-empty">You have no active loans to renew.</div>
+              <?php else: ?>
+                <div class="borrower-table-wrap">
+                  <table class="borrower-table history-table">
               <thead>
                 <tr>
                   <th>Loan ID</th>
@@ -156,7 +213,7 @@ $currentPage = 'history';
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($activeLoans['rows'] as $row): ?>
+                <?php foreach ($activeLoanRows as $row): ?>
                   <?php
                   $title = trim((string)($row['book_title'] ?? ''));
                   if ($title === '') {
@@ -192,10 +249,11 @@ $currentPage = 'history';
                   </tr>
                 <?php endforeach; ?>
               </tbody>
-            </table>
-          </div>
-        <?php endif; ?>
-      </section>
+                  </table>
+                </div>
+              <?php endif; ?>
+            </div>
+          </section>
 
       <?php if (!$loanHistory['available']): ?>
         <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
@@ -203,14 +261,19 @@ $currentPage = 'history';
         </div>
       <?php endif; ?>
 
-      <section id="borrowing-history" class="borrower-card history-section">
-        <h2>Borrowing History</h2>
-
-        <?php if (empty($loanHistory['rows'])): ?>
-          <div class="borrower-empty">No returned or closed loans yet.</div>
-        <?php else: ?>
-          <div class="borrower-table-wrap">
-            <table class="borrower-table history-table">
+          <section id="borrowing-history" class="borrower-card borrower-surface-card history-section">
+            <div class="borrower-panel-heading">
+              <div>
+                <span class="borrower-section-kicker">Borrowing history</span>
+                <h2>Returned and closed loan records</h2>
+              </div>
+            </div>
+            <div class="borrower-panel-content">
+              <?php if (empty($loanHistoryRows)): ?>
+                <div class="borrower-empty">No returned or closed loans yet.</div>
+              <?php else: ?>
+                <div class="borrower-table-wrap">
+                  <table class="borrower-table history-table">
               <thead>
                 <tr>
                   <th>Loan ID</th>
@@ -223,7 +286,7 @@ $currentPage = 'history';
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($loanHistory['rows'] as $row): ?>
+                <?php foreach ($loanHistoryRows as $row): ?>
                   <?php
                   $title = trim((string)($row['book_title'] ?? ''));
                   if ($title === '') {
@@ -247,10 +310,11 @@ $currentPage = 'history';
                   </tr>
                 <?php endforeach; ?>
               </tbody>
-            </table>
-          </div>
-        <?php endif; ?>
-      </section>
+                  </table>
+                </div>
+              <?php endif; ?>
+            </div>
+          </section>
         </div>
       </div>
     </main>

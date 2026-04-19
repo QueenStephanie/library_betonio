@@ -109,6 +109,12 @@ if (isset($_SESSION['show_password_success'])) {
 }
 
 $currentPage = 'account';
+$accountFullName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+if ($accountFullName === '') {
+  $accountFullName = 'Borrower User';
+}
+$accountInitials = strtoupper(substr((string)($user['first_name'] ?? 'B'), 0, 1) . substr((string)($user['last_name'] ?? 'U'), 0, 1));
+$accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verification pending';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,27 +149,45 @@ $currentPage = 'account';
     <main class="admin-main borrower-main">
       <div class="borrower-page">
         <div class="borrower-shell">
-      <header class="borrower-page-header">
-        <h1>Account Settings</h1>
-        <p class="borrower-page-subtitle">Manage your profile details and password in one place.</p>
-      </header>
+          <section class="borrower-hero borrower-page-hero">
+            <div class="borrower-hero-copy">
+              <span class="borrower-eyebrow">Account settings</span>
+              <h1>Keep your borrower profile current and your password secure.</h1>
+              <p class="borrower-page-subtitle">Manage your visible borrower details and update credentials from one screen.</p>
+            </div>
+            <aside class="borrower-hero-card borrower-account-summary">
+              <span class="borrower-account-avatar" aria-hidden="true"><?php echo htmlspecialchars($accountInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+              <strong><?php echo htmlspecialchars($accountFullName, ENT_QUOTES, 'UTF-8'); ?></strong>
+              <p><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
+              <ul class="borrower-hero-list">
+                <li><?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?></li>
+                <li>Password changes apply to your next login session</li>
+              </ul>
+            </aside>
+          </section>
 
-      <?php if ($flash): ?>
-        <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if ($flash): ?>
+            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <?php if ($error): ?>
-        <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
-          <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if ($error): ?>
+            <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+              <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <div class="settings-grid">
-        <section class="settings-card borrower-card">
-          <h2>Profile Information</h2>
-          <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
+          <div class="settings-grid">
+            <section class="settings-card borrower-card borrower-surface-card">
+              <div class="borrower-panel-heading">
+                <div>
+                  <span class="borrower-section-kicker">Profile</span>
+                  <h2>Profile information</h2>
+                </div>
+              </div>
+              <div class="borrower-panel-content">
+                <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <input type="hidden" name="action" value="update_profile">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -183,13 +207,20 @@ $currentPage = 'account';
               <p class="settings-help-text">Contact support to change your email address.</p>
             </div>
 
-            <button type="submit" class="borrower-btn borrower-btn-primary settings-submit-btn">Save Changes</button>
-          </form>
-        </section>
+                  <button type="submit" class="borrower-btn borrower-btn-primary settings-submit-btn">Save Changes</button>
+                </form>
+              </div>
+            </section>
 
-        <section class="settings-card borrower-card">
-          <h2>Change Password</h2>
-          <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
+            <section class="settings-card borrower-card borrower-surface-card">
+              <div class="borrower-panel-heading">
+                <div>
+                  <span class="borrower-section-kicker">Security</span>
+                  <h2>Change password</h2>
+                </div>
+              </div>
+              <div class="borrower-panel-content">
+                <form method="POST" action="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>">
             <input type="hidden" name="action" value="change_password">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($accountCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -208,10 +239,11 @@ $currentPage = 'account';
               <input type="password" id="new_password_confirm" name="new_password_confirm" autocomplete="new-password" required>
             </div>
 
-            <button type="submit" class="borrower-btn borrower-btn-primary settings-submit-btn">Change Password</button>
-          </form>
-        </section>
-      </div>
+                  <button type="submit" class="borrower-btn borrower-btn-primary settings-submit-btn">Change Password</button>
+                </form>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>

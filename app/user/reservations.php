@@ -62,6 +62,20 @@ try {
 
 $flash = getFlash();
 $currentPage = 'reservations';
+$reservationRows = is_array($activeReservations['rows'] ?? null) ? $activeReservations['rows'] : [];
+$readyReservations = 0;
+$queuedReservations = 0;
+$otherReservations = 0;
+foreach ($reservationRows as $reservationSummary) {
+  $reservationStatus = strtolower(trim((string)($reservationSummary['status'] ?? '')));
+  if ($reservationStatus === 'ready_for_pickup') {
+    $readyReservations++;
+  } elseif ($reservationStatus === 'queued') {
+    $queuedReservations++;
+  } else {
+    $otherReservations++;
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,28 +108,65 @@ $currentPage = 'reservations';
     <main class="admin-main borrower-main">
       <div class="borrower-page">
         <div class="borrower-shell">
-      <header class="borrower-page-header">
-        <h1>My Active Reservations</h1>
-        <p class="borrower-page-subtitle">Track reservation status and cancel active queue entries.</p>
-      </header>
+          <section class="borrower-hero borrower-page-hero">
+            <div class="borrower-hero-copy">
+              <span class="borrower-eyebrow">Reservations</span>
+              <h1>Track every queue position and pickup-ready hold.</h1>
+              <p class="borrower-page-subtitle">Review reservation status, see which holds are ready, and cancel active requests when your plans change.</p>
+            </div>
+            <aside class="borrower-hero-card">
+              <span class="borrower-hero-card-label">Reservation snapshot</span>
+              <strong><?php echo count($reservationRows); ?> active requests</strong>
+              <p><?php echo $readyReservations; ?> ready for pickup and <?php echo $queuedReservations; ?> still in queue.</p>
+              <ul class="borrower-hero-list">
+                <li><?php echo $otherReservations; ?> requests in other statuses</li>
+                <li>Cancel actions stay available only for supported statuses</li>
+              </ul>
+            </aside>
+          </section>
 
-      <?php if ($flash): ?>
-        <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <section class="borrower-dashboard-stats borrower-stat-grid reservations-summary-stats" aria-label="Reservation summary">
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">All Active</p>
+              <p class="borrower-stat-value"><?php echo count($reservationRows); ?></p>
+              <p class="borrower-stat-detail">Reservations currently tied to your account.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Ready for Pickup</p>
+              <p class="borrower-stat-value"><?php echo $readyReservations; ?></p>
+              <p class="borrower-stat-detail">Items you should claim before the hold expires.</p>
+            </article>
+            <article class="borrower-card borrower-stat-card">
+              <p class="borrower-stat-label">Queued</p>
+              <p class="borrower-stat-value"><?php echo $queuedReservations; ?></p>
+              <p class="borrower-stat-detail">Requests still waiting for availability.</p>
+            </article>
+          </section>
 
-      <?php if (!$activeReservations['available']): ?>
-        <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$activeReservations['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+          <?php if ($flash): ?>
+            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
 
-      <?php if (empty($activeReservations['rows'])): ?>
-        <div class="borrower-empty">You have no active reservations.</div>
-      <?php else: ?>
-        <div class="borrower-table-wrap">
-          <table class="borrower-table reservations-table">
+          <?php if (!$activeReservations['available']): ?>
+            <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$activeReservations['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
+
+          <?php if (empty($reservationRows)): ?>
+            <div class="borrower-empty">You have no active reservations.</div>
+          <?php else: ?>
+            <section class="borrower-card borrower-surface-card borrower-table-panel">
+              <div class="borrower-panel-heading">
+                <div>
+                  <span class="borrower-section-kicker">Queue details</span>
+                  <h2>Active reservation list</h2>
+                </div>
+              </div>
+              <div class="borrower-table-wrap">
+                <table class="borrower-table reservations-table">
             <thead>
               <tr>
                 <th>Book</th>
@@ -126,7 +177,7 @@ $currentPage = 'reservations';
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($activeReservations['rows'] as $row): ?>
+              <?php foreach ($reservationRows as $row): ?>
                 <?php $status = strtolower(trim((string)($row['status'] ?? ''))); ?>
                 <tr>
                   <td>
@@ -154,9 +205,10 @@ $currentPage = 'reservations';
                 </tr>
               <?php endforeach; ?>
             </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
+                </table>
+              </div>
+            </section>
+          <?php endif; ?>
         </div>
       </div>
     </main>
