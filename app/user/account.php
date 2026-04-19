@@ -246,7 +246,6 @@ $accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verif
     </main>
   </div>
 
-  <script src="public/js/main.js"></script>
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
 </body>

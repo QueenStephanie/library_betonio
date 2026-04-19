@@ -202,7 +202,7 @@ $rows = $queue['rows'];
                 <th>Book</th>
                 <th>Status</th>
                 <th>Queued At</th>
-                <th>Actions</th>
+                <th class="librarian-col-action">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -234,7 +234,7 @@ $rows = $queue['rows'];
                     <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><span class="admin-badge <?php echo $status === 'pending' ? 'is-librarian' : 'is-admin'; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></span></td>
                     <td><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime((string)($row['queued_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>
+                    <td class="librarian-col-action">
                       <div class="admin-actions">
                         <?php if ($status === 'pending'): ?>
                           <form method="POST" class="admin-inline-form">

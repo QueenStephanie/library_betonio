@@ -103,6 +103,10 @@ function receiptValue($value): string
       margin-top: 8px;
     }
 
+    .table-wrap {
+      overflow-x: auto;
+    }
+
     th,
     td {
       text-align: left;
@@ -110,6 +114,8 @@ function receiptValue($value): string
       border-bottom: 1px solid #eceff3;
       vertical-align: top;
       font-size: 0.9rem;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     th {
@@ -120,6 +126,16 @@ function receiptValue($value): string
     .missing {
       color: #b91c1c;
       font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .meta {
+        grid-template-columns: 1fr;
+      }
+
+      .meta strong {
+        min-width: 0;
+      }
     }
 
     @media print {
@@ -157,28 +173,30 @@ function receiptValue($value): string
 
       <section>
         <h2 style="margin:0 0 8px;font-size:1.05rem;">Receipt Snapshot</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Field</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php if (empty($payload)): ?>
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td colspan="2">No snapshot data stored.</td>
+                <th>Field</th>
+                <th>Value</th>
               </tr>
-            <?php else: ?>
-              <?php foreach ($payload as $key => $value): ?>
+            </thead>
+            <tbody>
+              <?php if (empty($payload)): ?>
                 <tr>
-                  <th><?php echo htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8'); ?></th>
-                  <td><?php echo htmlspecialchars(receiptValue($value), ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td colspan="2">No snapshot data stored.</td>
                 </tr>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
+              <?php else: ?>
+                <?php foreach ($payload as $key => $value): ?>
+                  <tr>
+                    <th><?php echo htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8'); ?></th>
+                    <td><?php echo htmlspecialchars(receiptValue($value), ENT_QUOTES, 'UTF-8'); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
       </section>
     <?php endif; ?>
   </main>

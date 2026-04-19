@@ -1,15 +1,11 @@
-# Graph Report - C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon  (2026-04-19)
+# Graph Report - C:\xampp\htdocs\library_betonio  (2026-04-19)
 
 ## Corpus Check
-<<<<<<< ours
-- 166 files · ~153,153 words
-=======
-- 170 files · ~151,764 words
->>>>>>> theirs
+- 170 files · ~157,365 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 688 nodes · 905 edges · 158 communities detected
+- 690 nodes · 908 edges · 158 communities detected
 - Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 104 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -187,12 +183,12 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `AuthSupport` --calls--> `enforceAuthenticatedSessionTimeout()`  [INFERRED]
-  C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\.kilo\worktrees\maple-hexagon\includes\functions.php
+  C:\xampp\htdocs\library_betonio\backend\classes\AuthSupport.php → C:\xampp\htdocs\library_betonio\includes\functions.php
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
+Cohesion: 0.04
 Nodes (1): PHPMailer
 
 ### Community 1 - "Community 1"
@@ -200,12 +196,12 @@ Cohesion: 0.05
 Nodes (38): appPath(), appUrl(), checkSessionTimeout(), clearPublicCsrfToken(), denyWithFlashRedirect(), displayFlash(), enforceAuthenticatedSessionTimeout(), ensureAdminCsrfToken() (+30 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.06
-Nodes (5): AdminUserManagementService, Auth, AuthManager, AuthSupport, UserRepository
+Cohesion: 0.08
+Nodes (1): SMTP
 
 ### Community 3 - "Community 3"
-Cohesion: 0.1
-Nodes (1): SMTP
+Cohesion: 0.06
+Nodes (5): AdminUserManagementService, Auth, AuthManager, AuthSupport, UserRepository
 
 ### Community 4 - "Community 4"
 Cohesion: 0.04
@@ -256,20 +252,20 @@ Cohesion: 0.29
 Nodes (1): AdminProfileRepository
 
 ### Community 16 - "Community 16"
+Cohesion: 0.43
+Nodes (6): handleViewportChange(), nextSlide(), resetAutoPlay(), setDrawerState(), showSlide(), startAutoPlay()
+
+### Community 17 - "Community 17"
 Cohesion: 0.47
 Nodes (1): OAuth
 
-### Community 17 - "Community 17"
+### Community 18 - "Community 18"
 Cohesion: 0.4
 Nodes (2): setUserSession(), updateDashboardData()
 
-### Community 18 - "Community 18"
+### Community 19 - "Community 19"
 Cohesion: 0.4
 Nodes (1): AccountService
-
-### Community 19 - "Community 19"
-Cohesion: 0.6
-Nodes (4): nextSlide(), resetAutoPlay(), showSlide(), startAutoPlay()
 
 ### Community 20 - "Community 20"
 Cohesion: 0.67
@@ -1098,17 +1094,17 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PHPMailer` connect `Community 0` to `Community 8`, `Community 10`, `Community 3`?**
-  _High betweenness centrality (0.173) - this node is a cross-community bridge._
+- **Why does `PHPMailer` connect `Community 0` to `Community 8`, `Community 2`, `Community 10`?**
+  _High betweenness centrality (0.172) - this node is a cross-community bridge._
 - **Why does `sendPasswordResetEmail()` connect `Community 1` to `Community 8`?**
-  _High betweenness centrality (0.130) - this node is a cross-community bridge._
-- **Why does `AuthSupport` connect `Community 2` to `Community 1`?**
+  _High betweenness centrality (0.129) - this node is a cross-community bridge._
+- **Why does `AuthSupport` connect `Community 3` to `Community 1`?**
   _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Are the 11 inferred relationships involving `UserRepository` (e.g. with `.register()` and `.login()`) actually correct?**
   _`UserRepository` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Database` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._

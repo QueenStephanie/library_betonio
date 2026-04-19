@@ -301,7 +301,7 @@ foreach ($rows as $row) {
                       <th>Book</th>
                       <th>Ready Until</th>
                       <th>Copies</th>
-                      <th>Action</th>
+                      <th class="librarian-col-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -331,7 +331,7 @@ foreach ($rows as $row) {
                           <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
                           <td><?php echo htmlspecialchars((string)($readyRow['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                           <td><?php echo max(0, (int)($readyRow['available_copies'] ?? 0)); ?></td>
-                          <td>
+                          <td class="librarian-col-action">
                             <?php if (!empty($readyRow['can_checkout'])): ?>
                               <form method="POST" style="margin:0;">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
@@ -391,7 +391,7 @@ foreach ($rows as $row) {
                       <th>Barcode</th>
                       <th>Due</th>
                       <th>Status</th>
-                      <th>Action</th>
+                      <th class="librarian-col-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,7 +422,7 @@ foreach ($rows as $row) {
                           <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
                           <td><?php echo htmlspecialchars((string)($row['barcode'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></td>
                           <td><?php echo htmlspecialchars((string)date('M j, Y g:i A', strtotime((string)($row['due_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
-                          <td>
+                          <td class="librarian-col-action">
                             <span class="admin-badge <?php echo $isOverdue ? 'is-admin' : 'is-librarian'; ?>">
                               <?php echo $isOverdue ? 'Overdue' : 'Active'; ?>
                             </span>

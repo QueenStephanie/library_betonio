@@ -66,45 +66,117 @@ $renderPortalIcon = static function ($icon) {
 };
 
 $portalNavItems = $navByRole[$portalRole];
+$portalCurrentPageLabel = $portalBrandSub;
+foreach ($portalNavItems as $portalNavItem) {
+  if ($portalCurrentPage === (string)$portalNavItem['key']) {
+    $portalCurrentPageLabel = (string)$portalNavItem['label'];
+    break;
+  }
+}
+
+$portalMobileDrawerId = 'admin-sidebar-mobile-drawer-' . $portalRole;
 ?>
 <aside class="admin-sidebar" aria-label="<?php echo htmlspecialchars(ucfirst($portalRole) . ' navigation', ENT_QUOTES, 'UTF-8'); ?>">
-  <div class="admin-brand-wrap">
-    <div class="admin-brand">QueenLib</div>
-    <div class="admin-brand-sub"><?php echo htmlspecialchars($portalBrandSub, ENT_QUOTES, 'UTF-8'); ?></div>
+  <div class="admin-sidebar-desktop">
+    <div class="admin-brand-wrap">
+      <div class="admin-brand">QueenLib</div>
+      <div class="admin-brand-sub"><?php echo htmlspecialchars($portalBrandSub, ENT_QUOTES, 'UTF-8'); ?></div>
+    </div>
+
+    <div class="admin-sidebar-profile">
+      <span class="admin-sidebar-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8" />
+          <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </span>
+      <div>
+        <div class="admin-sidebar-name"><?php echo htmlspecialchars($portalIdentityName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php if ($portalIdentityMeta !== ''): ?>
+          <div class="admin-sidebar-role"><?php echo htmlspecialchars($portalIdentityMeta, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <nav class="admin-nav" aria-label="<?php echo htmlspecialchars(ucfirst($portalRole) . ' sidebar links', ENT_QUOTES, 'UTF-8'); ?>">
+      <?php foreach ($portalNavItems as $item): ?>
+        <?php
+        $isActive = $portalCurrentPage === (string)$item['key'];
+        $isLogout = !empty($item['logout']);
+        $itemClasses = 'admin-nav-item';
+        if ($isActive) {
+          $itemClasses .= ' is-active';
+        }
+        if ($isLogout) {
+          $itemClasses .= ' admin-nav-logout';
+        }
+        ?>
+        <a class="<?php echo htmlspecialchars($itemClasses, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars(appPath((string)$item['path']), ENT_QUOTES, 'UTF-8'); ?>" <?php if ($isActive): ?>aria-current="page"<?php endif; ?>>
+          <?php echo $renderPortalIcon((string)$item['icon']); ?>
+          <span><?php echo htmlspecialchars((string)$item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+        </a>
+      <?php endforeach; ?>
+    </nav>
   </div>
 
-  <div class="admin-sidebar-profile">
-    <span class="admin-sidebar-avatar" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8" />
-        <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-      </svg>
-    </span>
-    <div>
-      <div class="admin-sidebar-name"><?php echo htmlspecialchars($portalIdentityName, ENT_QUOTES, 'UTF-8'); ?></div>
-      <?php if ($portalIdentityMeta !== ''): ?>
-        <div class="admin-sidebar-role"><?php echo htmlspecialchars($portalIdentityMeta, ENT_QUOTES, 'UTF-8'); ?></div>
-      <?php endif; ?>
+  <div class="admin-sidebar-mobile" aria-label="<?php echo htmlspecialchars(ucfirst($portalRole) . ' mobile navigation', ENT_QUOTES, 'UTF-8'); ?>">
+    <div class="admin-sidebar-mobile-bar">
+      <div class="admin-sidebar-mobile-brand">
+        <strong>QueenLib</strong>
+        <span><?php echo htmlspecialchars($portalBrandSub, ENT_QUOTES, 'UTF-8'); ?></span>
+      </div>
+      <div class="admin-sidebar-mobile-current"><?php echo htmlspecialchars($portalCurrentPageLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+      <button
+        type="button"
+        class="admin-sidebar-mobile-toggle"
+        aria-expanded="false"
+        aria-controls="<?php echo htmlspecialchars($portalMobileDrawerId, ENT_QUOTES, 'UTF-8'); ?>"
+        aria-label="Toggle navigation menu"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <button type="button" class="admin-sidebar-mobile-overlay" aria-label="Close navigation menu" hidden></button>
+
+    <div id="<?php echo htmlspecialchars($portalMobileDrawerId, ENT_QUOTES, 'UTF-8'); ?>" class="admin-sidebar-mobile-drawer" aria-hidden="true" inert>
+      <div class="admin-sidebar-profile">
+        <span class="admin-sidebar-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" stroke-width="1.8" />
+            <path d="M4.93 20C5.83 17.1 8.57 15 12 15C15.43 15 18.17 17.1 19.07 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </span>
+        <div>
+          <div class="admin-sidebar-name"><?php echo htmlspecialchars($portalIdentityName, ENT_QUOTES, 'UTF-8'); ?></div>
+          <?php if ($portalIdentityMeta !== ''): ?>
+            <div class="admin-sidebar-role"><?php echo htmlspecialchars($portalIdentityMeta, ENT_QUOTES, 'UTF-8'); ?></div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="<?php echo htmlspecialchars(ucfirst($portalRole) . ' drawer links', ENT_QUOTES, 'UTF-8'); ?>">
+        <?php foreach ($portalNavItems as $item): ?>
+          <?php
+          $isActive = $portalCurrentPage === (string)$item['key'];
+          $isLogout = !empty($item['logout']);
+          $itemClasses = 'admin-nav-item';
+          if ($isActive) {
+            $itemClasses .= ' is-active';
+          }
+          if ($isLogout) {
+            $itemClasses .= ' admin-nav-logout';
+          }
+          ?>
+          <a class="<?php echo htmlspecialchars($itemClasses, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars(appPath((string)$item['path']), ENT_QUOTES, 'UTF-8'); ?>" <?php if ($isActive): ?>aria-current="page"<?php endif; ?>>
+            <?php echo $renderPortalIcon((string)$item['icon']); ?>
+            <span><?php echo htmlspecialchars((string)$item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+          </a>
+        <?php endforeach; ?>
+      </nav>
     </div>
   </div>
-
-  <nav class="admin-nav">
-    <?php foreach ($portalNavItems as $item): ?>
-      <?php
-      $isActive = $portalCurrentPage === (string)$item['key'];
-      $isLogout = !empty($item['logout']);
-      $itemClasses = 'admin-nav-item';
-      if ($isActive) {
-        $itemClasses .= ' is-active';
-      }
-      if ($isLogout) {
-        $itemClasses .= ' admin-nav-logout';
-      }
-      ?>
-      <a class="<?php echo htmlspecialchars($itemClasses, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars(appPath((string)$item['path']), ENT_QUOTES, 'UTF-8'); ?>" <?php if ($isActive): ?>aria-current="page"<?php endif; ?>>
-        <?php echo $renderPortalIcon((string)$item['icon']); ?>
-        <span><?php echo htmlspecialchars((string)$item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
-      </a>
-    <?php endforeach; ?>
-  </nav>
 </aside>
+<script src="<?php echo htmlspecialchars(appPath('public/js/main.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>

@@ -64,3 +64,65 @@ if (!slides.length || !dots.length) {
   showSlide(activeIndex);
   startAutoPlay();
 }
+
+const mobileSidebar = document.querySelector(".admin-sidebar-mobile");
+
+if (mobileSidebar) {
+  const toggleButton = mobileSidebar.querySelector(".admin-sidebar-mobile-toggle");
+  const overlay = mobileSidebar.querySelector(".admin-sidebar-mobile-overlay");
+  const drawerId = toggleButton ? toggleButton.getAttribute("aria-controls") : "";
+  const drawer = drawerId ? document.getElementById(drawerId) : null;
+
+  if (toggleButton && overlay && drawer) {
+    const mobileMedia = window.matchMedia("(max-width: 980px)");
+
+    const setDrawerState = (isOpen) => {
+      mobileSidebar.classList.toggle("is-open", isOpen);
+      toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      drawer.setAttribute("aria-hidden", isOpen ? "false" : "true");
+      overlay.hidden = !isOpen;
+
+      if (isOpen) {
+        drawer.removeAttribute("inert");
+      } else {
+        drawer.setAttribute("inert", "");
+      }
+    };
+
+    setDrawerState(false);
+
+    toggleButton.addEventListener("click", () => {
+      const willOpen = toggleButton.getAttribute("aria-expanded") !== "true";
+      setDrawerState(willOpen);
+    });
+
+    overlay.addEventListener("click", () => {
+      setDrawerState(false);
+    });
+
+    drawer.addEventListener("click", (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("a")) {
+        setDrawerState(false);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        setDrawerState(false);
+      }
+    });
+
+    const handleViewportChange = (event) => {
+      if (!event.matches) {
+        setDrawerState(false);
+      }
+    };
+
+    if (typeof mobileMedia.addEventListener === "function") {
+      mobileMedia.addEventListener("change", handleViewportChange);
+    } else if (typeof mobileMedia.addListener === "function") {
+      mobileMedia.addListener(handleViewportChange);
+    }
+  }
+}
