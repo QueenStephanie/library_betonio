@@ -15,6 +15,7 @@ PermissionGate::requireAdminRole('librarian', 'admin-dashboard.php');
 $receiptId = isset($_GET['receipt_id']) ? (int)$_GET['receipt_id'] : 0;
 $receiptCode = trim((string)($_GET['receipt_code'] ?? ''));
 $autoPrint = isset($_GET['auto_print']) && (string)$_GET['auto_print'] === '1';
+$download = isset($_GET['download']) && (string)$_GET['download'] === '1';
 $receiptRepositoryClass = 'ReceiptRepository';
 
 $receipt = null;
@@ -26,6 +27,18 @@ if ($receiptId > 0) {
 
 if (!is_array($receipt)) {
   http_response_code(404);
+}
+
+if ($download && is_array($receipt)) {
+  $downloadCode = trim((string)($receipt['receipt_code'] ?? ''));
+  $downloadBaseName = $downloadCode !== '' ? strtolower($downloadCode) : ('receipt-' . (int)($receipt['id'] ?? 0));
+  $downloadBaseName = preg_replace('/[^a-z0-9._-]/i', '_', $downloadBaseName);
+  if (!is_string($downloadBaseName) || trim($downloadBaseName) === '') {
+    $downloadBaseName = 'receipt';
+  }
+
+  header('Content-Type: text/html; charset=UTF-8');
+  header('Content-Disposition: attachment; filename="' . $downloadBaseName . '.html"');
 }
 
 $payload = is_array($receipt['payload'] ?? null) ? $receipt['payload'] : [];

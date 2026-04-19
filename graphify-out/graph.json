@@ -349,7 +349,7 @@
       "label": "receiptValue()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\app\\librarian\\receipt.php",
-      "source_location": "L38",
+      "source_location": "L51",
       "id": "receipt_receiptvalue",
       "community": 24,
       "norm_label": "receiptvalue()"
@@ -477,7 +477,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_setup_db_php",
-      "community": 12,
+      "community": 13,
       "norm_label": "setup-db.php"
     },
     {
@@ -486,7 +486,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L13",
       "id": "setup_db_ensureindex",
-      "community": 12,
+      "community": 13,
       "norm_label": "ensureindex()"
     },
     {
@@ -495,7 +495,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L33",
       "id": "setup_db_ensurecolumn",
-      "community": 12,
+      "community": 13,
       "norm_label": "ensurecolumn()"
     },
     {
@@ -504,7 +504,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L53",
       "id": "setup_db_ensureadmindashboardschema",
-      "community": 12,
+      "community": 13,
       "norm_label": "ensureadmindashboardschema()"
     },
     {
@@ -513,7 +513,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L161",
       "id": "setup_db_ensureschemamigrationstable",
-      "community": 12,
+      "community": 13,
       "norm_label": "ensureschemamigrationstable()"
     },
     {
@@ -522,7 +522,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L176",
       "id": "setup_db_normalizesuperadminusername",
-      "community": 12,
+      "community": 13,
       "norm_label": "normalizesuperadminusername()"
     },
     {
@@ -531,7 +531,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L193",
       "id": "setup_db_buildgeneratedsuperadminemail",
-      "community": 12,
+      "community": 13,
       "norm_label": "buildgeneratedsuperadminemail()"
     },
     {
@@ -540,7 +540,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\setup-db.php",
       "source_location": "L205",
       "id": "setup_db_ensuresuperadminaccount",
-      "community": 12,
+      "community": 13,
       "norm_label": "ensuresuperadminaccount()"
     },
     {
@@ -729,7 +729,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_classes_auth_php",
-      "community": 3,
+      "community": 2,
       "norm_label": "auth.php"
     },
     {
@@ -738,7 +738,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L11",
       "id": "auth_auth",
-      "community": 3,
+      "community": 2,
       "norm_label": "auth"
     },
     {
@@ -747,7 +747,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L18",
       "id": "auth_auth_construct",
-      "community": 3,
+      "community": 2,
       "norm_label": ".__construct()"
     },
     {
@@ -756,7 +756,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L26",
       "id": "auth_auth_register",
-      "community": 3,
+      "community": 2,
       "norm_label": ".register()"
     },
     {
@@ -765,7 +765,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L96",
       "id": "auth_auth_login",
-      "community": 3,
+      "community": 2,
       "norm_label": ".login()"
     },
     {
@@ -774,7 +774,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L166",
       "id": "auth_auth_logout",
-      "community": 3,
+      "community": 2,
       "norm_label": ".logout()"
     },
     {
@@ -783,7 +783,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L195",
       "id": "auth_auth_isauthenticated",
-      "community": 3,
+      "community": 2,
       "norm_label": ".isauthenticated()"
     },
     {
@@ -792,7 +792,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L204",
       "id": "auth_auth_getcurrentuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".getcurrentuser()"
     },
     {
@@ -801,7 +801,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L228",
       "id": "auth_auth_generateauthtoken",
-      "community": 3,
+      "community": 2,
       "norm_label": ".generateauthtoken()"
     },
     {
@@ -810,7 +810,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L243",
       "id": "auth_auth_logattempt",
-      "community": 3,
+      "community": 2,
       "norm_label": ".logattempt()"
     },
     {
@@ -819,7 +819,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\Auth.php",
       "source_location": "L265",
       "id": "auth_auth_logloginhistory",
-      "community": 3,
+      "community": 2,
       "norm_label": ".logloginhistory()"
     },
     {
@@ -828,7 +828,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_classes_authsupport_php",
-      "community": 3,
+      "community": 2,
       "norm_label": "authsupport.php"
     },
     {
@@ -837,7 +837,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L6",
       "id": "authsupport_authsupport",
-      "community": 3,
+      "community": 2,
       "norm_label": "authsupport"
     },
     {
@@ -846,7 +846,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L8",
       "id": "authsupport_authsupport_ensuresessionstarted",
-      "community": 3,
+      "community": 2,
       "norm_label": ".ensuresessionstarted()"
     },
     {
@@ -855,7 +855,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L15",
       "id": "authsupport_authsupport_setfrontendsession",
-      "community": 3,
+      "community": 2,
       "norm_label": ".setfrontendsession()"
     },
     {
@@ -864,7 +864,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L31",
       "id": "authsupport_authsupport_setbackendsession",
-      "community": 3,
+      "community": 2,
       "norm_label": ".setbackendsession()"
     },
     {
@@ -873,7 +873,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\AuthSupport.php",
       "source_location": "L48",
       "id": "authsupport_authsupport_clearsession",
-      "community": 3,
+      "community": 2,
       "norm_label": ".clearsession()"
     },
     {
@@ -1656,7 +1656,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_classes_userrepository_php",
-      "community": 3,
+      "community": 2,
       "norm_label": "userrepository.php"
     },
     {
@@ -1665,7 +1665,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L6",
       "id": "userrepository_userrepository",
-      "community": 3,
+      "community": 2,
       "norm_label": "userrepository"
     },
     {
@@ -1674,7 +1674,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L10",
       "id": "userrepository_userrepository_assertactorcanmanagerole",
-      "community": 3,
+      "community": 2,
       "norm_label": ".assertactorcanmanagerole()"
     },
     {
@@ -1683,7 +1683,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L23",
       "id": "userrepository_userrepository_findbyemail",
-      "community": 3,
+      "community": 2,
       "norm_label": ".findbyemail()"
     },
     {
@@ -1692,7 +1692,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L44",
       "id": "userrepository_userrepository_findbyid",
-      "community": 3,
+      "community": 2,
       "norm_label": ".findbyid()"
     },
     {
@@ -1701,7 +1701,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L59",
       "id": "userrepository_userrepository_normalizerole",
-      "community": 3,
+      "community": 2,
       "norm_label": ".normalizerole()"
     },
     {
@@ -1710,7 +1710,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L69",
       "id": "userrepository_userrepository_listmanagedusers",
-      "community": 3,
+      "community": 2,
       "norm_label": ".listmanagedusers()"
     },
     {
@@ -1719,7 +1719,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L95",
       "id": "userrepository_userrepository_getmanageduserbyid",
-      "community": 3,
+      "community": 2,
       "norm_label": ".getmanageduserbyid()"
     },
     {
@@ -1728,7 +1728,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L119",
       "id": "userrepository_userrepository_emailexistsforotheruser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".emailexistsforotheruser()"
     },
     {
@@ -1737,7 +1737,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L137",
       "id": "userrepository_userrepository_getsuperadminuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".getsuperadminuser()"
     },
     {
@@ -1746,7 +1746,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L167",
       "id": "userrepository_userrepository_issuperadminuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".issuperadminuser()"
     },
     {
@@ -1755,7 +1755,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L185",
       "id": "userrepository_userrepository_createmanageduser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".createmanageduser()"
     },
     {
@@ -1764,7 +1764,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L242",
       "id": "userrepository_userrepository_updatemanageduser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".updatemanageduser()"
     },
     {
@@ -1773,7 +1773,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L296",
       "id": "userrepository_userrepository_setuseractivestate",
-      "community": 3,
+      "community": 2,
       "norm_label": ".setuseractivestate()"
     },
     {
@@ -1782,7 +1782,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L317",
       "id": "userrepository_userrepository_deletemanageduser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".deletemanageduser()"
     },
     {
@@ -1791,7 +1791,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L347",
       "id": "userrepository_userrepository_replaceroleprofile",
-      "community": 3,
+      "community": 2,
       "norm_label": ".replaceroleprofile()"
     },
     {
@@ -1800,7 +1800,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\classes\\UserRepository.php",
       "source_location": "L355",
       "id": "userrepository_userrepository_upsertroleprofile",
-      "community": 3,
+      "community": 2,
       "norm_label": ".upsertroleprofile()"
     },
     {
@@ -2097,7 +2097,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_migrations_migrate_php",
-      "community": 13,
+      "community": 14,
       "norm_label": "migrate.php"
     },
     {
@@ -2106,7 +2106,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L17",
       "id": "migrate_printusage",
-      "community": 13,
+      "community": 14,
       "norm_label": "printusage()"
     },
     {
@@ -2115,7 +2115,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L35",
       "id": "migrate_ensureschemamigrationstable",
-      "community": 13,
+      "community": 14,
       "norm_label": "ensureschemamigrationstable()"
     },
     {
@@ -2124,7 +2124,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L52",
       "id": "migrate_loadmigrationfiles",
-      "community": 13,
+      "community": 14,
       "norm_label": "loadmigrationfiles()"
     },
     {
@@ -2133,7 +2133,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L85",
       "id": "migrate_fetchappliedmigrations",
-      "community": 13,
+      "community": 14,
       "norm_label": "fetchappliedmigrations()"
     },
     {
@@ -2142,7 +2142,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L107",
       "id": "migrate_splitsqlstatements",
-      "community": 13,
+      "community": 14,
       "norm_label": "splitsqlstatements()"
     },
     {
@@ -2151,7 +2151,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L139",
       "id": "migrate_applymigration",
-      "community": 13,
+      "community": 14,
       "norm_label": "applymigration()"
     },
     {
@@ -2160,7 +2160,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\migrations\\migrate.php",
       "source_location": "L170",
       "id": "migrate_parsemode",
-      "community": 13,
+      "community": 14,
       "norm_label": "parsemode()"
     },
     {
@@ -2358,7 +2358,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\composer\\autoload_real.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_vendor_composer_autoload_real_php",
-      "community": 9,
+      "community": 2,
       "norm_label": "autoload_real.php"
     },
     {
@@ -2367,7 +2367,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\composer\\autoload_real.php",
       "source_location": "L5",
       "id": "autoload_real_composerautoloaderinit2185d2f99bcd56787481d9357a5972d3",
-      "community": 9,
+      "community": 2,
       "norm_label": "composerautoloaderinit2185d2f99bcd56787481d9357a5972d3"
     },
     {
@@ -2376,7 +2376,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\composer\\autoload_real.php",
       "source_location": "L9",
       "id": "autoload_real_composerautoloaderinit2185d2f99bcd56787481d9357a5972d3_loadclassloader",
-      "community": 9,
+      "community": 2,
       "norm_label": ".loadclassloader()"
     },
     {
@@ -2385,7 +2385,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\composer\\autoload_real.php",
       "source_location": "L19",
       "id": "autoload_real_composerautoloaderinit2185d2f99bcd56787481d9357a5972d3_getloader",
-      "community": 9,
+      "community": 2,
       "norm_label": ".getloader()"
     },
     {
@@ -3528,7 +3528,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L856",
       "id": "phpmailer_phpmailer_destruct",
-      "community": 2,
+      "community": 0,
       "norm_label": ".__destruct()"
     },
     {
@@ -3537,7 +3537,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L876",
       "id": "phpmailer_phpmailer_mailpassthru",
-      "community": 2,
+      "community": 0,
       "norm_label": ".mailpassthru()"
     },
     {
@@ -3762,7 +3762,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L1842",
       "id": "phpmailer_phpmailer_postsend",
-      "community": 2,
+      "community": 3,
       "norm_label": ".postsend()"
     },
     {
@@ -3771,7 +3771,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L1888",
       "id": "phpmailer_phpmailer_sendmailsend",
-      "community": 2,
+      "community": 0,
       "norm_label": ".sendmailsend()"
     },
     {
@@ -3807,7 +3807,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L2080",
       "id": "phpmailer_phpmailer_mailsend",
-      "community": 2,
+      "community": 0,
       "norm_label": ".mailsend()"
     },
     {
@@ -3816,7 +3816,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L2159",
       "id": "phpmailer_phpmailer_getsmtpinstance",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getsmtpinstance()"
     },
     {
@@ -3852,7 +3852,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L2227",
       "id": "phpmailer_phpmailer_smtpsend",
-      "community": 2,
+      "community": 3,
       "norm_label": ".smtpsend()"
     },
     {
@@ -3861,7 +3861,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L2320",
       "id": "phpmailer_phpmailer_smtpconnect",
-      "community": 2,
+      "community": 3,
       "norm_label": ".smtpconnect()"
     },
     {
@@ -3870,7 +3870,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L2470",
       "id": "phpmailer_phpmailer_smtpclose",
-      "community": 2,
+      "community": 3,
       "norm_label": ".smtpclose()"
     },
     {
@@ -4329,7 +4329,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L4448",
       "id": "phpmailer_phpmailer_serverhostname",
-      "community": 2,
+      "community": 3,
       "norm_label": ".serverhostname()"
     },
     {
@@ -4383,7 +4383,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L4573",
       "id": "phpmailer_phpmailer_getsmtperrormessage",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getsmtperrormessage()"
     },
     {
@@ -4644,7 +4644,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\PHPMailer.php",
       "source_location": "L5501",
       "id": "phpmailer_phpmailer_docallback",
-      "community": 2,
+      "community": 0,
       "norm_label": ".docallback()"
     },
     {
@@ -4788,7 +4788,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_backend_vendor_phpmailer_phpmailer_src_smtp_php",
-      "community": 2,
+      "community": 3,
       "norm_label": "smtp.php"
     },
     {
@@ -4797,7 +4797,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L31",
       "id": "smtp_smtp",
-      "community": 2,
+      "community": 3,
       "norm_label": "smtp"
     },
     {
@@ -4806,7 +4806,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L287",
       "id": "smtp_smtp_edebug",
-      "community": 2,
+      "community": 3,
       "norm_label": ".edebug()"
     },
     {
@@ -4815,7 +4815,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L348",
       "id": "smtp_smtp_connect",
-      "community": 2,
+      "community": 3,
       "norm_label": ".connect()"
     },
     {
@@ -4824,7 +4824,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L407",
       "id": "smtp_smtp_getsmtpconnection",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getsmtpconnection()"
     },
     {
@@ -4833,7 +4833,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L486",
       "id": "smtp_smtp_starttls",
-      "community": 2,
+      "community": 3,
       "norm_label": ".starttls()"
     },
     {
@@ -4842,7 +4842,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L531",
       "id": "smtp_smtp_authenticate",
-      "community": 2,
+      "community": 3,
       "norm_label": ".authenticate()"
     },
     {
@@ -4851,7 +4851,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L702",
       "id": "smtp_smtp_hmac",
-      "community": 2,
+      "community": 3,
       "norm_label": ".hmac()"
     },
     {
@@ -4860,7 +4860,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L734",
       "id": "smtp_smtp_connected",
-      "community": 2,
+      "community": 3,
       "norm_label": ".connected()"
     },
     {
@@ -4869,7 +4869,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L761",
       "id": "smtp_smtp_close",
-      "community": 2,
+      "community": 3,
       "norm_label": ".close()"
     },
     {
@@ -4878,7 +4878,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L773",
       "id": "smtp_smtp_iteratelines",
-      "community": 2,
+      "community": 3,
       "norm_label": ".iteratelines()"
     },
     {
@@ -4887,7 +4887,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L805",
       "id": "smtp_smtp_data",
-      "community": 2,
+      "community": 3,
       "norm_label": ".data()"
     },
     {
@@ -4896,7 +4896,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L899",
       "id": "smtp_smtp_hello",
-      "community": 2,
+      "community": 3,
       "norm_label": ".hello()"
     },
     {
@@ -4905,7 +4905,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L925",
       "id": "smtp_smtp_sendhello",
-      "community": 2,
+      "community": 3,
       "norm_label": ".sendhello()"
     },
     {
@@ -4914,7 +4914,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L944",
       "id": "smtp_smtp_parsehellofields",
-      "community": 2,
+      "community": 3,
       "norm_label": ".parsehellofields()"
     },
     {
@@ -4923,7 +4923,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1000",
       "id": "smtp_smtp_mail",
-      "community": 2,
+      "community": 3,
       "norm_label": ".mail()"
     },
     {
@@ -4932,7 +4932,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1021",
       "id": "smtp_smtp_quit",
-      "community": 2,
+      "community": 3,
       "norm_label": ".quit()"
     },
     {
@@ -4941,7 +4941,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1045",
       "id": "smtp_smtp_recipient",
-      "community": 2,
+      "community": 3,
       "norm_label": ".recipient()"
     },
     {
@@ -4950,7 +4950,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1078",
       "id": "smtp_smtp_xclient",
-      "community": 2,
+      "community": 3,
       "norm_label": ".xclient()"
     },
     {
@@ -4959,7 +4959,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1099",
       "id": "smtp_smtp_reset",
-      "community": 2,
+      "community": 3,
       "norm_label": ".reset()"
     },
     {
@@ -4968,7 +4968,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1113",
       "id": "smtp_smtp_sendcommand",
-      "community": 2,
+      "community": 3,
       "norm_label": ".sendcommand()"
     },
     {
@@ -4977,7 +4977,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1187",
       "id": "smtp_smtp_sendandmail",
-      "community": 2,
+      "community": 3,
       "norm_label": ".sendandmail()"
     },
     {
@@ -4986,7 +4986,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1199",
       "id": "smtp_smtp_verify",
-      "community": 2,
+      "community": 3,
       "norm_label": ".verify()"
     },
     {
@@ -4995,7 +4995,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1210",
       "id": "smtp_smtp_noop",
-      "community": 2,
+      "community": 3,
       "norm_label": ".noop()"
     },
     {
@@ -5004,7 +5004,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1224",
       "id": "smtp_smtp_turn",
-      "community": 2,
+      "community": 3,
       "norm_label": ".turn()"
     },
     {
@@ -5013,7 +5013,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1240",
       "id": "smtp_smtp_client_send",
-      "community": 2,
+      "community": 3,
       "norm_label": ".client_send()"
     },
     {
@@ -5022,7 +5022,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1266",
       "id": "smtp_smtp_geterror",
-      "community": 2,
+      "community": 3,
       "norm_label": ".geterror()"
     },
     {
@@ -5031,7 +5031,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1276",
       "id": "smtp_smtp_getserverextlist",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getserverextlist()"
     },
     {
@@ -5040,7 +5040,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1298",
       "id": "smtp_smtp_getserverext",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getserverext()"
     },
     {
@@ -5049,7 +5049,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1326",
       "id": "smtp_smtp_getlastreply",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getlastreply()"
     },
     {
@@ -5058,7 +5058,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1340",
       "id": "smtp_smtp_get_lines",
-      "community": 2,
+      "community": 3,
       "norm_label": ".get_lines()"
     },
     {
@@ -5067,7 +5067,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1440",
       "id": "smtp_smtp_setverp",
-      "community": 2,
+      "community": 3,
       "norm_label": ".setverp()"
     },
     {
@@ -5076,7 +5076,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1450",
       "id": "smtp_smtp_getverp",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getverp()"
     },
     {
@@ -5085,7 +5085,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1460",
       "id": "smtp_smtp_setsmtputf8",
-      "community": 2,
+      "community": 3,
       "norm_label": ".setsmtputf8()"
     },
     {
@@ -5094,7 +5094,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1470",
       "id": "smtp_smtp_getsmtputf8",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getsmtputf8()"
     },
     {
@@ -5103,7 +5103,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1483",
       "id": "smtp_smtp_seterror",
-      "community": 2,
+      "community": 3,
       "norm_label": ".seterror()"
     },
     {
@@ -5112,7 +5112,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1498",
       "id": "smtp_smtp_setdebugoutput",
-      "community": 2,
+      "community": 3,
       "norm_label": ".setdebugoutput()"
     },
     {
@@ -5121,7 +5121,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1508",
       "id": "smtp_smtp_getdebugoutput",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getdebugoutput()"
     },
     {
@@ -5130,7 +5130,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1518",
       "id": "smtp_smtp_setdebuglevel",
-      "community": 2,
+      "community": 3,
       "norm_label": ".setdebuglevel()"
     },
     {
@@ -5139,7 +5139,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1528",
       "id": "smtp_smtp_getdebuglevel",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getdebuglevel()"
     },
     {
@@ -5148,7 +5148,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1538",
       "id": "smtp_smtp_settimeout",
-      "community": 2,
+      "community": 3,
       "norm_label": ".settimeout()"
     },
     {
@@ -5157,7 +5157,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1548",
       "id": "smtp_smtp_gettimeout",
-      "community": 2,
+      "community": 3,
       "norm_label": ".gettimeout()"
     },
     {
@@ -5166,7 +5166,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1561",
       "id": "smtp_smtp_errorhandler",
-      "community": 2,
+      "community": 3,
       "norm_label": ".errorhandler()"
     },
     {
@@ -5175,7 +5175,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1584",
       "id": "smtp_smtp_recordlasttransactionid",
-      "community": 2,
+      "community": 3,
       "norm_label": ".recordlasttransactionid()"
     },
     {
@@ -5184,7 +5184,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\backend\\vendor\\phpmailer\\phpmailer\\src\\SMTP.php",
       "source_location": "L1613",
       "id": "smtp_smtp_getlasttransactionid",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getlasttransactionid()"
     },
     {
@@ -5193,7 +5193,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_includes_auth_php",
-      "community": 3,
+      "community": 2,
       "norm_label": "auth.php"
     },
     {
@@ -5202,7 +5202,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L11",
       "id": "auth_authmanager",
-      "community": 3,
+      "community": 2,
       "norm_label": "authmanager"
     },
     {
@@ -5211,7 +5211,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L15",
       "id": "auth_authmanager_construct",
-      "community": 3,
+      "community": 2,
       "norm_label": ".__construct()"
     },
     {
@@ -5220,7 +5220,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L23",
       "id": "auth_authmanager_register",
-      "community": 9,
+      "community": 2,
       "norm_label": ".register()"
     },
     {
@@ -5229,7 +5229,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L86",
       "id": "auth_authmanager_login",
-      "community": 3,
+      "community": 2,
       "norm_label": ".login()"
     },
     {
@@ -5238,7 +5238,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L135",
       "id": "auth_authmanager_logout",
-      "community": 3,
+      "community": 2,
       "norm_label": ".logout()"
     },
     {
@@ -5247,7 +5247,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L144",
       "id": "auth_authmanager_isloggedin",
-      "community": 3,
+      "community": 2,
       "norm_label": ".isloggedin()"
     },
     {
@@ -5256,7 +5256,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L152",
       "id": "auth_authmanager_getcurrentuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".getcurrentuser()"
     },
     {
@@ -5265,7 +5265,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L173",
       "id": "auth_authmanager_verifyemailbytoken",
-      "community": 3,
+      "community": 2,
       "norm_label": ".verifyemailbytoken()"
     },
     {
@@ -5274,7 +5274,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L221",
       "id": "auth_authmanager_requestpasswordreset",
-      "community": 3,
+      "community": 2,
       "norm_label": ".requestpasswordreset()"
     },
     {
@@ -5283,7 +5283,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\auth.php",
       "source_location": "L262",
       "id": "auth_authmanager_resetpassword",
-      "community": 3,
+      "community": 2,
       "norm_label": ".resetpassword()"
     },
     {
@@ -5805,7 +5805,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_includes_services_adminusermanagementservice_php",
-      "community": 3,
+      "community": 2,
       "norm_label": "adminusermanagementservice.php"
     },
     {
@@ -5814,7 +5814,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L7",
       "id": "adminusermanagementservice_adminusermanagementservice",
-      "community": 3,
+      "community": 2,
       "norm_label": "adminusermanagementservice"
     },
     {
@@ -5823,7 +5823,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L12",
       "id": "adminusermanagementservice_adminusermanagementservice_construct",
-      "community": 3,
+      "community": 2,
       "norm_label": ".__construct()"
     },
     {
@@ -5832,7 +5832,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L17",
       "id": "adminusermanagementservice_adminusermanagementservice_handleaction",
-      "community": 3,
+      "community": 2,
       "norm_label": ".handleaction()"
     },
     {
@@ -5841,7 +5841,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L43",
       "id": "adminusermanagementservice_adminusermanagementservice_handlecreateuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".handlecreateuser()"
     },
     {
@@ -5850,7 +5850,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L104",
       "id": "adminusermanagementservice_adminusermanagementservice_handleupdateuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".handleupdateuser()"
     },
     {
@@ -5859,7 +5859,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L173",
       "id": "adminusermanagementservice_adminusermanagementservice_handletogglestatus",
-      "community": 3,
+      "community": 2,
       "norm_label": ".handletogglestatus()"
     },
     {
@@ -5868,7 +5868,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AdminUserManagementService.php",
       "source_location": "L222",
       "id": "adminusermanagementservice_adminusermanagementservice_handledeleteuser",
-      "community": 3,
+      "community": 2,
       "norm_label": ".handledeleteuser()"
     },
     {
@@ -5877,7 +5877,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_includes_services_authservice_php",
-      "community": 9,
+      "community": 12,
       "norm_label": "authservice.php"
     },
     {
@@ -5886,7 +5886,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L12",
       "id": "authservice_authservice",
-      "community": 9,
+      "community": 12,
       "norm_label": "authservice"
     },
     {
@@ -5895,7 +5895,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L17",
       "id": "authservice_authservice_construct",
-      "community": 9,
+      "community": 12,
       "norm_label": ".__construct()"
     },
     {
@@ -5904,7 +5904,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L22",
       "id": "authservice_authservice_login",
-      "community": 9,
+      "community": 12,
       "norm_label": ".login()"
     },
     {
@@ -5913,7 +5913,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L28",
       "id": "authservice_authservice_registerborrower",
-      "community": 9,
+      "community": 1,
       "norm_label": ".registerborrower()"
     },
     {
@@ -5922,7 +5922,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L81",
       "id": "authservice_authservice_verifyemailbytoken",
-      "community": 9,
+      "community": 12,
       "norm_label": ".verifyemailbytoken()"
     },
     {
@@ -5931,7 +5931,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L87",
       "id": "authservice_authservice_requestpasswordreset",
-      "community": 9,
+      "community": 12,
       "norm_label": ".requestpasswordreset()"
     },
     {
@@ -5940,7 +5940,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L99",
       "id": "authservice_authservice_createmailhandler",
-      "community": 9,
+      "community": 12,
       "norm_label": ".createmailhandler()"
     },
     {
@@ -5949,7 +5949,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L117",
       "id": "authservice_authservice_verifyresettoken",
-      "community": 9,
+      "community": 12,
       "norm_label": ".verifyresettoken()"
     },
     {
@@ -5958,7 +5958,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\includes\\services\\AuthService.php",
       "source_location": "L123",
       "id": "authservice_authservice_resetpassword",
-      "community": 9,
+      "community": 12,
       "norm_label": ".resetpassword()"
     },
     {
@@ -6138,7 +6138,7 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L1",
       "id": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
-      "community": 14,
+      "community": 9,
       "norm_label": "page-alerts.js"
     },
     {
@@ -6147,61 +6147,115 @@
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
       "source_location": "L12",
       "id": "page_alerts_asstring",
-      "community": 14,
+      "community": 9,
       "norm_label": "asstring()"
+    },
+    {
+      "label": "escapeHtml()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L16",
+      "id": "page_alerts_escapehtml",
+      "community": 9,
+      "norm_label": "escapehtml()"
     },
     {
       "label": "redirectTo()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L16",
+      "source_location": "L26",
       "id": "page_alerts_redirectto",
-      "community": 14,
+      "community": 9,
       "norm_label": "redirectto()"
     },
     {
       "label": "openWindow()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L22",
+      "source_location": "L32",
       "id": "page_alerts_openwindow",
-      "community": 14,
+      "community": 9,
       "norm_label": "openwindow()"
+    },
+    {
+      "label": "isMobileLikeDevice()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L40",
+      "id": "page_alerts_ismobilelikedevice",
+      "community": 9,
+      "norm_label": "ismobilelikedevice()"
+    },
+    {
+      "label": "downloadTextFile()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L49",
+      "id": "page_alerts_downloadtextfile",
+      "community": 9,
+      "norm_label": "downloadtextfile()"
+    },
+    {
+      "label": "safeFileName()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L62",
+      "id": "page_alerts_safefilename",
+      "community": 9,
+      "norm_label": "safefilename()"
+    },
+    {
+      "label": "handleReceiptAction()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L67",
+      "id": "page_alerts_handlereceiptaction",
+      "community": 9,
+      "norm_label": "handlereceiptaction()"
+    },
+    {
+      "label": "runReceiptOverlay()",
+      "file_type": "code",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L109",
+      "id": "page_alerts_runreceiptoverlay",
+      "community": 9,
+      "norm_label": "runreceiptoverlay()"
     },
     {
       "label": "runWithSweetAlerts()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L30",
+      "source_location": "L159",
       "id": "page_alerts_runwithsweetalerts",
-      "community": 14,
+      "community": 9,
       "norm_label": "runwithsweetalerts()"
     },
     {
       "label": "runWithSwalFallback()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L84",
+      "source_location": "L221",
       "id": "page_alerts_runwithswalfallback",
-      "community": 14,
+      "community": 9,
       "norm_label": "runwithswalfallback()"
     },
     {
       "label": "runSingleAlert()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L107",
+      "source_location": "L248",
       "id": "page_alerts_runsinglealert",
-      "community": 14,
+      "community": 9,
       "norm_label": "runsinglealert()"
     },
     {
       "label": "run()",
       "file_type": "code",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L117",
+      "source_location": "L262",
       "id": "page_alerts_run",
-      "community": 14,
+      "community": 9,
       "norm_label": "run()"
     },
     {
@@ -6243,7 +6297,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\app\\librarian\\receipt.php",
-      "source_location": "L38",
+      "source_location": "L51",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_app_librarian_receipt_php",
       "_tgt": "receipt_receiptvalue",
@@ -16938,6 +16992,18 @@
       "source_location": "L16",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_escapehtml",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_escapehtml",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_redirectto",
       "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "target": "page_alerts_redirectto",
@@ -16947,7 +17013,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L22",
+      "source_location": "L32",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_openwindow",
@@ -16959,7 +17025,67 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L30",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_ismobilelikedevice",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_ismobilelikedevice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_downloadtextfile",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_downloadtextfile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_safefilename",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_safefilename",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_handlereceiptaction",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_handlereceiptaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L109",
+      "weight": 1.0,
+      "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "_tgt": "page_alerts_runreceiptoverlay",
+      "source": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L159",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_runwithsweetalerts",
@@ -16971,7 +17097,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L84",
+      "source_location": "L221",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_runwithswalfallback",
@@ -16983,7 +17109,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L107",
+      "source_location": "L248",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_runsinglealert",
@@ -16995,7 +17121,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L117",
+      "source_location": "L262",
       "weight": 1.0,
       "_src": "c_xampp_htdocs_library_betonio_public_js_page_alerts_js",
       "_tgt": "page_alerts_run",
@@ -17007,7 +17133,31 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L45",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_src": "page_alerts_escapehtml",
+      "_tgt": "page_alerts_asstring",
+      "source": "page_alerts_asstring",
+      "target": "page_alerts_escapehtml",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "_src": "page_alerts_runreceiptoverlay",
+      "_tgt": "page_alerts_asstring",
+      "source": "page_alerts_asstring",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L174",
       "weight": 1.0,
       "_src": "page_alerts_runwithsweetalerts",
       "_tgt": "page_alerts_asstring",
@@ -17019,7 +17169,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L92",
+      "source_location": "L229",
       "weight": 1.0,
       "_src": "page_alerts_runwithswalfallback",
       "_tgt": "page_alerts_asstring",
@@ -17031,7 +17181,31 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L39",
+      "source_location": "L130",
+      "weight": 1.0,
+      "_src": "page_alerts_runreceiptoverlay",
+      "_tgt": "page_alerts_escapehtml",
+      "source": "page_alerts_escapehtml",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "_src": "page_alerts_runreceiptoverlay",
+      "_tgt": "page_alerts_redirectto",
+      "source": "page_alerts_redirectto",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L168",
       "weight": 1.0,
       "_src": "page_alerts_runwithsweetalerts",
       "_tgt": "page_alerts_redirectto",
@@ -17043,7 +17217,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L87",
+      "source_location": "L224",
       "weight": 1.0,
       "_src": "page_alerts_runwithswalfallback",
       "_tgt": "page_alerts_redirectto",
@@ -17055,7 +17229,19 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L56",
+      "source_location": "L97",
+      "weight": 1.0,
+      "_src": "page_alerts_handlereceiptaction",
+      "_tgt": "page_alerts_openwindow",
+      "source": "page_alerts_openwindow",
+      "target": "page_alerts_handlereceiptaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L187",
       "weight": 1.0,
       "_src": "page_alerts_runwithsweetalerts",
       "_tgt": "page_alerts_openwindow",
@@ -17067,7 +17253,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L101",
+      "source_location": "L240",
       "weight": 1.0,
       "_src": "page_alerts_runwithswalfallback",
       "_tgt": "page_alerts_openwindow",
@@ -17079,7 +17265,103 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L108",
+      "source_location": "L76",
+      "weight": 1.0,
+      "_src": "page_alerts_handlereceiptaction",
+      "_tgt": "page_alerts_ismobilelikedevice",
+      "source": "page_alerts_ismobilelikedevice",
+      "target": "page_alerts_handlereceiptaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L121",
+      "weight": 1.0,
+      "_src": "page_alerts_runreceiptoverlay",
+      "_tgt": "page_alerts_ismobilelikedevice",
+      "source": "page_alerts_ismobilelikedevice",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "_src": "page_alerts_handlereceiptaction",
+      "_tgt": "page_alerts_downloadtextfile",
+      "source": "page_alerts_downloadtextfile",
+      "target": "page_alerts_handlereceiptaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "_src": "page_alerts_handlereceiptaction",
+      "_tgt": "page_alerts_safefilename",
+      "source": "page_alerts_safefilename",
+      "target": "page_alerts_handlereceiptaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L112",
+      "weight": 1.0,
+      "_src": "page_alerts_runreceiptoverlay",
+      "_tgt": "page_alerts_handlereceiptaction",
+      "source": "page_alerts_handlereceiptaction",
+      "target": "page_alerts_runreceiptoverlay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L183",
+      "weight": 1.0,
+      "_src": "page_alerts_runwithsweetalerts",
+      "_tgt": "page_alerts_handlereceiptaction",
+      "source": "page_alerts_handlereceiptaction",
+      "target": "page_alerts_runwithsweetalerts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L236",
+      "weight": 1.0,
+      "_src": "page_alerts_runwithswalfallback",
+      "_tgt": "page_alerts_handlereceiptaction",
+      "source": "page_alerts_handlereceiptaction",
+      "target": "page_alerts_runwithswalfallback",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L250",
+      "weight": 1.0,
+      "_src": "page_alerts_runsinglealert",
+      "_tgt": "page_alerts_runreceiptoverlay",
+      "source": "page_alerts_runreceiptoverlay",
+      "target": "page_alerts_runsinglealert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
+      "source_location": "L253",
       "weight": 1.0,
       "_src": "page_alerts_runsinglealert",
       "_tgt": "page_alerts_runwithsweetalerts",
@@ -17091,7 +17373,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L113",
+      "source_location": "L258",
       "weight": 1.0,
       "_src": "page_alerts_runsinglealert",
       "_tgt": "page_alerts_runwithswalfallback",
@@ -17103,7 +17385,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "C:\\xampp\\htdocs\\library_betonio\\public\\js\\page-alerts.js",
-      "source_location": "L123",
+      "source_location": "L268",
       "weight": 1.0,
       "_src": "page_alerts_run",
       "_tgt": "page_alerts_runsinglealert",

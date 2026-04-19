@@ -1,11 +1,11 @@
 # Graph Report - C:\xampp\htdocs\library_betonio  (2026-04-19)
 
 ## Corpus Check
-- 170 files · ~157,365 words
+- 170 files · ~157,934 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 690 nodes · 908 edges · 158 communities detected
+- 696 nodes · 927 edges · 158 communities detected
 - Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 104 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -188,7 +188,7 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.04
+Cohesion: 0.03
 Nodes (1): PHPMailer
 
 ### Community 1 - "Community 1"
@@ -196,12 +196,12 @@ Cohesion: 0.05
 Nodes (38): appPath(), appUrl(), checkSessionTimeout(), clearPublicCsrfToken(), denyWithFlashRedirect(), displayFlash(), enforceAuthenticatedSessionTimeout(), ensureAdminCsrfToken() (+30 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.08
-Nodes (1): SMTP
+Cohesion: 0.05
+Nodes (6): AdminUserManagementService, Auth, AuthManager, AuthSupport, ComposerAutoloaderInit2185d2f99bcd56787481d9357a5972d3, UserRepository
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (5): AdminUserManagementService, Auth, AuthManager, AuthSupport, UserRepository
+Cohesion: 0.09
+Nodes (1): SMTP
 
 ### Community 4 - "Community 4"
 Cohesion: 0.04
@@ -224,8 +224,8 @@ Cohesion: 0.25
 Nodes (1): MailHandler
 
 ### Community 9 - "Community 9"
-Cohesion: 0.14
-Nodes (2): AuthService, ComposerAutoloaderInit2185d2f99bcd56787481d9357a5972d3
+Cohesion: 0.38
+Nodes (13): asString(), downloadTextFile(), escapeHtml(), handleReceiptAction(), isMobileLikeDevice(), openWindow(), redirectTo(), run() (+5 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.24
@@ -236,16 +236,16 @@ Cohesion: 0.35
 Nodes (1): POP3
 
 ### Community 12 - "Community 12"
+Cohesion: 0.25
+Nodes (1): AuthService
+
+### Community 13 - "Community 13"
 Cohesion: 0.39
 Nodes (6): buildGeneratedSuperadminEmail(), ensureAdminDashboardSchema(), ensureColumn(), ensureIndex(), ensureSuperadminAccount(), normalizeSuperadminUsername()
 
-### Community 13 - "Community 13"
+### Community 14 - "Community 14"
 Cohesion: 0.29
 Nodes (2): applyMigration(), splitSqlStatements()
-
-### Community 14 - "Community 14"
-Cohesion: 0.57
-Nodes (7): asString(), openWindow(), redirectTo(), run(), runSingleAlert(), runWithSwalFallback(), runWithSweetAlerts()
 
 ### Community 15 - "Community 15"
 Cohesion: 0.29
@@ -1094,17 +1094,17 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PHPMailer` connect `Community 0` to `Community 8`, `Community 2`, `Community 10`?**
-  _High betweenness centrality (0.172) - this node is a cross-community bridge._
+- **Why does `PHPMailer` connect `Community 0` to `Community 8`, `Community 10`, `Community 3`?**
+  _High betweenness centrality (0.169) - this node is a cross-community bridge._
 - **Why does `sendPasswordResetEmail()` connect `Community 1` to `Community 8`?**
-  _High betweenness centrality (0.129) - this node is a cross-community bridge._
-- **Why does `AuthSupport` connect `Community 3` to `Community 1`?**
-  _High betweenness centrality (0.050) - this node is a cross-community bridge._
+  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+- **Why does `AuthSupport` connect `Community 2` to `Community 1`?**
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Are the 11 inferred relationships involving `UserRepository` (e.g. with `.register()` and `.login()`) actually correct?**
   _`UserRepository` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Database` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._

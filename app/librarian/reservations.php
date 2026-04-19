@@ -71,20 +71,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return;
       }
 
-      $receiptPrintUrl = trim((string)($result['receipt_print_url'] ?? ''));
-      if ($receiptPrintUrl === '') {
-        $receiptPrintUrl = appPath('librarian-receipt.php', [
+      $receiptCode = trim((string)($result['receipt_code'] ?? ''));
+      $receiptViewUrl = trim((string)($result['receipt_print_url'] ?? ''));
+      if ($receiptViewUrl === '') {
+        $receiptViewUrl = appPath('librarian-receipt.php', [
           'receipt_id' => $receiptId,
-          'auto_print' => 1,
         ]);
-      } else {
-        $separator = strpos($receiptPrintUrl, '?') === false ? '?' : '&';
-        $receiptPrintUrl .= $separator . 'auto_print=1';
       }
 
-      $alert['onConfirmOpen'] = $receiptPrintUrl;
+      $appendQuery = static function (string $url, string $query): string {
+        $separator = strpos($url, '?') === false ? '?' : '&';
+        return $url . $separator . $query;
+      };
 
-      $receiptCode = trim((string)($result['receipt_code'] ?? ''));
+      $receiptPrintUrl = $appendQuery($receiptViewUrl, 'auto_print=1');
+      $receiptDownloadUrl = $appendQuery($receiptViewUrl, 'download=1');
+      $alert['onConfirmOpen'] = $receiptPrintUrl;
+      $alert['receipt'] = [
+        'id' => $receiptId,
+        'code' => $receiptCode,
+        'viewUrl' => $receiptViewUrl,
+        'printUrl' => $receiptPrintUrl,
+        'downloadUrl' => $receiptDownloadUrl,
+        'mobileFileName' => ($receiptCode !== '' ? strtolower($receiptCode) : ('receipt-' . $receiptId)) . '.html',
+      ];
+
       if ($receiptCode !== '') {
         $alert['message'] .= ' Receipt: ' . $receiptCode . '.';
       }
