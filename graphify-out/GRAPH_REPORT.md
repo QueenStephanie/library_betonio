@@ -1,7 +1,7 @@
 # Graph Report - C:\xampp\htdocs\library_betonio  (2026-04-19)
 
 ## Corpus Check
-- 166 files · ~152,463 words
+- 166 files · ~153,346 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

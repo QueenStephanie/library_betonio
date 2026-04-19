@@ -19,10 +19,13 @@ $roleBadgeClass = PermissionGate::getRoleBadgeClass($currentRole);
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
+$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
 $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
 $adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
 $mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
 $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
+$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
 
 $page_alerts = [];
 $flash = getFlash();
@@ -72,6 +75,7 @@ $missingTables = array_map('strval', $summary['missing_tables'] ?? []);
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $librarianCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
@@ -85,65 +89,86 @@ $missingTables = array_map('strval', $summary['missing_tables'] ?? []);
     require APP_ROOT . '/app/shared/portal-sidebar.php';
     ?>
 
-    <main class="admin-main">
-      <header class="admin-page-hero">
-        <h1>Librarian Dashboard</h1>
-        <p>Operational summary for circulation, reservations, catalog, and fines.</p>
-      </header>
+    <main class="admin-main librarian-main">
+      <div class="librarian-page">
+        <div class="librarian-shell">
+          <section class="librarian-hero">
+            <div class="librarian-hero-copy">
+              <span class="librarian-eyebrow">Librarian dashboard</span>
+              <h1>Run circulation, reservations, catalog, and fines from one workspace.</h1>
+              <p class="librarian-page-subtitle">Operational summary for circulation, reservations, catalog, and fines with schema-safe fallback values.</p>
+            </div>
+            <aside class="librarian-hero-card">
+              <span class="librarian-hero-card-label">Access snapshot</span>
+              <strong><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+              <p><?php echo htmlspecialchars($currentUserEmail, ENT_QUOTES, 'UTF-8'); ?></p>
+              <ul class="librarian-hero-list">
+                <li><?php echo (int)$summary['stats']['active_loans']; ?> active loans in circulation</li>
+                <li><?php echo (int)$summary['stats']['pending_reservations']; ?> pending reservation requests</li>
+                <li><?php echo (int)$summary['stats']['ready_reservations']; ?> holds ready for pickup</li>
+              </ul>
+            </aside>
+          </section>
 
-      <?php if (!$summary['data_available']): ?>
-        <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">
-          Some circulation tables are missing: <?php echo htmlspecialchars(implode(', ', $missingTables), ENT_QUOTES, 'UTF-8'); ?>.
-          Dashboard uses safe fallback values until migrations are complete.
-        </div>
-      <?php endif; ?>
+          <?php if (!$summary['data_available']): ?>
+            <div class="librarian-alert librarian-alert-warning" role="status" aria-live="polite">
+              Some circulation tables are missing: <?php echo htmlspecialchars(implode(', ', $missingTables), ENT_QUOTES, 'UTF-8'); ?>.
+              Dashboard uses safe fallback values until migrations are complete.
+            </div>
+          <?php endif; ?>
 
-      <section class="admin-card">
-        <div class="admin-card-header">
-          <h2>Current Operations</h2>
-          <p>Live counts from circulation tables with schema-safe fallback.</p>
-        </div>
-        <div class="admin-stats-row">
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['catalog_titles']; ?></strong>
-            <span>Catalog Titles</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['available_copies']; ?></strong>
-            <span>Available Copies</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['active_loans']; ?></strong>
-            <span>Active Loans</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['overdue_loans']; ?></strong>
-            <span>Overdue Loans</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['pending_reservations']; ?></strong>
-            <span>Pending Reservations</span>
-          </article>
-          <article class="admin-stat-tile">
-            <strong><?php echo (int)$summary['stats']['ready_reservations']; ?></strong>
-            <span>Ready for Pickup</span>
-          </article>
-        </div>
-      </section>
+          <section class="librarian-stat-grid" aria-label="Current operations summary">
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Catalog Titles</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['catalog_titles']; ?></p>
+              <p class="librarian-stat-detail">Distinct titles listed in the collection.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Available Copies</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['available_copies']; ?></p>
+              <p class="librarian-stat-detail">Copies currently available for checkout.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Active Loans</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['active_loans']; ?></p>
+              <p class="librarian-stat-detail">Loans that have not been checked in yet.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Overdue Loans</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['overdue_loans']; ?></p>
+              <p class="librarian-stat-detail">Open loans currently past their due date.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Pending Reservations</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['pending_reservations']; ?></p>
+              <p class="librarian-stat-detail">Queue entries awaiting next action.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Ready for Pickup</p>
+              <p class="librarian-stat-value"><?php echo (int)$summary['stats']['ready_reservations']; ?></p>
+              <p class="librarian-stat-detail">Reservations eligible for checkout pickup.</p>
+            </article>
+          </section>
 
-      <section class="admin-card" style="margin-top:16px;">
-        <div class="admin-card-header">
-          <h2>Quick Access</h2>
-          <p>Use dedicated pages for each workflow.</p>
+          <section class="librarian-card librarian-surface-card">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Quick access</span>
+                <h2>Workflow destinations</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <div class="librarian-action-grid">
+                <article class="librarian-action-card"><strong>Circulation</strong><span>Active loans, overdues, and check-ins.</span></article>
+                <article class="librarian-action-card"><strong>Books</strong><span>Catalog search and copy visibility.</span></article>
+                <article class="librarian-action-card"><strong>Reservations</strong><span>Queue review and approvals.</span></article>
+                <article class="librarian-action-card"><strong>Fines</strong><span>Collected fines and month-to-date summary.</span></article>
+                <article class="librarian-action-card"><strong>Role</strong><span class="admin-badge <?php echo htmlspecialchars($roleBadgeClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></span></article>
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="admin-stats-row">
-          <article class="admin-stat-tile"><strong>Circulation</strong><span>Active loans, overdues, and check-ins.</span></article>
-          <article class="admin-stat-tile"><strong>Books</strong><span>Catalog search and copy visibility.</span></article>
-          <article class="admin-stat-tile"><strong>Reservations</strong><span>Queue review and approvals.</span></article>
-          <article class="admin-stat-tile"><strong>Fines</strong><span>Collected fines and month-to-date summary.</span></article>
-          <article class="admin-stat-tile"><strong>Role</strong><span class="admin-badge <?php echo htmlspecialchars($roleBadgeClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></span></article>
-        </div>
-      </section>
+      </div>
     </main>
   </div>
 

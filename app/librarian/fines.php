@@ -19,10 +19,13 @@ $roleLabel = PermissionGate::getRoleLabel($currentRole);
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
+$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
 $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
 $adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
 $mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
 $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
+$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
 
 $page_alerts = [];
 $flash = getFlash();
@@ -75,6 +78,7 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $librarianCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
@@ -88,25 +92,66 @@ try {
     require APP_ROOT . '/app/shared/portal-sidebar.php';
     ?>
 
-    <main class="admin-main">
-      <header class="admin-page-hero">
-        <h1>Collected Fines</h1>
-        <p>Month-to-date report with all-time collection totals.</p>
-      </header>
+    <main class="admin-main librarian-main">
+      <div class="librarian-page">
+        <div class="librarian-shell">
+          <section class="librarian-hero">
+            <div class="librarian-hero-copy">
+              <span class="librarian-eyebrow">Fine reporting</span>
+              <h1>Review month-to-date and all-time fine collections with full transaction detail.</h1>
+              <p class="librarian-page-subtitle">Month-to-date report with all-time collection totals.</p>
+            </div>
+            <aside class="librarian-hero-card">
+              <span class="librarian-hero-card-label">Report window</span>
+              <strong><?php echo htmlspecialchars((string)$report['period_label'], ENT_QUOTES, 'UTF-8'); ?></strong>
+              <p><?php echo (int)$report['total_collections']; ?> month-to-date collections captured in this report.</p>
+              <ul class="librarian-hero-list">
+                <li>All-time amount: <?php echo number_format((float)$totals['all_time_amount'], 2); ?></li>
+                <li>All-time collections: <?php echo (int)$totals['all_time_collections']; ?></li>
+              </ul>
+            </aside>
+          </section>
 
-      <section class="admin-card">
-        <div class="admin-stats-row">
-          <article class="admin-stat-tile"><strong><?php echo number_format((float)$report['total_amount'], 2); ?></strong><span>MTD Amount</span></article>
-          <article class="admin-stat-tile"><strong><?php echo (int)$report['total_collections']; ?></strong><span>MTD Collections</span></article>
-          <article class="admin-stat-tile"><strong><?php echo number_format((float)$report['average_amount'], 2); ?></strong><span>MTD Average</span></article>
-          <article class="admin-stat-tile"><strong><?php echo number_format((float)$totals['all_time_amount'], 2); ?></strong><span>All-Time Amount</span></article>
-          <article class="admin-stat-tile"><strong><?php echo (int)$totals['all_time_collections']; ?></strong><span>All-Time Collections</span></article>
-        </div>
+          <section class="librarian-stat-grid is-five" aria-label="Fine totals">
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">MTD Amount</p>
+              <p class="librarian-stat-value"><?php echo number_format((float)$report['total_amount'], 2); ?></p>
+              <p class="librarian-stat-detail">Total fine amount collected during the current period.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">MTD Collections</p>
+              <p class="librarian-stat-value"><?php echo (int)$report['total_collections']; ?></p>
+              <p class="librarian-stat-detail">Number of completed collections in period.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">MTD Average</p>
+              <p class="librarian-stat-value"><?php echo number_format((float)$report['average_amount'], 2); ?></p>
+              <p class="librarian-stat-detail">Average amount per month-to-date collection.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">All-Time Amount</p>
+              <p class="librarian-stat-value"><?php echo number_format((float)$totals['all_time_amount'], 2); ?></p>
+              <p class="librarian-stat-detail">Lifetime collected amount across all records.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">All-Time Collections</p>
+              <p class="librarian-stat-value"><?php echo (int)$totals['all_time_collections']; ?></p>
+              <p class="librarian-stat-detail">Lifetime count of completed fine collections.</p>
+            </article>
+          </section>
 
-        <p class="admin-helper-text">Current month-to-date period: <?php echo htmlspecialchars((string)$report['period_label'], ENT_QUOTES, 'UTF-8'); ?></p>
+          <section class="librarian-card librarian-surface-card librarian-table-panel">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Transactions</span>
+                <h2>Collection report rows</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <p class="librarian-inline-note">Current month-to-date period: <?php echo htmlspecialchars((string)$report['period_label'], ENT_QUOTES, 'UTF-8'); ?></p>
 
-        <div class="admin-table-wrap">
-          <table class="admin-table">
+              <div class="librarian-table-wrap">
+                <table class="admin-table librarian-table">
             <thead>
               <tr>
                 <th>Date & Time</th>
@@ -137,9 +182,12 @@ try {
                 <?php endforeach; ?>
               <?php endif; ?>
             </tbody>
-          </table>
+                </table>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </main>
   </div>
 

@@ -1,0 +1,522 @@
+.portal-role-librarian .librarian-main {
+  padding: 32px 32px 56px;
+}
+
+.portal-role-librarian .librarian-page {
+  --librarian-anchor-offset: 104px;
+  --librarian-hero-bg: linear-gradient(145deg, rgba(23, 39, 59, 0.96), rgba(30, 65, 99, 0.92));
+  --librarian-hero-glow: rgba(114, 178, 255, 0.24);
+  --librarian-panel-bg: rgba(255, 255, 255, 0.82);
+  --librarian-panel-border: rgba(34, 66, 101, 0.14);
+  --librarian-shadow: 0 18px 40px rgba(25, 41, 59, 0.14);
+  position: relative;
+  padding: 0;
+}
+
+.portal-role-librarian .librarian-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(233, 244, 255, 0.76), transparent 24%),
+    radial-gradient(circle at 86% 14%, rgba(69, 135, 206, 0.16), transparent 20%),
+    radial-gradient(circle at 86% 88%, rgba(167, 212, 255, 0.26), transparent 24%);
+  pointer-events: none;
+}
+
+.portal-role-librarian .librarian-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+.portal-role-librarian .librarian-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.95fr);
+  gap: 20px;
+  padding: clamp(24px, 3vw, 34px);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, var(--librarian-hero-glow), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.08), transparent 18%),
+    var(--librarian-hero-bg);
+  color: #eef5fc;
+  box-shadow: 0 24px 42px rgba(18, 31, 47, 0.24);
+  overflow: hidden;
+}
+
+.portal-role-librarian .librarian-hero-copy {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.portal-role-librarian .librarian-eyebrow,
+.portal-role-librarian .librarian-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.portal-role-librarian .librarian-eyebrow {
+  color: rgba(209, 227, 246, 0.88);
+}
+
+.portal-role-librarian .librarian-section-kicker {
+  color: #5078a3;
+}
+
+.portal-role-librarian .librarian-hero h1 {
+  margin: 0;
+  max-width: 15ch;
+  font-size: clamp(2.3rem, 4.5vw, 4rem);
+  line-height: 0.96;
+  letter-spacing: -0.042em;
+}
+
+.portal-role-librarian .librarian-page-subtitle {
+  margin: 0;
+  max-width: 66ch;
+  color: rgba(238, 245, 252, 0.82);
+  font-size: 1rem;
+}
+
+.portal-role-librarian .librarian-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.portal-role-librarian .librarian-hero-card {
+  align-self: stretch;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(242, 249, 255, 0.11);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.portal-role-librarian .librarian-hero-card-label {
+  color: rgba(208, 227, 246, 0.82);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.portal-role-librarian .librarian-hero-card strong {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1;
+}
+
+.portal-role-librarian .librarian-hero-card p {
+  margin: 0;
+  color: rgba(238, 245, 252, 0.84);
+}
+
+.portal-role-librarian .librarian-hero-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: rgba(238, 245, 252, 0.88);
+}
+
+.portal-role-librarian .librarian-alert {
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid;
+  box-shadow: 0 12px 24px rgba(26, 43, 62, 0.08);
+}
+
+.portal-role-librarian .librarian-alert-warning {
+  border-color: #e2cba0;
+  background: #fff7e9;
+  color: #805a15;
+}
+
+.portal-role-librarian .librarian-card,
+.portal-role-librarian .librarian-table-wrap {
+  background: var(--librarian-panel-bg);
+  border: 1px solid var(--librarian-panel-border);
+  border-radius: 22px;
+  box-shadow: var(--librarian-shadow);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.portal-role-librarian .librarian-card {
+  overflow: hidden;
+}
+
+.portal-role-librarian .librarian-surface-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(243, 249, 255, 0.86)),
+    var(--librarian-panel-bg);
+}
+
+.portal-role-librarian .librarian-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 0;
+}
+
+.portal-role-librarian .librarian-panel-heading h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.4rem, 2.2vw, 1.95rem);
+}
+
+.portal-role-librarian .librarian-panel-content {
+  padding: 20px 24px 24px;
+}
+
+.portal-role-librarian .librarian-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.portal-role-librarian .librarian-stat-grid.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portal-role-librarian .librarian-stat-grid.is-five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.portal-role-librarian .librarian-stat-card {
+  position: relative;
+  padding: 20px;
+  min-height: 146px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.portal-role-librarian .librarian-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #3570ad, #88b5e1);
+}
+
+.portal-role-librarian .librarian-stat-label {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.portal-role-librarian .librarian-stat-value {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.portal-role-librarian .librarian-stat-detail {
+  margin: 0;
+  color: #5d6f83;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.portal-role-librarian .librarian-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.portal-role-librarian .librarian-btn:hover {
+  transform: translateY(-1px);
+}
+
+.portal-role-librarian .librarian-btn-primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #2a6daa, #4f8fc9);
+  box-shadow: 0 12px 24px rgba(42, 109, 170, 0.2);
+}
+
+.portal-role-librarian .librarian-btn-primary:hover {
+  background: linear-gradient(135deg, #1f5e96, #3d7cb6);
+}
+
+.portal-role-librarian .librarian-btn-secondary {
+  border-color: #c3d8eb;
+  background: rgba(244, 249, 255, 0.94);
+  color: #2f587f;
+}
+
+.portal-role-librarian .librarian-btn-secondary:hover {
+  background: #eaf3fd;
+}
+
+.portal-role-librarian .librarian-btn-danger {
+  border-color: #e8c2b8;
+  background: #fff4f1;
+  color: #9b3920;
+}
+
+.portal-role-librarian .librarian-btn-danger:hover {
+  background: #fde8e3;
+}
+
+.portal-role-librarian .librarian-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.portal-role-librarian .librarian-action-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portal-role-librarian .librarian-action-card {
+  min-height: 122px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(86, 127, 169, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.9));
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.portal-role-librarian .librarian-action-card strong {
+  font-size: 1.02rem;
+}
+
+.portal-role-librarian .librarian-action-card span {
+  color: #5d6f83;
+  font-size: 0.92rem;
+}
+
+.portal-role-librarian .librarian-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.portal-role-librarian .librarian-search {
+  display: grid;
+  gap: 8px;
+}
+
+.portal-role-librarian .librarian-search label,
+.portal-role-librarian .librarian-form-group label {
+  display: block;
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--admin-text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portal-role-librarian .librarian-search input,
+.portal-role-librarian .librarian-search select,
+.portal-role-librarian .librarian-form-group input,
+.portal-role-librarian .librarian-form-group select {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(86, 127, 169, 0.24);
+  border-radius: 12px;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--admin-text);
+}
+
+.portal-role-librarian .librarian-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.portal-role-librarian .librarian-table-panel .librarian-panel-content {
+  padding-top: 18px;
+}
+
+.portal-role-librarian .librarian-table-wrap {
+  overflow-x: auto;
+}
+
+.portal-role-librarian .librarian-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.portal-role-librarian .librarian-table th,
+.portal-role-librarian .librarian-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(86, 127, 169, 0.16);
+  vertical-align: middle;
+}
+
+.portal-role-librarian .librarian-table th {
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.portal-role-librarian .librarian-table tbody tr:nth-child(even) {
+  background: rgba(241, 247, 253, 0.64);
+}
+
+.portal-role-librarian .librarian-table tbody tr:hover {
+  background: rgba(226, 238, 250, 0.82);
+}
+
+.portal-role-librarian .librarian-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.portal-role-librarian .librarian-empty {
+  padding: 18px 20px;
+  border: 1px dashed rgba(86, 127, 169, 0.38);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.54);
+  color: var(--admin-muted);
+}
+
+.portal-role-librarian .librarian-inline-note {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+
+.portal-role-librarian .admin-modal-card {
+  border-radius: 22px;
+  border-color: rgba(86, 127, 169, 0.25);
+  box-shadow: 0 20px 42px rgba(23, 39, 59, 0.26);
+  background: linear-gradient(180deg, #ffffff, #f3f9ff);
+}
+
+.portal-role-librarian .admin-modal-header h2 {
+  color: #1f4f79;
+}
+
+.portal-role-librarian .admin-modal-actions .admin-button-primary {
+  background: linear-gradient(135deg, #2a6daa, #4f8fc9);
+}
+
+.portal-role-librarian .admin-modal-actions .admin-button-primary:hover {
+  background: linear-gradient(135deg, #1f5e96, #3d7cb6);
+}
+
+.portal-role-librarian .librarian-main [id] {
+  scroll-margin-top: var(--librarian-anchor-offset);
+}
+
+.portal-role-librarian .librarian-btn:focus-visible,
+.portal-role-librarian .librarian-search input:focus-visible,
+.portal-role-librarian .librarian-search select:focus-visible,
+.portal-role-librarian .librarian-form-group input:focus-visible,
+.portal-role-librarian .librarian-form-group select:focus-visible,
+.portal-role-librarian .admin-button:focus-visible,
+.portal-role-librarian .admin-action-btn:focus-visible {
+  outline: 3px solid rgba(42, 109, 170, 0.35);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .portal-role-librarian .librarian-stat-grid,
+  .portal-role-librarian .librarian-stat-grid.is-three,
+  .portal-role-librarian .librarian-stat-grid.is-five {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portal-role-librarian .librarian-action-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .portal-role-librarian .librarian-main {
+    padding: 22px 16px 36px;
+  }
+
+  .portal-role-librarian .librarian-page {
+    --librarian-anchor-offset: 148px;
+  }
+
+  .portal-role-librarian .librarian-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-role-librarian .librarian-hero h1 {
+    max-width: none;
+  }
+
+  .portal-role-librarian .librarian-toolbar,
+  .portal-role-librarian .librarian-form-row,
+  .portal-role-librarian .librarian-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-role-librarian .librarian-btn,
+  .portal-role-librarian .librarian-toolbar .admin-button,
+  .portal-role-librarian .librarian-form-row .admin-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .portal-role-librarian .librarian-page {
+    --librarian-anchor-offset: 172px;
+  }
+
+  .portal-role-librarian .librarian-stat-grid,
+  .portal-role-librarian .librarian-stat-grid.is-three,
+  .portal-role-librarian .librarian-stat-grid.is-five {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-role-librarian .librarian-hero,
+  .portal-role-librarian .librarian-panel-heading,
+  .portal-role-librarian .librarian-panel-content {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .portal-role-librarian .librarian-panel-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

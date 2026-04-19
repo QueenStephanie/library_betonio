@@ -18,10 +18,13 @@ $roleLabel = PermissionGate::getRoleLabel($currentRole);
 
 $mainCssFile = APP_ROOT . '/public/css/main.css';
 $adminCssFile = APP_ROOT . '/public/css/admin.css';
+$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
 $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
 $adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
 $mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
 $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
+$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
 
 $page_alerts = [];
 $flash = getFlash();
@@ -153,6 +156,7 @@ foreach ($rows as $row) {
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $librarianCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
@@ -166,213 +170,256 @@ foreach ($rows as $row) {
     require APP_ROOT . '/app/shared/portal-sidebar.php';
     ?>
 
-    <main class="admin-main">
-      <header class="admin-page-hero">
-        <h1>Circulation</h1>
-        <p>Checkout, check-in, and reservation pickup workflows.</p>
-      </header>
+    <main class="admin-main librarian-main">
+      <div class="librarian-page">
+        <div class="librarian-shell">
+          <section class="librarian-hero">
+            <div class="librarian-hero-copy">
+              <span class="librarian-eyebrow">Circulation</span>
+              <h1>Run checkouts, check-ins, and reservation pickups without context switching.</h1>
+              <p class="librarian-page-subtitle">Checkout, check-in, and reservation pickup workflows in one operational view.</p>
+            </div>
+            <aside class="librarian-hero-card">
+              <span class="librarian-hero-card-label">Loan snapshot</span>
+              <strong><?php echo (int)$activeCount; ?> active loans</strong>
+              <p><?php echo (int)$overdueCount; ?> currently overdue records in active circulation.</p>
+              <ul class="librarian-hero-list">
+                <li><?php echo count($readyReservationRows['rows'] ?? []); ?> ready reservations eligible for pickup flow</li>
+                <li><?php echo count($checkoutCandidates['rows']['books'] ?? []); ?> books listed with available copies</li>
+              </ul>
+            </aside>
+          </section>
 
-      <section class="admin-card" style="margin-bottom:16px;">
-        <div class="admin-card-header">
-          <h2>Manual Checkout</h2>
-          <p>Create a new loan by assigning an available copy to a borrower.</p>
-        </div>
-
-        <?php if (!$checkoutCandidates['available']): ?>
-          <p class="admin-demo-note"><?php echo htmlspecialchars((string)$checkoutCandidates['message'], ENT_QUOTES, 'UTF-8'); ?></p>
-        <?php endif; ?>
-
-        <form method="POST" class="admin-inline-form" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;max-width:100%;">
-          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-          <input type="hidden" name="action" value="checkout">
-
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Borrower</span>
-            <select name="borrower_user_id" required>
-              <option value="">Select borrower</option>
-              <?php foreach (($checkoutCandidates['rows']['borrowers'] ?? []) as $borrower): ?>
-                <?php
-                $displayName = trim((string)($borrower['display_name'] ?? ''));
-                $email = trim((string)($borrower['email'] ?? ''));
-                $label = $displayName !== '' ? $displayName : ('User #' . (int)($borrower['id'] ?? 0));
-                if ($email !== '') {
-                  $label .= ' (' . $email . ')';
-                }
-                ?>
-                <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
-              <?php endforeach; ?>
-            </select>
-          </label>
-
-          <label style="display:flex;flex-direction:column;gap:6px;">
-            <span class="admin-demo-note">Title</span>
-            <select name="book_id" required>
-              <option value="">Select book with available copies</option>
-              <?php foreach (($checkoutCandidates['rows']['books'] ?? []) as $book): ?>
-                <?php
-                $title = trim((string)($book['title'] ?? 'Unknown title'));
-                $author = trim((string)($book['author'] ?? ''));
-                $label = $title;
-                if ($author !== '') {
-                  $label .= ' - ' . $author;
-                }
-                $label .= ' [' . max(0, (int)($book['available_copies'] ?? 0)) . ' available]';
-                ?>
-                <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
-              <?php endforeach; ?>
-            </select>
-          </label>
-
-          <button type="submit" class="admin-button admin-button-primary">Check Out</button>
-        </form>
-      </section>
-
-      <section class="admin-card" style="margin-bottom:16px;">
-        <div class="admin-card-header">
-          <h2>Ready Reservation Pickup</h2>
-          <p>Bridge ready-for-pickup reservations directly into checkout.</p>
-        </div>
-
-        <?php if (!$readyReservationRows['available']): ?>
-          <p class="admin-demo-note"><?php echo htmlspecialchars((string)$readyReservationRows['message'], ENT_QUOTES, 'UTF-8'); ?></p>
-        <?php endif; ?>
-
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Reservation ID</th>
-                <th>Borrower</th>
-                <th>Book</th>
-                <th>Ready Until</th>
-                <th>Copies</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($readyReservationRows['rows'])): ?>
-                <tr>
-                  <td colspan="6" class="admin-empty-state">No ready reservations for pickup checkout.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($readyReservationRows['rows'] as $readyRow): ?>
-                  <?php
-                  $borrowerName = trim(((string)($readyRow['borrower_first_name'] ?? '')) . ' ' . ((string)($readyRow['borrower_last_name'] ?? '')));
-                  if ($borrowerName === '') {
-                    $borrowerName = (string)($readyRow['borrower_email'] ?? 'N/A');
-                  }
-                  $bookLabel = trim((string)($readyRow['book_title'] ?? ''));
-                  if ($bookLabel === '') {
-                    $bookLabel = 'Unknown title';
-                  }
-                  $bookAuthor = trim((string)($readyRow['book_author'] ?? ''));
-                  if ($bookAuthor !== '') {
-                    $bookLabel .= ' - ' . $bookAuthor;
-                  }
-                  ?>
-                  <tr>
-                    <td>#<?php echo (int)($readyRow['id'] ?? 0); ?></td>
-                    <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($readyRow['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo max(0, (int)($readyRow['available_copies'] ?? 0)); ?></td>
-                    <td>
-                      <?php if (!empty($readyRow['can_checkout'])): ?>
-                        <form method="POST" style="margin:0;">
-                          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                          <input type="hidden" name="action" value="checkout_reservation">
-                          <input type="hidden" name="reservation_id" value="<?php echo (int)($readyRow['id'] ?? 0); ?>">
-                          <button type="submit" class="admin-button admin-button-primary">Pick Up + Checkout</button>
-                        </form>
-                      <?php else: ?>
-                        <span class="admin-demo-note">No copies available</span>
-                      <?php endif; ?>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
+          <section class="librarian-card librarian-surface-card">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Manual checkout</span>
+                <h2>Create a loan</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <?php if (!$checkoutCandidates['available']): ?>
+                <p class="librarian-inline-note"><?php echo htmlspecialchars((string)$checkoutCandidates['message'], ENT_QUOTES, 'UTF-8'); ?></p>
               <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
-      <?php if (!$circulation['available']): ?>
-        <div class="admin-alert admin-alert-warning" role="status" aria-live="polite">
-          <?php echo htmlspecialchars((string)$circulation['message'], ENT_QUOTES, 'UTF-8'); ?>
-        </div>
-      <?php endif; ?>
+              <form method="POST" class="admin-inline-form librarian-form-row">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="checkout">
 
-      <section class="admin-card">
-        <div class="admin-stats-row">
-          <article class="admin-stat-tile"><strong><?php echo (int)$activeCount; ?></strong><span>Active Loans</span></article>
-          <article class="admin-stat-tile"><strong><?php echo (int)$overdueCount; ?></strong><span>Overdue Loans</span></article>
-        </div>
+                <label class="librarian-form-group">
+                  <span>Borrower</span>
+                  <select name="borrower_user_id" required>
+                    <option value="">Select borrower</option>
+                    <?php foreach (($checkoutCandidates['rows']['borrowers'] ?? []) as $borrower): ?>
+                      <?php
+                      $displayName = trim((string)($borrower['display_name'] ?? ''));
+                      $email = trim((string)($borrower['email'] ?? ''));
+                      $label = $displayName !== '' ? $displayName : ('User #' . (int)($borrower['id'] ?? 0));
+                      if ($email !== '') {
+                        $label .= ' (' . $email . ')';
+                      }
+                      ?>
+                      <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
 
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Loan ID</th>
-                <th>Borrower</th>
-                <th>Book</th>
-                <th>Barcode</th>
-                <th>Due</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($rows)): ?>
-                <tr>
-                  <td colspan="7" class="admin-empty-state">No active circulation records found.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($rows as $row): ?>
-                  <?php
-                  $borrowerName = trim(((string)($row['borrower_first_name'] ?? '')) . ' ' . ((string)($row['borrower_last_name'] ?? '')));
-                  if ($borrowerName === '') {
-                    $borrowerName = (string)($row['borrower_email'] ?? 'N/A');
-                  }
-                  $bookLabel = trim((string)($row['title'] ?? ''));
-                  if ($bookLabel === '') {
-                    $bookLabel = 'Unknown title';
-                  }
-                  $author = trim((string)($row['author'] ?? ''));
-                  if ($author !== '') {
-                    $bookLabel .= ' - ' . $author;
-                  }
-                  $isOverdue = !empty($row['is_overdue']);
-                  ?>
-                  <tr>
-                    <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
-                    <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)($row['barcode'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td><?php echo htmlspecialchars((string)date('M j, Y g:i A', strtotime((string)($row['due_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>
-                      <span class="admin-badge <?php echo $isOverdue ? 'is-admin' : 'is-librarian'; ?>">
-                        <?php echo $isOverdue ? 'Overdue' : 'Active'; ?>
-                      </span>
-                    </td>
-                    <td>
-                      <?php if (!empty($row['can_checkin'])): ?>
-                        <form method="POST" style="margin:0;">
-                          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                          <input type="hidden" name="action" value="checkin">
-                          <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                          <button type="submit" class="admin-button admin-button-primary">Check In</button>
-                        </form>
-                      <?php else: ?>
-                        <span class="admin-demo-note">Not available</span>
-                      <?php endif; ?>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
+                <label class="librarian-form-group">
+                  <span>Title</span>
+                  <select name="book_id" required>
+                    <option value="">Select book with available copies</option>
+                    <?php foreach (($checkoutCandidates['rows']['books'] ?? []) as $book): ?>
+                      <?php
+                      $title = trim((string)($book['title'] ?? 'Unknown title'));
+                      $author = trim((string)($book['author'] ?? ''));
+                      $label = $title;
+                      if ($author !== '') {
+                        $label .= ' - ' . $author;
+                      }
+                      $label .= ' [' . max(0, (int)($book['available_copies'] ?? 0)) . ' available]';
+                      ?>
+                      <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+
+                <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check Out</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="librarian-card librarian-surface-card librarian-table-panel">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Reservation pickup</span>
+                <h2>Ready reservations</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <?php if (!$readyReservationRows['available']): ?>
+                <p class="librarian-inline-note"><?php echo htmlspecialchars((string)$readyReservationRows['message'], ENT_QUOTES, 'UTF-8'); ?></p>
               <?php endif; ?>
-            </tbody>
-          </table>
+
+              <div class="librarian-table-wrap">
+                <table class="admin-table librarian-table">
+                  <thead>
+                    <tr>
+                      <th>Reservation ID</th>
+                      <th>Borrower</th>
+                      <th>Book</th>
+                      <th>Ready Until</th>
+                      <th>Copies</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php if (empty($readyReservationRows['rows'])): ?>
+                      <tr>
+                        <td colspan="6" class="admin-empty-state">No ready reservations for pickup checkout.</td>
+                      </tr>
+                    <?php else: ?>
+                      <?php foreach ($readyReservationRows['rows'] as $readyRow): ?>
+                        <?php
+                        $borrowerName = trim(((string)($readyRow['borrower_first_name'] ?? '')) . ' ' . ((string)($readyRow['borrower_last_name'] ?? '')));
+                        if ($borrowerName === '') {
+                          $borrowerName = (string)($readyRow['borrower_email'] ?? 'N/A');
+                        }
+                        $bookLabel = trim((string)($readyRow['book_title'] ?? ''));
+                        if ($bookLabel === '') {
+                          $bookLabel = 'Unknown title';
+                        }
+                        $bookAuthor = trim((string)($readyRow['book_author'] ?? ''));
+                        if ($bookAuthor !== '') {
+                          $bookLabel .= ' - ' . $bookAuthor;
+                        }
+                        ?>
+                        <tr>
+                          <td>#<?php echo (int)($readyRow['id'] ?? 0); ?></td>
+                          <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo htmlspecialchars((string)($readyRow['ready_until'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo max(0, (int)($readyRow['available_copies'] ?? 0)); ?></td>
+                          <td>
+                            <?php if (!empty($readyRow['can_checkout'])): ?>
+                              <form method="POST" style="margin:0;">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="action" value="checkout_reservation">
+                                <input type="hidden" name="reservation_id" value="<?php echo (int)($readyRow['id'] ?? 0); ?>">
+                                <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Pick Up + Checkout</button>
+                              </form>
+                            <?php else: ?>
+                              <span class="librarian-inline-note">No copies available</span>
+                            <?php endif; ?>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <?php if (!$circulation['available']): ?>
+            <div class="librarian-alert librarian-alert-warning" role="status" aria-live="polite">
+              <?php echo htmlspecialchars((string)$circulation['message'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+          <?php endif; ?>
+
+          <section class="librarian-stat-grid is-three" aria-label="Circulation summary">
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Active Loans</p>
+              <p class="librarian-stat-value"><?php echo (int)$activeCount; ?></p>
+              <p class="librarian-stat-detail">Open loans awaiting check-in.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Overdue Loans</p>
+              <p class="librarian-stat-value"><?php echo (int)$overdueCount; ?></p>
+              <p class="librarian-stat-detail">Loans currently past due date.</p>
+            </article>
+            <article class="librarian-card librarian-stat-card">
+              <p class="librarian-stat-label">Ready Pickups</p>
+              <p class="librarian-stat-value"><?php echo (int)count($readyReservationRows['rows'] ?? []); ?></p>
+              <p class="librarian-stat-detail">Reservations available for direct checkout.</p>
+            </article>
+          </section>
+
+          <section class="librarian-card librarian-surface-card librarian-table-panel">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Active circulation</span>
+                <h2>Loan records</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <div class="librarian-table-wrap">
+                <table class="admin-table librarian-table">
+                  <thead>
+                    <tr>
+                      <th>Loan ID</th>
+                      <th>Borrower</th>
+                      <th>Book</th>
+                      <th>Barcode</th>
+                      <th>Due</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php if (empty($rows)): ?>
+                      <tr>
+                        <td colspan="7" class="admin-empty-state">No active circulation records found.</td>
+                      </tr>
+                    <?php else: ?>
+                      <?php foreach ($rows as $row): ?>
+                        <?php
+                        $borrowerName = trim(((string)($row['borrower_first_name'] ?? '')) . ' ' . ((string)($row['borrower_last_name'] ?? '')));
+                        if ($borrowerName === '') {
+                          $borrowerName = (string)($row['borrower_email'] ?? 'N/A');
+                        }
+                        $bookLabel = trim((string)($row['title'] ?? ''));
+                        if ($bookLabel === '') {
+                          $bookLabel = 'Unknown title';
+                        }
+                        $author = trim((string)($row['author'] ?? ''));
+                        if ($author !== '') {
+                          $bookLabel .= ' - ' . $author;
+                        }
+                        $isOverdue = !empty($row['is_overdue']);
+                        ?>
+                        <tr>
+                          <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
+                          <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo htmlspecialchars((string)($row['barcode'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td><?php echo htmlspecialchars((string)date('M j, Y g:i A', strtotime((string)($row['due_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
+                          <td>
+                            <span class="admin-badge <?php echo $isOverdue ? 'is-admin' : 'is-librarian'; ?>">
+                              <?php echo $isOverdue ? 'Overdue' : 'Active'; ?>
+                            </span>
+                          </td>
+                          <td>
+                            <?php if (!empty($row['can_checkin'])): ?>
+                              <form method="POST" style="margin:0;">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="action" value="checkin">
+                                <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                                <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check In</button>
+                              </form>
+                            <?php else: ?>
+                              <span class="librarian-inline-note">Not available</span>
+                            <?php endif; ?>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </main>
   </div>
 
