@@ -176,17 +176,13 @@ foreach ($rows as $row) {
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
               <span class="librarian-eyebrow">Circulation</span>
-              <h1>Run checkouts, check-ins, and reservation pickups without context switching.</h1>
-              <p class="librarian-page-subtitle">Checkout, check-in, and reservation pickup workflows in one operational view.</p>
+              <h1>Manage checkouts and returns</h1>
+              <p class="librarian-page-subtitle">Handle checkouts, check-ins, and pickup checkouts.</p>
             </div>
             <aside class="librarian-hero-card">
               <span class="librarian-hero-card-label">Loan snapshot</span>
               <strong><?php echo (int)$activeCount; ?> active loans</strong>
               <p><?php echo (int)$overdueCount; ?> currently overdue records in active circulation.</p>
-              <ul class="librarian-hero-list">
-                <li><?php echo count($readyReservationRows['rows'] ?? []); ?> ready reservations eligible for pickup flow</li>
-                <li><?php echo count($checkoutCandidates['rows']['books'] ?? []); ?> books listed with available copies</li>
-              </ul>
             </aside>
           </section>
 
@@ -330,17 +326,14 @@ foreach ($rows as $row) {
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Active Loans</p>
               <p class="librarian-stat-value"><?php echo (int)$activeCount; ?></p>
-              <p class="librarian-stat-detail">Open loans awaiting check-in.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Overdue Loans</p>
               <p class="librarian-stat-value"><?php echo (int)$overdueCount; ?></p>
-              <p class="librarian-stat-detail">Loans currently past due date.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Ready Pickups</p>
               <p class="librarian-stat-value"><?php echo (int)count($readyReservationRows['rows'] ?? []); ?></p>
-              <p class="librarian-stat-detail">Reservations available for direct checkout.</p>
             </article>
           </section>
 

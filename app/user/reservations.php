@@ -65,15 +65,12 @@ $currentPage = 'reservations';
 $reservationRows = is_array($activeReservations['rows'] ?? null) ? $activeReservations['rows'] : [];
 $readyReservations = 0;
 $queuedReservations = 0;
-$otherReservations = 0;
 foreach ($reservationRows as $reservationSummary) {
   $reservationStatus = strtolower(trim((string)($reservationSummary['status'] ?? '')));
   if ($reservationStatus === 'ready_for_pickup') {
     $readyReservations++;
   } elseif ($reservationStatus === 'queued') {
     $queuedReservations++;
-  } else {
-    $otherReservations++;
   }
 }
 ?>
@@ -111,17 +108,13 @@ foreach ($reservationRows as $reservationSummary) {
           <section class="borrower-hero borrower-page-hero">
             <div class="borrower-hero-copy">
               <span class="borrower-eyebrow">Reservations</span>
-              <h1>Track every queue position and pickup-ready hold.</h1>
-              <p class="borrower-page-subtitle">Review reservation status, see which holds are ready, and cancel active requests when your plans change.</p>
+              <h1>Manage your holds</h1>
+              <p class="borrower-page-subtitle">Track status and cancel eligible requests.</p>
             </div>
             <aside class="borrower-hero-card">
               <span class="borrower-hero-card-label">Reservation snapshot</span>
               <strong><?php echo count($reservationRows); ?> active requests</strong>
               <p><?php echo $readyReservations; ?> ready for pickup and <?php echo $queuedReservations; ?> still in queue.</p>
-              <ul class="borrower-hero-list">
-                <li><?php echo $otherReservations; ?> requests in other statuses</li>
-                <li>Cancel actions stay available only for supported statuses</li>
-              </ul>
             </aside>
           </section>
 
@@ -129,17 +122,14 @@ foreach ($reservationRows as $reservationSummary) {
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">All Active</p>
               <p class="borrower-stat-value"><?php echo count($reservationRows); ?></p>
-              <p class="borrower-stat-detail">Reservations currently tied to your account.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Ready for Pickup</p>
               <p class="borrower-stat-value"><?php echo $readyReservations; ?></p>
-              <p class="borrower-stat-detail">Items you should claim before the hold expires.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Queued</p>
               <p class="borrower-stat-value"><?php echo $queuedReservations; ?></p>
-              <p class="borrower-stat-detail">Requests still waiting for availability.</p>
             </article>
           </section>
 

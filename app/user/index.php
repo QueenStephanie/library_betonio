@@ -100,8 +100,8 @@ $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending
             <section class="borrower-hero borrower-dashboard-hero">
               <div class="borrower-hero-copy">
                 <span class="borrower-eyebrow">Borrower dashboard</span>
-                <h1>Keep every loan, reservation, and account task in one clear view.</h1>
-                <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars($borrowerFullName, ENT_QUOTES, 'UTF-8'); ?>. Review account activity, catch upcoming due dates, and jump straight to the next borrower action.</p>
+                <h1>Manage your library account</h1>
+                <p class="borrower-page-subtitle">Welcome back, <?php echo htmlspecialchars($borrowerFullName, ENT_QUOTES, 'UTF-8'); ?>.</p>
                 <div class="borrower-hero-actions">
                   <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-primary">Browse Catalog</a>
                   <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-btn borrower-btn-secondary">Manage Loans</a>
@@ -111,11 +111,6 @@ $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending
                 <span class="borrower-hero-card-label">Account snapshot</span>
                 <strong><?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
                 <p><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
-                <ul class="borrower-hero-list">
-                  <li><?php echo (int)$circulationOverview['current_loans']; ?> active loans on file</li>
-                  <li><?php echo (int)$circulationOverview['active_reservations']; ?> reservation slots in use</li>
-                  <li><?php echo (int)$circulationOverview['loan_history_count']; ?> total borrowing records</li>
-                </ul>
               </aside>
             </section>
 
@@ -129,22 +124,18 @@ $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending
               <article class="borrower-card borrower-stat-card">
                 <p class="borrower-stat-label">Current Loans</p>
                 <p class="borrower-stat-value"><?php echo (int)$circulationOverview['current_loans']; ?></p>
-                <p class="borrower-stat-detail">Checked out items still in your account.</p>
               </article>
               <article class="borrower-card borrower-stat-card">
                 <p class="borrower-stat-label">Due in 3 Days</p>
                 <p class="borrower-stat-value"><?php echo (int)$circulationOverview['due_soon']; ?></p>
-                <p class="borrower-stat-detail">Prioritize these renewals or returns first.</p>
               </article>
               <article class="borrower-card borrower-stat-card">
                 <p class="borrower-stat-label">Active Reservations</p>
                 <p class="borrower-stat-value"><?php echo (int)$circulationOverview['active_reservations']; ?></p>
-                <p class="borrower-stat-detail">Queued and ready-for-pickup requests.</p>
               </article>
               <article class="borrower-card borrower-stat-card">
                 <p class="borrower-stat-label">Active Loan Fines</p>
                 <p class="borrower-stat-value">₱<?php echo number_format((float)$circulationOverview['outstanding_fines'], 2); ?></p>
-                <p class="borrower-stat-detail">Outstanding fines attached to open loans.</p>
               </article>
             </section>
 
@@ -192,27 +183,27 @@ $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending
                   <div class="borrower-action-grid borrower-action-cards">
                     <a href="<?php echo htmlspecialchars(appPath('catalog.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
                       <strong>Browse Catalog</strong>
-                      <span>Search titles and place a reservation.</span>
+                      <span>Find and reserve books.</span>
                     </a>
                     <a href="<?php echo htmlspecialchars(appPath('reservations.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
                       <strong>Manage Reservations</strong>
-                      <span>Track queue status and cancel active requests.</span>
+                      <span>Track and cancel requests.</span>
                     </a>
                     <a href="<?php echo htmlspecialchars(appPath('history.php') . '#active-loans', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
                       <strong>Renew Active Loans</strong>
-                      <span>Handle due dates before they become overdue.</span>
+                      <span>Renew eligible loans.</span>
                     </a>
                     <a href="<?php echo htmlspecialchars(appPath('history.php') . '#borrowing-history', ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
                       <strong>Review History</strong>
-                      <span>Check returned items and fine records.</span>
+                      <span>See returns and fines.</span>
                     </a>
                     <a href="<?php echo htmlspecialchars(appPath('account.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card">
                       <strong>Update Settings</strong>
-                      <span>Edit your name and change your password.</span>
+                      <span>Edit profile and password.</span>
                     </a>
                     <a href="<?php echo htmlspecialchars(appPath('logout.php'), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-action-card is-danger">
                       <strong>Log Out</strong>
-                      <span>End the current borrower session securely.</span>
+                      <span>Sign out securely.</span>
                     </a>
                   </div>
 

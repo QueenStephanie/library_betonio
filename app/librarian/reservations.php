@@ -137,17 +137,13 @@ $rows = $queue['rows'];
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
               <span class="librarian-eyebrow">Reservations</span>
-              <h1>Review queue status and complete reservation actions from one table.</h1>
-              <p class="librarian-page-subtitle">Queue list with approve, reject, cancel, and checkout actions.</p>
+              <h1>Manage reservation queue</h1>
+              <p class="librarian-page-subtitle">Review and process reservation requests.</p>
             </div>
             <aside class="librarian-hero-card">
               <span class="librarian-hero-card-label">Queue snapshot</span>
               <strong><?php echo (int)count($rows); ?> active items</strong>
-              <p>Pending and ready reservations are surfaced with role-safe action controls.</p>
-              <ul class="librarian-hero-list">
-                <li>Approve and reject are available only for pending requests</li>
-                <li>Checkout and cancel options follow status rules per row</li>
-              </ul>
+              <p>Pending and ready items in one queue.</p>
             </aside>
           </section>
 
@@ -165,8 +161,6 @@ $rows = $queue['rows'];
               </div>
             </div>
             <div class="librarian-panel-content">
-              <p class="librarian-inline-note">Showing <?php echo (int)count($rows); ?> active queue item(s).</p>
-
               <div class="librarian-table-wrap">
                 <table class="admin-table librarian-table">
             <thead>

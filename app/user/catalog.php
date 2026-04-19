@@ -94,9 +94,9 @@ foreach ($catalogRows as $catalogRowSummary) {
   }
   $catalogAvailableCopies += $itemAvailableCopies;
 }
-$catalogHeading = 'Discover your next checkout.';
+$catalogHeading = 'Find your next book';
 if ($query !== '' || $category !== '') {
-  $catalogHeading = 'Filtered results for your current catalog search.';
+  $catalogHeading = 'Filtered catalog results';
 }
 
 $truncateCatalogText = static function (string $value, int $limit = 180): string {
@@ -172,16 +172,12 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
             <div class="borrower-hero-copy">
               <span class="borrower-eyebrow">Catalog</span>
               <h1><?php echo htmlspecialchars($catalogHeading, ENT_QUOTES, 'UTF-8'); ?></h1>
-              <p class="borrower-page-subtitle">Search by title, author, or ISBN and reserve available titles without leaving the borrower portal.</p>
+              <p class="borrower-page-subtitle">Search and reserve books.</p>
             </div>
             <aside class="borrower-hero-card">
               <span class="borrower-hero-card-label">Search coverage</span>
               <strong><?php echo (int)$catalogResultCount; ?> titles</strong>
               <p><?php echo (int)$catalogAvailableCopies; ?> total copies currently available for checkout.</p>
-              <ul class="borrower-hero-list">
-                <li><?php echo (int)$catalogInStockTitles; ?> titles are in stock right now</li>
-                <li><?php echo $category !== '' ? htmlspecialchars($category, ENT_QUOTES, 'UTF-8') : 'All categories'; ?> currently selected</li>
-              </ul>
             </aside>
           </section>
 
@@ -189,17 +185,14 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Results</p>
               <p class="borrower-stat-value"><?php echo (int)$catalogResultCount; ?></p>
-              <p class="borrower-stat-detail">Books matching the current search and category filters.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">In-Stock Titles</p>
               <p class="borrower-stat-value"><?php echo (int)$catalogInStockTitles; ?></p>
-              <p class="borrower-stat-detail">Distinct titles with at least one ready copy.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Available Copies</p>
               <p class="borrower-stat-value"><?php echo (int)$catalogAvailableCopies; ?></p>
-              <p class="borrower-stat-detail">Immediate checkout inventory across all results.</p>
             </article>
           </section>
 

@@ -98,17 +98,13 @@ try {
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
               <span class="librarian-eyebrow">Fine reporting</span>
-              <h1>Review month-to-date and all-time fine collections with full transaction detail.</h1>
-              <p class="librarian-page-subtitle">Month-to-date report with all-time collection totals.</p>
+              <h1>Review fine collections</h1>
+              <p class="librarian-page-subtitle">View month-to-date and all-time totals.</p>
             </div>
             <aside class="librarian-hero-card">
               <span class="librarian-hero-card-label">Report window</span>
               <strong><?php echo htmlspecialchars((string)$report['period_label'], ENT_QUOTES, 'UTF-8'); ?></strong>
               <p><?php echo (int)$report['total_collections']; ?> month-to-date collections captured in this report.</p>
-              <ul class="librarian-hero-list">
-                <li>All-time amount: <?php echo number_format((float)$totals['all_time_amount'], 2); ?></li>
-                <li>All-time collections: <?php echo (int)$totals['all_time_collections']; ?></li>
-              </ul>
             </aside>
           </section>
 
@@ -116,27 +112,22 @@ try {
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">MTD Amount</p>
               <p class="librarian-stat-value"><?php echo number_format((float)$report['total_amount'], 2); ?></p>
-              <p class="librarian-stat-detail">Total fine amount collected during the current period.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">MTD Collections</p>
               <p class="librarian-stat-value"><?php echo (int)$report['total_collections']; ?></p>
-              <p class="librarian-stat-detail">Number of completed collections in period.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">MTD Average</p>
               <p class="librarian-stat-value"><?php echo number_format((float)$report['average_amount'], 2); ?></p>
-              <p class="librarian-stat-detail">Average amount per month-to-date collection.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">All-Time Amount</p>
               <p class="librarian-stat-value"><?php echo number_format((float)$totals['all_time_amount'], 2); ?></p>
-              <p class="librarian-stat-detail">Lifetime collected amount across all records.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">All-Time Collections</p>
               <p class="librarian-stat-value"><?php echo (int)$totals['all_time_collections']; ?></p>
-              <p class="librarian-stat-detail">Lifetime count of completed fine collections.</p>
             </article>
           </section>
 
@@ -148,8 +139,6 @@ try {
               </div>
             </div>
             <div class="librarian-panel-content">
-              <p class="librarian-inline-note">Current month-to-date period: <?php echo htmlspecialchars((string)$report['period_label'], ENT_QUOTES, 'UTF-8'); ?></p>
-
               <div class="librarian-table-wrap">
                 <table class="admin-table librarian-table">
             <thead>

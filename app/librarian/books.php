@@ -193,8 +193,8 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
               <span class="librarian-eyebrow">Catalog operations</span>
-              <h1>Manage book records, metadata, and copy visibility in one flow.</h1>
-              <p class="librarian-page-subtitle">Add and manage catalog entries with search by title, author, ISBN, and category.</p>
+              <h1>Manage catalog books</h1>
+              <p class="librarian-page-subtitle">Add books and update catalog entries.</p>
               <div class="librarian-hero-actions">
                 <button type="button" class="admin-button admin-button-primary librarian-btn librarian-btn-primary" data-open-modal="#addBookModal">Add Book</button>
               </div>
@@ -203,10 +203,6 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
               <span class="librarian-hero-card-label">Catalog snapshot</span>
               <strong><?php echo (int)$resultCount; ?> results</strong>
               <p><?php echo (int)$availableCopiesCount; ?> of <?php echo (int)$totalCopiesCount; ?> copies available in current result set.</p>
-              <ul class="librarian-hero-list">
-                <li>Search supports title, author, ISBN, and category values</li>
-                <li>Add-book modal preserves fields after failed submissions</li>
-              </ul>
             </aside>
           </section>
 
@@ -283,17 +279,14 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Results</p>
               <p class="librarian-stat-value"><?php echo (int)$resultCount; ?></p>
-              <p class="librarian-stat-detail">Titles matching the current search query.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Total Copies</p>
               <p class="librarian-stat-value"><?php echo (int)$totalCopiesCount; ?></p>
-              <p class="librarian-stat-detail">Combined catalog copies across listed titles.</p>
             </article>
             <article class="librarian-card librarian-stat-card">
               <p class="librarian-stat-label">Available Copies</p>
               <p class="librarian-stat-value"><?php echo (int)$availableCopiesCount; ?></p>
-              <p class="librarian-stat-detail">Copies currently available for checkout.</p>
             </article>
           </section>
 

@@ -152,17 +152,14 @@ $accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verif
           <section class="borrower-hero borrower-page-hero">
             <div class="borrower-hero-copy">
               <span class="borrower-eyebrow">Account settings</span>
-              <h1>Keep your borrower profile current and your password secure.</h1>
-              <p class="borrower-page-subtitle">Manage your visible borrower details and update credentials from one screen.</p>
+              <h1>Update your account</h1>
+              <p class="borrower-page-subtitle">Edit profile details and password.</p>
             </div>
             <aside class="borrower-hero-card borrower-account-summary">
               <span class="borrower-account-avatar" aria-hidden="true"><?php echo htmlspecialchars($accountInitials, ENT_QUOTES, 'UTF-8'); ?></span>
               <strong><?php echo htmlspecialchars($accountFullName, ENT_QUOTES, 'UTF-8'); ?></strong>
               <p><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
-              <ul class="borrower-hero-list">
-                <li><?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li>Password changes apply to your next login session</li>
-              </ul>
+              <p><?php echo htmlspecialchars($accountStatusLabel, ENT_QUOTES, 'UTF-8'); ?></p>
             </aside>
           </section>
 
@@ -204,7 +201,7 @@ $accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verif
             <div class="form-group">
               <label for="email">Email Address</label>
               <input type="email" id="email" name="email" value="<?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?>" disabled>
-              <p class="settings-help-text">Contact support to change your email address.</p>
+              <p class="settings-help-text">Email changes require support.</p>
             </div>
 
                   <button type="submit" class="borrower-btn borrower-btn-primary settings-submit-btn">Save Changes</button>

@@ -133,8 +133,8 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
           <section class="borrower-hero borrower-page-hero">
             <div class="borrower-hero-copy">
               <span class="borrower-eyebrow">Loan history</span>
-              <h1>Watch due dates, renew eligible loans, and review completed borrowing records.</h1>
-              <p class="borrower-page-subtitle">Renewal limit: <?php echo (int)CirculationRepository::getBorrowerMaxRenewals(); ?> per loan. Renewal extension: <?php echo (int)CirculationRepository::getBorrowerRenewalExtensionDays(); ?> days.</p>
+              <h1>Manage loans and history</h1>
+              <p class="borrower-page-subtitle">Review active loans and past records.</p>
               <div class="borrower-hero-actions">
                 <a href="#active-loans" class="borrower-btn borrower-btn-primary">View Active Loans</a>
                 <a href="#borrowing-history" class="borrower-btn borrower-btn-secondary">Open History</a>
@@ -144,10 +144,6 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
               <span class="borrower-hero-card-label">Loan snapshot</span>
               <strong><?php echo count($activeLoanRows); ?> active loans</strong>
               <p><?php echo $renewableLoanCount; ?> currently eligible for renewal.</p>
-              <ul class="borrower-hero-list">
-                <li><?php echo count($loanHistoryRows); ?> closed borrowing records</li>
-                <li>₱<?php echo number_format($closedFineTotal, 2); ?> total fines in closed history</li>
-              </ul>
             </aside>
           </section>
 
@@ -155,22 +151,18 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Active Loans</p>
               <p class="borrower-stat-value"><?php echo count($activeLoanRows); ?></p>
-              <p class="borrower-stat-detail">Current checkouts still open on your account.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Renewable Now</p>
               <p class="borrower-stat-value"><?php echo $renewableLoanCount; ?></p>
-              <p class="borrower-stat-detail">Loans that meet the current renewal rules.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Closed Records</p>
               <p class="borrower-stat-value"><?php echo count($loanHistoryRows); ?></p>
-              <p class="borrower-stat-detail">Returned or otherwise closed borrowing transactions.</p>
             </article>
             <article class="borrower-card borrower-stat-card">
               <p class="borrower-stat-label">Closed-Loan Fines</p>
               <p class="borrower-stat-value">₱<?php echo number_format($closedFineTotal, 2); ?></p>
-              <p class="borrower-stat-detail">Fine totals recorded in your history table.</p>
             </article>
           </section>
 
@@ -190,7 +182,7 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
             <div class="borrower-panel-heading">
               <div>
                 <span class="borrower-section-kicker">Active loans</span>
-                <h2>Renew and monitor current checkouts</h2>
+                <h2>Current checkouts</h2>
               </div>
             </div>
             <div class="borrower-panel-content">
@@ -265,7 +257,7 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
             <div class="borrower-panel-heading">
               <div>
                 <span class="borrower-section-kicker">Borrowing history</span>
-                <h2>Returned and closed loan records</h2>
+                <h2>Closed loan records</h2>
               </div>
             </div>
             <div class="borrower-panel-content">
