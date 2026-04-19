@@ -55,6 +55,44 @@ foreach ($rows as $rowSummary) {
   $totalCopiesCount += max(0, (int)($rowSummary['total_copies'] ?? 0));
   $availableCopiesCount += max(0, (int)($rowSummary['available_copies'] ?? 0));
 }
+
+$truncateCatalogText = static function (string $value, int $limit = 190): string {
+  $normalized = trim(preg_replace('/\s+/', ' ', $value) ?? '');
+  if ($normalized === '') {
+    return '';
+  }
+
+  if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+    if (mb_strlen($normalized) <= $limit) {
+      return $normalized;
+    }
+
+    return rtrim((string)mb_substr($normalized, 0, max(1, $limit - 1))) . '...';
+  }
+
+  if (strlen($normalized) <= $limit) {
+    return $normalized;
+  }
+
+  return rtrim(substr($normalized, 0, max(1, $limit - 1))) . '...';
+};
+
+$resolveCatalogCoverUrl = static function (string $raw): string {
+  $value = trim($raw);
+  if ($value === '') {
+    return '';
+  }
+
+  if (preg_match('/^https?:\/\//i', $value) === 1) {
+    return $value;
+  }
+
+  if (str_starts_with($value, '/')) {
+    return $value;
+  }
+
+  return appPath(ltrim($value, '/'));
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -117,54 +155,76 @@ foreach ($rows as $rowSummary) {
           </article>
         </div>
 
-        <div class="admin-table-wrap">
-          <table class="admin-table admin-table-compact librarian-books-table">
-            <thead>
-              <tr>
-                <th>Book ID</th>
-                <th>Book Details</th>
-                <th>Inventory</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($rows)): ?>
-                <tr>
-                  <td colspan="3" class="admin-empty-state">No books matched the current search.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($rows as $row): ?>
-                  <?php
-                  $isbn = trim((string)($row['isbn'] ?? ''));
-                  $categoryLabel = trim((string)($row['category'] ?? ''));
-                  $authorLabel = trim((string)($row['author'] ?? ''));
-                  $titleLabel = trim((string)($row['title'] ?? ''));
-                  $yearLabel = trim((string)($row['published_year'] ?? ''));
-                  $bookTotalCopies = max(0, (int)($row['total_copies'] ?? 0));
-                  $bookAvailableCopies = max(0, (int)($row['available_copies'] ?? 0));
-                  ?>
-                  <tr>
-                    <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
-                    <td>
-                      <div class="admin-table-identity"><?php echo htmlspecialchars($titleLabel !== '' ? $titleLabel : 'Unknown title', ENT_QUOTES, 'UTF-8'); ?></div>
-                      <div class="admin-table-meta"><?php echo htmlspecialchars($authorLabel !== '' ? $authorLabel : 'Unknown author', ENT_QUOTES, 'UTF-8'); ?></div>
-                      <div class="admin-table-submeta">
-                        <span>ISBN: <?php echo htmlspecialchars($isbn !== '' ? $isbn : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span>Category: <?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span>Year: <?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="admin-inventory-stack">
-                        <span><strong><?php echo $bookAvailableCopies; ?></strong> available</span>
-                        <span><?php echo $bookTotalCopies; ?> total copies</span>
-                      </div>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
+        <?php if (empty($rows)): ?>
+          <div class="admin-empty-state">No books matched the current search.</div>
+        <?php else: ?>
+          <div class="librarian-books-grid">
+            <?php foreach ($rows as $row): ?>
+              <?php
+              $isbn = trim((string)($row['isbn'] ?? ''));
+              $categoryLabel = trim((string)($row['category'] ?? ''));
+              $authorLabel = trim((string)($row['author'] ?? ''));
+              if ($authorLabel === '') {
+                $authorLabel = 'Unknown author';
+              }
+              $titleLabel = trim((string)($row['title'] ?? ''));
+              if ($titleLabel === '') {
+                $titleLabel = 'Unknown title';
+              }
+              $yearLabel = trim((string)($row['published_year'] ?? ''));
+              $bookTotalCopies = max(0, (int)($row['total_copies'] ?? 0));
+              $bookAvailableCopies = max(0, (int)($row['available_copies'] ?? 0));
+              $bookDescription = trim((string)($row['description'] ?? ''));
+              if ($bookDescription === '') {
+                $bookDescription = 'Catalog title by ' . $authorLabel
+                  . ($categoryLabel !== '' ? ' in ' . $categoryLabel : '')
+                  . ($yearLabel !== '' ? ' (' . $yearLabel . ')' : '') . '.';
+              }
+              $bookDescription = $truncateCatalogText($bookDescription, 185);
+
+              $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''));
+              $placeholderSeed = strtoupper(substr($titleLabel, 0, 1));
+              if (!preg_match('/[A-Z0-9]/', $placeholderSeed)) {
+                $placeholderSeed = '#';
+              }
+
+              $statusClass = $bookAvailableCopies > 0 ? 'is-available' : 'is-unavailable';
+              $statusLabel = $bookAvailableCopies > 0 ? 'Available' : 'Unavailable';
+              ?>
+              <article class="librarian-book-card admin-card">
+                <div class="librarian-book-cover">
+                  <?php if ($coverUrl !== ''): ?>
+                    <img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Cover of <?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async">
+                  <?php else: ?>
+                    <div class="librarian-book-placeholder" aria-hidden="true"><?php echo htmlspecialchars($placeholderSeed, ENT_QUOTES, 'UTF-8'); ?></div>
+                  <?php endif; ?>
+                </div>
+
+                <div class="librarian-book-body">
+                  <div class="librarian-book-header">
+                    <span class="librarian-book-id">#<?php echo (int)($row['id'] ?? 0); ?></span>
+                    <span class="librarian-book-status <?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
+                  </div>
+
+                  <h3><?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
+                  <p class="librarian-book-author"><?php echo htmlspecialchars($authorLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+                  <p class="librarian-book-description"><?php echo htmlspecialchars($bookDescription, ENT_QUOTES, 'UTF-8'); ?></p>
+
+                  <div class="librarian-book-meta">
+                    <span>ISBN: <?php echo htmlspecialchars($isbn !== '' ? $isbn : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span>Category: <?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span>Year: <?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : '-', ENT_QUOTES, 'UTF-8'); ?></span>
+                  </div>
+
+                  <div class="librarian-book-inventory">
+                    <span><strong><?php echo $bookAvailableCopies; ?></strong> available</span>
+                    <span><?php echo $bookTotalCopies; ?> total copies</span>
+                  </div>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
       </section>
     </main>
   </div>

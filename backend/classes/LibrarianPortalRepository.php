@@ -865,6 +865,30 @@ class LibrarianPortalRepository
     $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id');
 
     if ($hasCopies && self::hasColumn($db, 'book_copies', 'status')) {
+      $descriptionExpr = self::hasColumn($db, 'books', 'description')
+        ? 'b.description'
+        : (self::hasColumn($db, 'books', 'summary')
+          ? 'b.summary'
+          : (self::hasColumn($db, 'books', 'synopsis')
+            ? 'b.synopsis'
+            : (self::hasColumn($db, 'books', 'short_description')
+              ? 'b.short_description'
+              : (self::hasColumn($db, 'books', 'blurb') ? 'b.blurb' : 'NULL'))));
+
+      $coverExpr = self::hasColumn($db, 'books', 'cover_image_url')
+        ? 'b.cover_image_url'
+        : (self::hasColumn($db, 'books', 'cover_url')
+          ? 'b.cover_url'
+          : (self::hasColumn($db, 'books', 'image_url')
+            ? 'b.image_url'
+            : (self::hasColumn($db, 'books', 'thumbnail_url')
+              ? 'b.thumbnail_url'
+              : (self::hasColumn($db, 'books', 'cover_image')
+                ? 'b.cover_image'
+                : (self::hasColumn($db, 'books', 'book_cover')
+                  ? 'b.book_cover'
+                  : (self::hasColumn($db, 'books', 'book_image') ? 'b.book_image' : 'NULL'))))));
+
       $sql = "SELECT
         b.id,
         b.isbn,
@@ -872,16 +896,42 @@ class LibrarianPortalRepository
         b.author,
         b.category,
         b.published_year,
+        {$descriptionExpr} AS description,
+        {$coverExpr} AS cover_image_url,
         b.is_active,
         COUNT(bc.id) AS total_copies,
         SUM(CASE WHEN bc.status = 'available' THEN 1 ELSE 0 END) AS available_copies
       FROM books b
       LEFT JOIN book_copies bc ON bc.book_id = b.id
       {$where}
-      GROUP BY b.id, b.isbn, b.title, b.author, b.category, b.published_year, b.is_active
+      GROUP BY b.id, b.isbn, b.title, b.author, b.category, b.published_year, {$descriptionExpr}, {$coverExpr}, b.is_active
       ORDER BY b.title ASC
       LIMIT {$limit}";
     } else {
+      $descriptionExpr = self::hasColumn($db, 'books', 'description')
+        ? 'b.description'
+        : (self::hasColumn($db, 'books', 'summary')
+          ? 'b.summary'
+          : (self::hasColumn($db, 'books', 'synopsis')
+            ? 'b.synopsis'
+            : (self::hasColumn($db, 'books', 'short_description')
+              ? 'b.short_description'
+              : (self::hasColumn($db, 'books', 'blurb') ? 'b.blurb' : 'NULL'))));
+
+      $coverExpr = self::hasColumn($db, 'books', 'cover_image_url')
+        ? 'b.cover_image_url'
+        : (self::hasColumn($db, 'books', 'cover_url')
+          ? 'b.cover_url'
+          : (self::hasColumn($db, 'books', 'image_url')
+            ? 'b.image_url'
+            : (self::hasColumn($db, 'books', 'thumbnail_url')
+              ? 'b.thumbnail_url'
+              : (self::hasColumn($db, 'books', 'cover_image')
+                ? 'b.cover_image'
+                : (self::hasColumn($db, 'books', 'book_cover')
+                  ? 'b.book_cover'
+                  : (self::hasColumn($db, 'books', 'book_image') ? 'b.book_image' : 'NULL'))))));
+
       $sql = "SELECT
         b.id,
         b.isbn,
@@ -889,6 +939,8 @@ class LibrarianPortalRepository
         b.author,
         b.category,
         b.published_year,
+        {$descriptionExpr} AS description,
+        {$coverExpr} AS cover_image_url,
         b.is_active,
         0 AS total_copies,
         0 AS available_copies

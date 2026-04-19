@@ -234,6 +234,9 @@ class CirculationRepository
     $authorColumn = self::resolveColumn($db, 'books', ['author']);
     $isbnColumn = self::resolveColumn($db, 'books', ['isbn']);
     $categoryColumn = self::resolveColumn($db, 'books', ['category']);
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'year_published']);
+    $descriptionColumn = self::resolveColumn($db, 'books', ['description', 'summary', 'synopsis', 'short_description', 'blurb']);
+    $coverImageColumn = self::resolveColumn($db, 'books', ['cover_image_url', 'cover_url', 'image_url', 'thumbnail_url', 'cover_image', 'book_cover', 'book_image']);
     $isActiveColumn = self::resolveColumn($db, 'books', ['is_active']);
 
     if ($bookIdColumn === null || $titleColumn === null || $authorColumn === null) {
@@ -305,6 +308,9 @@ class CirculationRepository
       : '\'Uncategorized\'';
 
     $isbnSelect = $isbnColumn !== null ? 'b.`' . $isbnColumn . '`' : 'NULL';
+    $publishedYearSelect = $publishedYearColumn !== null ? 'b.`' . $publishedYearColumn . '`' : 'NULL';
+    $descriptionSelect = $descriptionColumn !== null ? 'b.`' . $descriptionColumn . '`' : 'NULL';
+    $coverImageSelect = $coverImageColumn !== null ? 'b.`' . $coverImageColumn . '`' : 'NULL';
 
     $sql = 'SELECT
       b.`' . $bookIdColumn . '` AS id,
@@ -312,6 +318,9 @@ class CirculationRepository
       b.`' . $authorColumn . '` AS author,
       ' . $isbnSelect . ' AS isbn,
       ' . $categorySelect . ' AS category,
+      ' . $publishedYearSelect . ' AS published_year,
+      ' . $descriptionSelect . ' AS description,
+      ' . $coverImageSelect . ' AS cover_image_url,
       ' . $availableExpr . ' AS available_copies,
       ' . $totalExpr . ' AS total_copies
       FROM books b' . $copyJoin . $whereSql . '

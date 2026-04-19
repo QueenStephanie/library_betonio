@@ -1464,6 +1464,146 @@ body {
   min-width: 860px;
 }
 
+.librarian-books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.librarian-book-card {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.librarian-book-cover {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  background: linear-gradient(145deg, #f5ead9, #e8d3b8);
+  aspect-ratio: 4 / 3;
+}
+
+.librarian-book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.librarian-book-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: #7d4f35;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.42), transparent 35%),
+    repeating-linear-gradient(
+      -28deg,
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.14) 9px,
+      rgba(125, 79, 53, 0.08) 9px,
+      rgba(125, 79, 53, 0.08) 18px
+    ),
+    linear-gradient(140deg, #eedcc4, #dcb997);
+}
+
+.librarian-book-body {
+  display: grid;
+  gap: 8px;
+}
+
+.librarian-book-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.librarian-book-id {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--admin-muted);
+  letter-spacing: 0.04em;
+}
+
+.librarian-book-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--admin-line);
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.librarian-book-status.is-available {
+  color: #2f6f36;
+  background: #edf6ea;
+  border-color: #b6d4b5;
+}
+
+.librarian-book-status.is-unavailable {
+  color: #8c3218;
+  background: #fff1ec;
+  border-color: #e7c0b2;
+}
+
+.librarian-book-card h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.librarian-book-author {
+  margin: 0;
+  color: #594734;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.librarian-book-description {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  min-height: 4.1em;
+}
+
+.librarian-book-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+}
+
+.librarian-book-inventory {
+  margin-top: auto;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--admin-line);
+  background: #fcf9f4;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #6b5a49;
+  font-size: 0.84rem;
+}
+
+.librarian-book-inventory strong {
+  color: var(--admin-text);
+}
+
 .portal-role-borrower .admin-main {
   padding: 28px 32px 48px;
 }
@@ -1772,5 +1912,13 @@ body {
   .admin-action-btn.admin-action-text {
     min-width: 72px;
     padding: 0 10px;
+  }
+
+  .librarian-books-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .librarian-book-description {
+    min-height: 0;
   }
 }

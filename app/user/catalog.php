@@ -94,6 +94,44 @@ foreach ($catalogRows as $catalogRowSummary) {
   }
   $catalogAvailableCopies += $itemAvailableCopies;
 }
+
+$truncateCatalogText = static function (string $value, int $limit = 180): string {
+  $normalized = trim(preg_replace('/\s+/', ' ', $value) ?? '');
+  if ($normalized === '') {
+    return '';
+  }
+
+  if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+    if (mb_strlen($normalized) <= $limit) {
+      return $normalized;
+    }
+
+    return rtrim((string)mb_substr($normalized, 0, max(1, $limit - 1))) . '...';
+  }
+
+  if (strlen($normalized) <= $limit) {
+    return $normalized;
+  }
+
+  return rtrim(substr($normalized, 0, max(1, $limit - 1))) . '...';
+};
+
+$resolveCatalogCoverUrl = static function (string $raw): string {
+  $value = trim($raw);
+  if ($value === '') {
+    return '';
+  }
+
+  if (preg_match('/^https?:\/\//i', $value) === 1) {
+    return $value;
+  }
+
+  if (str_starts_with($value, '/')) {
+    return $value;
+  }
+
+  return appPath(ltrim($value, '/'));
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -194,16 +232,54 @@ foreach ($catalogRows as $catalogRowSummary) {
             if ($totalCopies < $availableCopies) {
               $totalCopies = $availableCopies;
             }
+
+            $titleLabel = trim((string)($row['title'] ?? ''));
+            if ($titleLabel === '') {
+              $titleLabel = 'Unknown Title';
+            }
+            $authorLabel = trim((string)($row['author'] ?? ''));
+            if ($authorLabel === '') {
+              $authorLabel = 'Unknown Author';
+            }
+
+            $categoryLabel = trim((string)($row['category'] ?? ''));
+            $yearLabel = trim((string)($row['published_year'] ?? ''));
+            $isbnLabel = trim((string)($row['isbn'] ?? ''));
+
+            $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''));
+            $bookDescription = trim((string)($row['description'] ?? ''));
+            if ($bookDescription === '') {
+              $bookDescription = 'A ' . ($categoryLabel !== '' ? strtolower($categoryLabel) : 'library') . ' title by ' . $authorLabel
+                . ($yearLabel !== '' ? ' (' . $yearLabel . ')' : '') . '.';
+            }
+            $bookDescription = $truncateCatalogText($bookDescription, 170);
+
+            $placeholderSeed = strtoupper(substr($titleLabel, 0, 1));
+            if (!preg_match('/[A-Z0-9]/', $placeholderSeed)) {
+              $placeholderSeed = '#';
+            }
             ?>
             <article class="catalog-item borrower-card">
+              <div class="catalog-item-cover">
+                <?php if ($coverUrl !== ''): ?>
+                  <img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Cover of <?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async">
+                <?php else: ?>
+                  <div class="catalog-cover-placeholder" aria-hidden="true"><?php echo htmlspecialchars($placeholderSeed, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+              </div>
+
               <div class="catalog-item-main">
-                <h3><?php echo htmlspecialchars((string)($row['title'] ?? 'Unknown Title'), ENT_QUOTES, 'UTF-8'); ?></h3>
-                <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars((string)($row['author'] ?? 'Unknown Author'), ENT_QUOTES, 'UTF-8'); ?></p>
+                <h3><?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
+                <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars($authorLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+                <p class="catalog-description"><?php echo htmlspecialchars($bookDescription, ENT_QUOTES, 'UTF-8'); ?></p>
                 <p class="catalog-meta catalog-meta-secondary">
-                  <?php if (!empty($row['category'])): ?>
-                    <span>Category: <?php echo htmlspecialchars((string)$row['category'], ENT_QUOTES, 'UTF-8'); ?></span>
+                  <?php if ($categoryLabel !== ''): ?>
+                    <span>Category: <?php echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></span>
                   <?php endif; ?>
-                  <span>ISBN: <?php echo htmlspecialchars((string)($row['isbn'] ?: 'N/A'), ENT_QUOTES, 'UTF-8'); ?></span>
+                  <?php if ($yearLabel !== ''): ?>
+                    <span>Year: <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                  <?php endif; ?>
+                  <span>ISBN: <?php echo htmlspecialchars($isbnLabel !== '' ? $isbnLabel : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
                 </p>
               </div>
               <div class="catalog-actions">
