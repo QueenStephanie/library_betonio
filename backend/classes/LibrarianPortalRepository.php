@@ -128,33 +128,12 @@ class LibrarianPortalRepository
       return false;
     }
 
-    if (strlen($normalized) === 10) {
-      if (preg_match('/^[0-9]{9}[0-9X]$/', $normalized) !== 1) {
-        return false;
-      }
-
-      $sum = 0;
-      for ($i = 0; $i < 10; $i++) {
-        $digit = $normalized[$i] === 'X' ? 10 : (int)$normalized[$i];
-        $sum += $digit * (10 - $i);
-      }
-
-      return $sum % 11 === 0;
+    if (strlen($normalized) === 10 && preg_match('/^[0-9]{9}[0-9X]$/', $normalized) === 1) {
+      return true;
     }
 
-    if (strlen($normalized) === 13) {
-      if (preg_match('/^[0-9]{13}$/', $normalized) !== 1) {
-        return false;
-      }
-
-      $sum = 0;
-      for ($i = 0; $i < 12; $i++) {
-        $weight = $i % 2 === 0 ? 1 : 3;
-        $sum += ((int)$normalized[$i]) * $weight;
-      }
-
-      $checkDigit = (10 - ($sum % 10)) % 10;
-      return $checkDigit === (int)$normalized[12];
+    if (strlen($normalized) === 13 && preg_match('/^[0-9]{13}$/', $normalized) === 1) {
+      return true;
     }
 
     return false;
@@ -185,7 +164,7 @@ class LibrarianPortalRepository
     }
 
     if (!self::isValidIsbn($isbn)) {
-      return ['ok' => false, 'message' => 'ISBN must be a valid ISBN-10 or ISBN-13 value.'];
+      return ['ok' => false, 'message' => 'ISBN must use 10 or 13 digits (ISBN-10 may end with X).'];
     }
 
     if ($publicationDate === '') {

@@ -173,6 +173,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       $coverUpload = $storeUploadedBookCover($_FILES['cover_image'] ?? []);
       if (!$coverUpload['ok']) {
+<<<<<<< ours
+=======
+        $page_alerts[] = [
+          'type' => 'warning',
+          'title' => 'Book Cover Skipped',
+          'message' => (string)$coverUpload['message'] . ' The book will still be added without a cover image.',
+        ];
+        $bookForm['cover_image_url'] = '';
+      } else {
+        $bookForm['cover_image_url'] = (string)($coverUpload['path'] ?? '');
+      }
+
+      $result = LibrarianPortalRepository::addBook($db, $bookForm);
+      if (empty($result['ok']) && $bookForm['cover_image_url'] !== '') {
+        $savedCoverPath = APP_ROOT . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string)$bookForm['cover_image_url']);
+        if (is_file($savedCoverPath)) {
+          @unlink($savedCoverPath);
+        }
+      }
+
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
+        'message' => (string)$result['message'],
+      ];
+
+      if (empty($result['ok'])) {
+>>>>>>> theirs
         $openAddBookModal = true;
         $page_alerts[] = [
           'type' => 'error',
@@ -190,10 +218,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           }
         }
 
+<<<<<<< ours
         $page_alerts[] = [
           'type' => $result['ok'] ? 'success' : 'error',
           'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
           'message' => (string)$result['message'],
+=======
+      if (!empty($result['ok'])) {
+        $bookForm = [
+          'title' => '',
+          'author' => '',
+          'isbn' => '',
+          'publication_date' => '',
+          'genre' => '',
+          'cover_image_url' => '',
+>>>>>>> theirs
         ];
 
         if (empty($result['ok'])) {

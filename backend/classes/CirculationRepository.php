@@ -568,12 +568,13 @@ class CirculationRepository
       return $result;
     }
 
+    $reservationIdColumn = self::resolveColumn($db, 'reservations', ['id']);
     $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
     $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
     $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
     $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
-    if ($reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null || $reservationQueuedColumn === null) {
+    if ($reservationIdColumn === null || $reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null) {
       throw new RuntimeException('Incompatible reservations table schema.');
     }
 
@@ -586,12 +587,14 @@ class CirculationRepository
 
     $safeLimit = max(1, min(300, $limit));
     $statusIn = self::buildInClause('active_status', self::ACTIVE_RESERVATION_STATUSES);
+    $queuedExpr = $reservationQueuedColumn !== null ? 'r.`' . $reservationQueuedColumn . '`' : 'NULL';
     $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
+    $orderByExpr = $reservationQueuedColumn !== null ? $queuedExpr : 'r.`' . $reservationIdColumn . '`';
 
     $sql = 'SELECT
-      r.id,
+      r.`' . $reservationIdColumn . '` AS id,
       r.`' . $reservationStatusColumn . '` AS status,
-      r.`' . $reservationQueuedColumn . '` AS queued_at,
+      ' . $queuedExpr . ' AS queued_at,
       ' . $readyUntilExpr . ' AS ready_until,
       b.`' . $bookIdColumn . '` AS book_id,
       b.`' . $bookTitleColumn . '` AS book_title,
@@ -600,7 +603,7 @@ class CirculationRepository
       INNER JOIN books b ON b.`' . $bookIdColumn . '` = r.`' . $reservationBookColumn . '`
       WHERE r.`' . $reservationUserColumn . '` = :user_id
         AND r.`' . $reservationStatusColumn . '` IN (' . $statusIn['clause'] . ')
-      ORDER BY r.`' . $reservationQueuedColumn . '` ASC
+      ORDER BY ' . $orderByExpr . ' ASC, r.`' . $reservationIdColumn . '` ASC
       LIMIT ' . $safeLimit;
 
     $stmt = $db->prepare($sql);
