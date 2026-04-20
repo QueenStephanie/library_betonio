@@ -23,10 +23,26 @@ $category = trim((string)($_GET['category'] ?? ''));
 $reserveScope = 'borrower_catalog_reserve';
 $reserveCsrfToken = getPublicCsrfToken($reserveScope);
 
+$resolveBookValue = static function (array $row, array $candidates, string $fallback = ''): string {
+  foreach ($candidates as $candidate) {
+    if (array_key_exists($candidate, $row)) {
+      $value = trim((string)($row[$candidate] ?? ''));
+      if ($value !== '') {
+        return $value;
+      }
+    }
+  }
+
+  return $fallback;
+};
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('borrower_catalog_reserve_post');
   $submittedToken = getPost('csrf_token');
+  $action = trim((string)getPost('action', 'reserve'));
   $bookId = (int)getPost('book_id', '0');
+  $reservationId = (int)getPost('reservation_id', '0');
+  $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
   if (!$originCheck['valid']) {
     logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
@@ -38,22 +54,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     clearPublicCsrfToken($reserveScope);
     setFlash('error', 'Invalid or missing security token. Please refresh and try again.');
   } else {
-    $result = CirculationRepository::createBorrowerReservation(
-      $db,
-      (int)($_SESSION['user_id'] ?? 0),
-      $bookId,
-      CirculationRepository::getBorrowerMaxActiveReservations()
-    );
-
-    if (!empty($result['ok'])) {
-      $queuePosition = isset($result['queue_position']) ? (int)$result['queue_position'] : 0;
-      $message = 'Reservation placed successfully.';
-      if ($queuePosition > 0) {
-        $message .= ' Queue position: ' . $queuePosition . '.';
+    if ($action === 'cancel_receipt_reservation') {
+      $cancelResult = CirculationRepository::cancelBorrowerReservation($db, $currentUserId, $reservationId);
+      if (!empty($cancelResult['ok'])) {
+        setFlash('success', 'Reservation cancelled successfully.');
+      } else {
+        setFlash('error', (string)($cancelResult['message'] ?? 'Unable to cancel reservation.'));
       }
-      setFlash('success', $message);
+      unset($_SESSION['borrower_catalog_reservation_receipt']);
     } else {
-      setFlash('error', (string)($result['message'] ?? 'Unable to create reservation.'));
+      $result = CirculationRepository::createBorrowerReservation(
+        $db,
+        $currentUserId,
+        $bookId,
+        CirculationRepository::getBorrowerMaxActiveReservations()
+      );
+
+      if (!empty($result['ok'])) {
+        $queuePosition = isset($result['queue_position']) ? (int)$result['queue_position'] : 0;
+
+        $bookTitle = 'Unknown Title';
+        $bookAuthor = 'Unknown Author';
+        $bookIsbn = 'N/A';
+        $bookCategory = 'General';
+        $bookCallNumber = 'N/A';
+        $bookCoverUrl = '';
+        $bookAvailabilityCount = 0;
+
+        try {
+          $bookStmt = $db->prepare('SELECT * FROM books WHERE id = :book_id LIMIT 1');
+          $bookStmt->execute([':book_id' => $bookId]);
+          $bookRow = $bookStmt->fetch(PDO::FETCH_ASSOC);
+
+          if (is_array($bookRow)) {
+            $bookTitle = $resolveBookValue($bookRow, ['title'], $bookTitle);
+            $bookAuthor = $resolveBookValue($bookRow, ['author'], $bookAuthor);
+            $bookIsbn = $resolveBookValue($bookRow, ['isbn'], $bookIsbn);
+            $bookCategory = $resolveBookValue($bookRow, ['category', 'genre'], $bookCategory);
+            $bookCallNumber = $resolveBookValue(
+              $bookRow,
+              ['call_number', 'shelf_location', 'shelf_code', 'location_code', 'classification_code'],
+              $bookCallNumber
+            );
+            $bookCoverUrl = $resolveBookValue(
+              $bookRow,
+              ['cover_image_url', 'cover_url', 'image_url', 'thumbnail_url', 'book_cover', 'book_image'],
+              ''
+            );
+
+            $bookAvailabilityCount = max(
+              0,
+              (int)$resolveBookValue($bookRow, ['available_copies', 'copies_available'], '0')
+            );
+          }
+
+          try {
+            $copiesStmt = $db->prepare('SELECT COUNT(*) FROM book_copies WHERE book_id = :book_id AND status = :status');
+            $copiesStmt->execute([
+              ':book_id' => $bookId,
+              ':status' => 'available',
+            ]);
+            $bookAvailabilityCount = max(0, (int)$copiesStmt->fetchColumn());
+          } catch (Exception $e) {
+            error_log('borrower catalog available copy lookup error: ' . $e->getMessage());
+          }
+        } catch (Exception $e) {
+          error_log('borrower catalog receipt lookup error: ' . $e->getMessage());
+        }
+
+        $generatedAtIso = date('c');
+        $pickupDeadlineIso = date('c', strtotime('+48 hours'));
+        $reservationExpiryIso = date('c', strtotime('+48 hours'));
+
+        $availabilityStatusKey = 'pending';
+        $availabilityStatusLabel = 'Pending';
+        $statusHeadline = 'Reservation Placed - Waiting for Availability';
+        if ($bookAvailabilityCount > 0 && $queuePosition <= 1) {
+          $availabilityStatusKey = 'ready';
+          $availabilityStatusLabel = 'Ready for Pickup';
+          $statusHeadline = 'Reservation Confirmed - Ready for Pickup';
+        } elseif ($queuePosition > 1) {
+          $availabilityStatusKey = 'on_hold';
+          $availabilityStatusLabel = 'On Hold';
+        }
+
+        $message = $statusHeadline . '.';
+        if ($queuePosition > 0) {
+          $message .= ' Queue position: ' . $queuePosition . '.';
+        }
+
+        $customerName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
+        if ($customerName === '') {
+          $customerName = trim((string)($user['email'] ?? 'Borrower User'));
+        }
+
+        $resolvedReservationId = (int)($result['reservation_id'] ?? 0);
+        if ($resolvedReservationId > 0) {
+          $receiptNumber = 'RCP-' . date('Y') . '-' . str_pad((string)$resolvedReservationId, 5, '0', STR_PAD_LEFT);
+          $verificationCode = strtoupper(substr(hash('sha256', $resolvedReservationId . '|' . $currentUserId . '|' . $generatedAtIso . '|' . session_id()), 0, 12));
+
+          $_SESSION['borrower_catalog_reservation_receipt'] = [
+            'confirmed' => true,
+            'reservation_id' => $resolvedReservationId,
+            'receipt_number' => $receiptNumber,
+            'receipt_code' => trim((string)($result['receipt_code'] ?? '')),
+            'verification_code' => $verificationCode,
+            'queue_position' => $queuePosition,
+            'customer_name' => $customerName,
+            'customer_email' => trim((string)($user['email'] ?? '')),
+            'generated_at' => $generatedAtIso,
+            'transaction_datetime' => $generatedAtIso,
+            'pickup_location' => 'Circulation Desk - Main Library',
+            'pickup_deadline' => $pickupDeadlineIso,
+            'reservation_expires_at' => $reservationExpiryIso,
+            'availability_status_key' => $availabilityStatusKey,
+            'availability_status_label' => $availabilityStatusLabel,
+            'status_headline' => $statusHeadline,
+            'items' => [
+              [
+                'label' => $bookTitle,
+                'details' => 'Author: ' . $bookAuthor,
+                'amount' => 0,
+                'isbn' => $bookIsbn,
+                'call_number' => $bookCallNumber,
+                'category' => $bookCategory,
+                'cover_image_url' => $bookCoverUrl,
+              ],
+            ],
+            'fees_label' => 'Fees: None (Free Reservation)',
+            'subtotal' => 0,
+            'taxes_fees' => 0,
+            'total_amount' => 0,
+            'currency' => 'PHP',
+            'payment_method' => 'No payment required (reservation hold)',
+            'policies' => [
+              'Reservation is valid for 48 hours only.',
+              'Unclaimed items are released to the next borrower in queue.',
+              'Cancel from your account to free the queue slot immediately.',
+            ],
+          ];
+        } else {
+          unset($_SESSION['borrower_catalog_reservation_receipt']);
+          $message .= ' Receipt details are temporarily unavailable.';
+        }
+
+        setFlash('success', $message);
+      } else {
+        setFlash('error', (string)($result['message'] ?? 'Unable to create reservation.'));
+      }
     }
   }
 
@@ -83,6 +231,12 @@ try {
 }
 
 $flash = getFlash();
+$reservationReceiptOverlay = null;
+if (isset($_SESSION['borrower_catalog_reservation_receipt']) && is_array($_SESSION['borrower_catalog_reservation_receipt'])) {
+  $reservationReceiptOverlay = $_SESSION['borrower_catalog_reservation_receipt'];
+}
+unset($_SESSION['borrower_catalog_reservation_receipt']);
+
 $catalogRows = is_array($catalog['rows'] ?? null) ? $catalog['rows'] : [];
 $catalogResultCount = count($catalogRows);
 $catalogInStockTitles = 0;
@@ -136,6 +290,121 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
 
   return appPath(ltrim($value, '/'));
 };
+
+$formatReceiptMoney = static function ($value, string $currency = 'PHP'): string {
+  $amount = is_numeric($value) ? (float)$value : 0.0;
+  return $currency . ' ' . number_format($amount, 2, '.', ',');
+};
+
+$receiptItems = [];
+if (is_array($reservationReceiptOverlay['items'] ?? null)) {
+  foreach ($reservationReceiptOverlay['items'] as $receiptItem) {
+    if (!is_array($receiptItem)) {
+      continue;
+    }
+
+    $receiptItems[] = [
+      'label' => trim((string)($receiptItem['label'] ?? 'Reservation item')),
+      'details' => trim((string)($receiptItem['details'] ?? '')),
+      'amount' => is_numeric($receiptItem['amount'] ?? null) ? (float)$receiptItem['amount'] : 0.0,
+    ];
+  }
+}
+
+if (empty($receiptItems)) {
+  $receiptItems[] = [
+    'label' => 'Reservation hold request',
+    'details' => 'Library reservation service',
+    'amount' => 0.0,
+  ];
+}
+
+$receiptCurrency = trim((string)($reservationReceiptOverlay['currency'] ?? 'PHP'));
+if ($receiptCurrency === '') {
+  $receiptCurrency = 'PHP';
+}
+
+$receiptDateRaw = trim((string)($reservationReceiptOverlay['transaction_datetime'] ?? ''));
+$receiptTimestamp = $receiptDateRaw !== '' ? strtotime($receiptDateRaw) : false;
+$receiptDateDisplay = $receiptTimestamp !== false
+  ? date('M j, Y g:i A', $receiptTimestamp)
+  : date('M j, Y g:i A');
+
+$receiptGeneratedRaw = trim((string)($reservationReceiptOverlay['generated_at'] ?? ''));
+$receiptGeneratedTimestamp = $receiptGeneratedRaw !== '' ? strtotime($receiptGeneratedRaw) : false;
+$receiptGeneratedDisplay = $receiptGeneratedTimestamp !== false
+  ? date('M j, Y g:i A', $receiptGeneratedTimestamp)
+  : $receiptDateDisplay;
+
+$pickupDeadlineRaw = trim((string)($reservationReceiptOverlay['pickup_deadline'] ?? ''));
+$pickupDeadlineTimestamp = $pickupDeadlineRaw !== '' ? strtotime($pickupDeadlineRaw) : false;
+$pickupDeadlineDisplay = $pickupDeadlineTimestamp !== false
+  ? date('M j, Y g:i A', $pickupDeadlineTimestamp)
+  : 'Pending schedule';
+
+$reservationExpiryRaw = trim((string)($reservationReceiptOverlay['reservation_expires_at'] ?? ''));
+$reservationExpiryTimestamp = $reservationExpiryRaw !== '' ? strtotime($reservationExpiryRaw) : false;
+$reservationExpiryDisplay = $reservationExpiryTimestamp !== false
+  ? date('M j, Y g:i A', $reservationExpiryTimestamp)
+  : 'Pending schedule';
+
+$receiptReservationId = (int)($reservationReceiptOverlay['reservation_id'] ?? 0);
+$receiptNumber = trim((string)($reservationReceiptOverlay['receipt_number'] ?? ''));
+$receiptCode = trim((string)($reservationReceiptOverlay['receipt_code'] ?? ''));
+$receiptVerificationCode = trim((string)($reservationReceiptOverlay['verification_code'] ?? ''));
+$receiptQueuePosition = max(0, (int)($reservationReceiptOverlay['queue_position'] ?? 0));
+$receiptCustomerName = trim((string)($reservationReceiptOverlay['customer_name'] ?? 'Borrower User'));
+$receiptCustomerEmail = trim((string)($reservationReceiptOverlay['customer_email'] ?? ''));
+$receiptPickupLocation = trim((string)($reservationReceiptOverlay['pickup_location'] ?? 'Main Library Desk'));
+$receiptStatusKey = trim((string)($reservationReceiptOverlay['availability_status_key'] ?? 'pending'));
+$receiptStatusLabel = trim((string)($reservationReceiptOverlay['availability_status_label'] ?? 'Pending'));
+$receiptStatusHeadline = trim((string)($reservationReceiptOverlay['status_headline'] ?? 'Reservation Placed - Waiting for Availability'));
+$receiptFeesLabel = trim((string)($reservationReceiptOverlay['fees_label'] ?? 'Fees: None (Free Reservation)'));
+$receiptSubtotal = is_numeric($reservationReceiptOverlay['subtotal'] ?? null) ? (float)$reservationReceiptOverlay['subtotal'] : 0.0;
+$receiptTaxesFees = is_numeric($reservationReceiptOverlay['taxes_fees'] ?? null) ? (float)$reservationReceiptOverlay['taxes_fees'] : 0.0;
+$receiptTotalAmount = is_numeric($reservationReceiptOverlay['total_amount'] ?? null) ? (float)$reservationReceiptOverlay['total_amount'] : 0.0;
+$receiptPaymentMethod = trim((string)($reservationReceiptOverlay['payment_method'] ?? 'No payment required'));
+$receiptIsConfirmed = !empty($reservationReceiptOverlay['confirmed']);
+$receiptFileBase = $receiptCode !== ''
+  ? strtolower($receiptCode)
+  : ($receiptReservationId > 0 ? ('reservation-' . $receiptReservationId) : 'reservation-receipt');
+$receiptPolicies = [];
+if (is_array($reservationReceiptOverlay['policies'] ?? null)) {
+  foreach ($reservationReceiptOverlay['policies'] as $policy) {
+    $policyText = trim((string)$policy);
+    if ($policyText !== '') {
+      $receiptPolicies[] = $policyText;
+    }
+  }
+}
+
+if (empty($receiptPolicies)) {
+  $receiptPolicies = [
+    'Reservation is valid for 48 hours only.',
+    'Unclaimed items are released to the next borrower in queue.',
+  ];
+}
+
+$firstReceiptItem = $receiptItems[0] ?? [
+  'label' => 'Reservation item',
+  'details' => '',
+  'amount' => 0,
+];
+
+$receiptBookIsbn = trim((string)($firstReceiptItem['isbn'] ?? 'N/A'));
+$receiptBookCallNumber = trim((string)($firstReceiptItem['call_number'] ?? 'N/A'));
+$receiptBookCategory = trim((string)($firstReceiptItem['category'] ?? 'General'));
+$receiptBookCoverRaw = trim((string)($firstReceiptItem['cover_image_url'] ?? ''));
+$receiptBookCoverUrl = $receiptBookCoverRaw !== '' ? $resolveCatalogCoverUrl($receiptBookCoverRaw) : '';
+
+$receiptBarcodeDisplay = preg_replace('/[^A-Z0-9]/', '', strtoupper($receiptVerificationCode !== '' ? $receiptVerificationCode : ('R' . $receiptReservationId)));
+$isReceiptExpiringSoon = false;
+if ($pickupDeadlineTimestamp !== false) {
+  $hoursRemaining = ($pickupDeadlineTimestamp - time()) / 3600;
+  $isReceiptExpiringSoon = $hoursRemaining > 0 && $hoursRemaining <= 24;
+}
+
+$showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0.0001 || abs($receiptTotalAmount) > 0.0001;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -331,6 +600,588 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
       </div>
     </main>
   </div>
+
+  <?php if ($receiptIsConfirmed): ?>
+  <div
+    id="borrower-reservation-receipt-modal"
+    class="borrower-receipt-modal"
+    role="presentation"
+    aria-hidden="true"
+  >
+    <div
+      class="borrower-receipt-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="borrower-receipt-title"
+      aria-describedby="borrower-receipt-summary"
+      tabindex="-1"
+    >
+      <header class="borrower-receipt-header">
+        <div>
+          <div class="borrower-receipt-branding">
+            <span class="borrower-receipt-logo" aria-hidden="true">QL</span>
+            <div>
+              <p class="borrower-receipt-kicker">QueenLib - Main Library</p>
+              <h2 id="borrower-receipt-title"><?php echo htmlspecialchars($receiptStatusHeadline, ENT_QUOTES, 'UTF-8'); ?></h2>
+            </div>
+          </div>
+          <p id="borrower-receipt-summary">System-generated reservation receipt. Present this at pickup for verification.</p>
+        </div>
+        <button type="button" class="borrower-receipt-close" id="borrower-receipt-close" aria-label="Close receipt overlay">&times;</button>
+      </header>
+
+      <section class="borrower-receipt-body">
+        <div class="borrower-receipt-status-strip status-<?php echo htmlspecialchars($receiptStatusKey, ENT_QUOTES, 'UTF-8'); ?><?php echo $isReceiptExpiringSoon ? ' status-expiring' : ''; ?>" role="status" aria-live="polite">
+          <strong><?php echo htmlspecialchars($receiptStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+          <span><?php echo htmlspecialchars($pickupDeadlineDisplay, ENT_QUOTES, 'UTF-8'); ?></span>
+        </div>
+
+        <div class="borrower-receipt-meta-grid">
+          <article class="borrower-receipt-meta-card">
+            <span>Reservation ID</span>
+            <strong><?php echo $receiptReservationId > 0 ? ('#' . (int)$receiptReservationId) : 'N/A'; ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Receipt Number</span>
+            <strong><?php echo htmlspecialchars($receiptNumber !== '' ? $receiptNumber : 'Pending', ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Customer Name</span>
+            <strong><?php echo htmlspecialchars($receiptCustomerName, ENT_QUOTES, 'UTF-8'); ?></strong>
+            <?php if ($receiptCustomerEmail !== ''): ?>
+              <p><?php echo htmlspecialchars($receiptCustomerEmail, ENT_QUOTES, 'UTF-8'); ?></p>
+            <?php endif; ?>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Generated On</span>
+            <strong><?php echo htmlspecialchars($receiptGeneratedDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Pickup Deadline</span>
+            <strong><?php echo htmlspecialchars($pickupDeadlineDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Reservation Expiry</span>
+            <strong><?php echo htmlspecialchars($reservationExpiryDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Pickup Location</span>
+            <strong><?php echo htmlspecialchars($receiptPickupLocation, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Availability</span>
+            <strong><?php echo htmlspecialchars($receiptStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Queue Position</span>
+            <strong><?php echo $receiptQueuePosition > 0 ? (int)$receiptQueuePosition : 'N/A'; ?></strong>
+          </article>
+          <article class="borrower-receipt-meta-card">
+            <span>Transaction Time</span>
+            <strong><?php echo htmlspecialchars($receiptDateDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+          </article>
+        </div>
+
+        <div class="borrower-receipt-book-detail">
+          <?php if ($receiptBookCoverUrl !== ''): ?>
+            <img src="<?php echo htmlspecialchars($receiptBookCoverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Cover thumbnail" loading="lazy" decoding="async">
+          <?php else: ?>
+            <div class="borrower-receipt-book-cover-fallback" aria-hidden="true">Book</div>
+          <?php endif; ?>
+          <div>
+            <h3><?php echo htmlspecialchars((string)($firstReceiptItem['label'] ?? 'Reservation item'), ENT_QUOTES, 'UTF-8'); ?></h3>
+            <p><?php echo htmlspecialchars((string)($firstReceiptItem['details'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+            <p><strong>ISBN:</strong> <?php echo htmlspecialchars($receiptBookIsbn, ENT_QUOTES, 'UTF-8'); ?></p>
+            <p><strong>Shelf / Call Number:</strong> <?php echo htmlspecialchars($receiptBookCallNumber, ENT_QUOTES, 'UTF-8'); ?></p>
+            <p><strong>Category:</strong> <?php echo htmlspecialchars($receiptBookCategory, ENT_QUOTES, 'UTF-8'); ?></p>
+          </div>
+        </div>
+
+        <div class="borrower-receipt-line-items">
+          <h3>Items / Services</h3>
+          <ul>
+            <?php foreach ($receiptItems as $receiptItem): ?>
+              <li>
+                <div>
+                  <strong><?php echo htmlspecialchars((string)$receiptItem['label'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                  <p><?php echo htmlspecialchars((string)$receiptItem['details'], ENT_QUOTES, 'UTF-8'); ?></p>
+                </div>
+                <span><?php echo htmlspecialchars($formatReceiptMoney($receiptItem['amount'], $receiptCurrency), ENT_QUOTES, 'UTF-8'); ?></span>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+
+        <div class="borrower-receipt-security-block">
+          <h3>Verification</h3>
+          <div class="borrower-receipt-security-grid">
+            <div class="borrower-receipt-security-values">
+              <?php if ($receiptCode !== ''): ?>
+                <p><strong>Legacy Receipt Code:</strong> <?php echo htmlspecialchars($receiptCode, ENT_QUOTES, 'UTF-8'); ?></p>
+              <?php endif; ?>
+              <p><strong>Verification Code:</strong> <?php echo htmlspecialchars($receiptVerificationCode !== '' ? $receiptVerificationCode : 'N/A', ENT_QUOTES, 'UTF-8'); ?></p>
+              <p><strong>Verification Method:</strong> Present Reservation ID + Verification Code at the circulation desk.</p>
+              <p><strong>Barcode:</strong></p>
+              <div class="borrower-receipt-barcode" aria-label="Verification barcode text"><?php echo htmlspecialchars($receiptBarcodeDisplay, ENT_QUOTES, 'UTF-8'); ?></div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="borrower-receipt-totals">
+          <?php if ($showFeeBreakdown): ?>
+            <div>
+              <dt>Subtotal</dt>
+              <dd><?php echo htmlspecialchars($formatReceiptMoney($receiptSubtotal, $receiptCurrency), ENT_QUOTES, 'UTF-8'); ?></dd>
+            </div>
+            <div>
+              <dt>Taxes / Fees</dt>
+              <dd><?php echo htmlspecialchars($formatReceiptMoney($receiptTaxesFees, $receiptCurrency), ENT_QUOTES, 'UTF-8'); ?></dd>
+            </div>
+            <div class="is-grand-total">
+              <dt>Total Amount</dt>
+              <dd><?php echo htmlspecialchars($formatReceiptMoney($receiptTotalAmount, $receiptCurrency), ENT_QUOTES, 'UTF-8'); ?></dd>
+            </div>
+          <?php else: ?>
+            <div class="is-grand-total">
+              <dt>Fees</dt>
+              <dd><?php echo htmlspecialchars($receiptFeesLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+            </div>
+          <?php endif; ?>
+          <div>
+            <dt>Payment Method</dt>
+            <dd><?php echo htmlspecialchars($receiptPaymentMethod, ENT_QUOTES, 'UTF-8'); ?></dd>
+          </div>
+        </dl>
+
+        <div class="borrower-receipt-policy-block">
+          <h3>Policy Notes</h3>
+          <ul>
+            <?php foreach ($receiptPolicies as $policyItem): ?>
+              <li><?php echo htmlspecialchars($policyItem, ENT_QUOTES, 'UTF-8'); ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      </section>
+
+      <footer class="borrower-receipt-actions">
+        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-close-action">Close</button>
+        <button type="button" class="borrower-btn borrower-btn-primary" id="borrower-receipt-print">Print</button>
+        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-download">Download</button>
+        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-calendar">Add to Calendar</button>
+        <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) { return $value !== ''; })), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-receipt-cancel-form">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+          <input type="hidden" name="action" value="cancel_receipt_reservation">
+          <input type="hidden" name="reservation_id" value="<?php echo (int)$receiptReservationId; ?>">
+          <button type="submit" class="borrower-btn borrower-btn-danger" id="borrower-receipt-cancel">Cancel Reservation</button>
+        </form>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    window.borrowerReservationReceipt = <?php echo json_encode([
+      'confirmed' => $receiptIsConfirmed,
+      'reservationId' => $receiptReservationId,
+      'receiptCode' => $receiptCode,
+      'receiptNumber' => $receiptNumber,
+      'verificationCode' => $receiptVerificationCode,
+      'queuePosition' => $receiptQueuePosition,
+      'customerName' => $receiptCustomerName,
+      'customerEmail' => $receiptCustomerEmail,
+      'transactionDate' => $receiptDateDisplay,
+      'generatedOn' => $receiptGeneratedDisplay,
+      'pickupDeadline' => $pickupDeadlineDisplay,
+      'pickupDeadlineIso' => $pickupDeadlineRaw,
+      'reservationExpiry' => $reservationExpiryDisplay,
+      'pickupLocation' => $receiptPickupLocation,
+      'statusKey' => $receiptStatusKey,
+      'statusLabel' => $receiptStatusLabel,
+      'statusHeadline' => $receiptStatusHeadline,
+      'feesLabel' => $receiptFeesLabel,
+      'showFeeBreakdown' => $showFeeBreakdown,
+      'bookIsbn' => $receiptBookIsbn,
+      'bookCallNumber' => $receiptBookCallNumber,
+      'bookCategory' => $receiptBookCategory,
+      'bookCoverUrl' => $receiptBookCoverUrl,
+      'policies' => $receiptPolicies,
+      'items' => $receiptItems,
+      'subtotal' => $receiptSubtotal,
+      'taxesFees' => $receiptTaxesFees,
+      'totalAmount' => $receiptTotalAmount,
+      'currency' => $receiptCurrency,
+      'paymentMethod' => $receiptPaymentMethod,
+      'fileBase' => $receiptFileBase,
+      'barcodeText' => $receiptBarcodeDisplay,
+      'cancelAction' => 'cancel_receipt_reservation',
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+  </script>
+  <script>
+    (function () {
+      'use strict';
+
+      var receiptData = window.borrowerReservationReceipt || null;
+      if (!receiptData || !receiptData.confirmed) {
+        return;
+      }
+
+      var modal = document.getElementById('borrower-reservation-receipt-modal');
+      var dialog = modal ? modal.querySelector('.borrower-receipt-dialog') : null;
+      var closeButton = document.getElementById('borrower-receipt-close');
+      var closeActionButton = document.getElementById('borrower-receipt-close-action');
+      var printButton = document.getElementById('borrower-receipt-print');
+      var downloadButton = document.getElementById('borrower-receipt-download');
+      var calendarButton = document.getElementById('borrower-receipt-calendar');
+      var lastFocusedElement = null;
+
+      if (!modal || !dialog) {
+        return;
+      }
+
+      function isMobileDevice() {
+        if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) {
+          return true;
+        }
+
+        var ua = window.navigator && window.navigator.userAgent ? window.navigator.userAgent : '';
+        return /Android|iPhone|iPad|iPod|Mobile|Opera Mini|IEMobile/i.test(ua);
+      }
+
+      function getFocusableElements() {
+        return Array.prototype.slice.call(
+          dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ).filter(function (element) {
+          return !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true';
+        });
+      }
+
+      function openModal() {
+        lastFocusedElement = document.activeElement;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('borrower-receipt-open');
+        dialog.focus();
+      }
+
+      function closeModal() {
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('borrower-receipt-open');
+        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+          lastFocusedElement.focus();
+        }
+      }
+
+      function formatMoney(value) {
+        var amount = Number(value);
+        if (!Number.isFinite(amount)) {
+          amount = 0;
+        }
+
+        var currency = typeof receiptData.currency === 'string' && receiptData.currency ? receiptData.currency : 'PHP';
+        return currency + ' ' + amount.toFixed(2);
+      }
+
+      function drawReceiptToCanvas() {
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        var width = 1240;
+
+        var lines = [
+          'QueenLib - Reservation Receipt',
+          'Reservation ID: #' + (receiptData.reservationId || 'N/A'),
+          'Receipt Number: ' + (receiptData.receiptNumber || 'Pending'),
+          'Customer: ' + (receiptData.customerName || 'Borrower User'),
+          'Email: ' + (receiptData.customerEmail || 'N/A'),
+          'Generated: ' + (receiptData.generatedOn || receiptData.transactionDate || ''),
+          'Status: ' + (receiptData.statusLabel || 'Pending'),
+          'Pickup Deadline: ' + (receiptData.pickupDeadline || 'Pending schedule'),
+          'Reservation Expiry: ' + (receiptData.reservationExpiry || 'Pending schedule'),
+          'Pickup Location: ' + (receiptData.pickupLocation || 'Main Library Desk'),
+          'Verification: ' + (receiptData.verificationCode || 'N/A'),
+          'Payment Method: ' + (receiptData.paymentMethod || 'No payment required'),
+          ''
+        ];
+
+        lines.push('Items / Services:');
+        var items = Array.isArray(receiptData.items) ? receiptData.items : [];
+        if (items.length === 0) {
+          lines.push('- Reservation hold request | ' + formatMoney(0));
+        }
+
+        items.forEach(function (item) {
+          var label = item && item.label ? String(item.label) : 'Reservation item';
+          var details = item && item.details ? String(item.details) : '';
+          var amount = item && Number.isFinite(Number(item.amount)) ? Number(item.amount) : 0;
+          lines.push('- ' + label + ' | ' + details + ' | ' + formatMoney(amount));
+
+          if (item && item.isbn) {
+            lines.push('  ISBN: ' + String(item.isbn));
+          }
+          if (item && item.call_number) {
+            lines.push('  Shelf/Call Number: ' + String(item.call_number));
+          }
+          if (item && item.category) {
+            lines.push('  Category: ' + String(item.category));
+          }
+        });
+
+        lines.push('');
+        if (receiptData.showFeeBreakdown) {
+          lines.push('Subtotal: ' + formatMoney(receiptData.subtotal));
+          lines.push('Taxes/Fees: ' + formatMoney(receiptData.taxesFees));
+          lines.push('Total Amount: ' + formatMoney(receiptData.totalAmount));
+        } else {
+          lines.push(receiptData.feesLabel || 'Fees: None (Free Reservation)');
+        }
+
+        var policies = Array.isArray(receiptData.policies) ? receiptData.policies : [];
+        if (policies.length > 0) {
+          lines.push('');
+          lines.push('Policy Notes:');
+          policies.forEach(function (policy) {
+            lines.push('- ' + String(policy));
+          });
+        }
+
+        var paddingX = 48;
+        var lineHeight = 38;
+        var height = Math.max(760, (lines.length * lineHeight) + 110);
+
+        canvas.width = width;
+        canvas.height = height;
+
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+
+        context.fillStyle = '#2b1c11';
+        context.font = '700 48px "Outfit", Arial, sans-serif';
+        context.fillText('Reservation Receipt', paddingX, 72);
+
+        context.strokeStyle = '#d8c7b2';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(paddingX, 96);
+        context.lineTo(width - paddingX, 96);
+        context.stroke();
+
+        context.fillStyle = '#3e3025';
+        context.font = '500 27px "Outfit", Arial, sans-serif';
+
+        var y = 146;
+        lines.forEach(function (line) {
+          context.fillText(line, paddingX, y);
+          y += lineHeight;
+        });
+
+        return canvas;
+      }
+
+      function downloadReceiptPdfIfAvailable(canvas, fileBase) {
+        if (isMobileDevice()) {
+          return false;
+        }
+
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+          return false;
+        }
+
+        try {
+          var pdf = new window.jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+          });
+
+          var pageWidth = pdf.internal.pageSize.getWidth();
+          var pageHeight = pdf.internal.pageSize.getHeight();
+          var margin = 24;
+          var imgData = canvas.toDataURL('image/png');
+          var maxWidth = pageWidth - (margin * 2);
+          var maxHeight = pageHeight - (margin * 2);
+          var imageWidth = maxWidth;
+          var imageHeight = canvas.height * (imageWidth / canvas.width);
+
+          if (imageHeight > maxHeight) {
+            imageHeight = maxHeight;
+            imageWidth = canvas.width * (imageHeight / canvas.height);
+          }
+
+          pdf.addImage(imgData, 'PNG', margin, margin, imageWidth, imageHeight);
+          pdf.save(fileBase + '.pdf');
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function downloadReceiptImage() {
+        var canvas = drawReceiptToCanvas();
+        var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-receipt';
+
+        if (downloadReceiptPdfIfAvailable(canvas, fileBase)) {
+          return;
+        }
+
+        var fileName = fileBase.replace(/[^a-z0-9._-]/gi, '_') + '.png';
+
+        if (typeof canvas.toBlob === 'function') {
+          canvas.toBlob(function (blob) {
+            if (!blob) {
+              return;
+            }
+            var url = URL.createObjectURL(blob);
+            var anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = fileName;
+            anchor.style.display = 'none';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(url);
+          }, 'image/png');
+          return;
+        }
+
+        var dataUrl = canvas.toDataURL('image/png');
+        var fallbackAnchor = document.createElement('a');
+        fallbackAnchor.href = dataUrl;
+        fallbackAnchor.download = fileName;
+        fallbackAnchor.style.display = 'none';
+        document.body.appendChild(fallbackAnchor);
+        fallbackAnchor.click();
+        document.body.removeChild(fallbackAnchor);
+      }
+
+      function printReceipt() {
+        window.print();
+      }
+
+      function escapeIcsText(value) {
+        return String(value || '')
+          .replace(/\\/g, '\\\\')
+          .replace(/\n/g, '\\n')
+          .replace(/,/g, '\\,')
+          .replace(/;/g, '\\;');
+      }
+
+      function toIcsDate(value) {
+        var dateValue = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(dateValue.getTime())) {
+          return '';
+        }
+
+        return dateValue.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+      }
+
+      function addCalendarReminder() {
+        var fallbackStart = new Date(Date.now() + (24 * 60 * 60 * 1000));
+        var start = receiptData.pickupDeadlineIso ? new Date(receiptData.pickupDeadlineIso) : fallbackStart;
+        if (Number.isNaN(start.getTime())) {
+          start = fallbackStart;
+        }
+        var end = new Date(start.getTime() + (30 * 60 * 1000));
+
+        var firstItem = Array.isArray(receiptData.items) && receiptData.items.length > 0 ? receiptData.items[0] : null;
+        var itemLabel = firstItem && firstItem.label ? String(firstItem.label) : 'Library Reservation Pickup';
+        var summary = 'QueenLib Pickup: ' + itemLabel;
+        var description = [
+          'Reservation ID: #' + (receiptData.reservationId || 'N/A'),
+          'Receipt Number: ' + (receiptData.receiptNumber || 'Pending'),
+          'Status: ' + (receiptData.statusLabel || 'Pending'),
+          'Verification Code: ' + (receiptData.verificationCode || 'N/A')
+        ].join('\\n');
+
+        var uid = 'queenlib-reservation-' + (receiptData.reservationId || '0') + '-' + Date.now() + '@local.queenlib';
+        var icsContent = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//QueenLib//Reservation//EN',
+          'BEGIN:VEVENT',
+          'UID:' + uid,
+          'DTSTAMP:' + toIcsDate(new Date()),
+          'DTSTART:' + toIcsDate(start),
+          'DTEND:' + toIcsDate(end),
+          'SUMMARY:' + escapeIcsText(summary),
+          'LOCATION:' + escapeIcsText(receiptData.pickupLocation || 'Main Library Desk'),
+          'DESCRIPTION:' + escapeIcsText(description),
+          'END:VEVENT',
+          'END:VCALENDAR'
+        ].join('\r\n');
+
+        var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-reminder';
+        anchor.href = url;
+        anchor.download = fileBase.replace(/[^a-z0-9._-]/gi, '_') + '.ics';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+      }
+
+      if (isMobileDevice()) {
+        downloadButton.textContent = 'Download Image';
+      } else {
+        downloadButton.textContent = window.jspdf && typeof window.jspdf.jsPDF === 'function'
+          ? 'Download PDF'
+          : 'Download Image';
+      }
+
+      closeButton.addEventListener('click', closeModal);
+      closeActionButton.addEventListener('click', closeModal);
+      printButton.addEventListener('click', printReceipt);
+      downloadButton.addEventListener('click', downloadReceiptImage);
+      if (calendarButton) {
+        calendarButton.addEventListener('click', addCalendarReminder);
+      }
+
+      modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (modal.getAttribute('aria-hidden') === 'true') {
+          return;
+        }
+
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeModal();
+          return;
+        }
+
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'p' || event.key === 'P')) {
+          event.preventDefault();
+          printReceipt();
+          return;
+        }
+
+        if (event.key === 'Tab') {
+          var focusable = getFocusableElements();
+          if (focusable.length === 0) {
+            event.preventDefault();
+            return;
+          }
+
+          var first = focusable[0];
+          var last = focusable[focusable.length - 1];
+
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      });
+
+      openModal();
+    })();
+  </script>
+  <?php endif; ?>
 </body>
 
 </html>
