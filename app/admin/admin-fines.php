@@ -24,6 +24,7 @@ $mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssV
 $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
 
 $page_alerts = [];
+$printFormUrl = appPath('librarian-print-records.php', ['type' => 'admin-fines']);
 $report = [
   'period_label' => date('M 1, Y') . ' to ' . date('M j, Y'),
   'total_collections' => 0,
@@ -73,6 +74,9 @@ try {
       <header class="admin-page-hero">
         <h1>Current Collected Fines</h1>
         <p>Fixed month-to-date period: <?php echo htmlspecialchars($report['period_label'], ENT_QUOTES, 'UTF-8'); ?></p>
+        <div class="admin-page-hero-actions">
+          <a class="admin-button admin-button-ghost" href="<?php echo htmlspecialchars($printFormUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Generate Printable Form</a>
+        </div>
       </header>
 
       <section class="admin-card">

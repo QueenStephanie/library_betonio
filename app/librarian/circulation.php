@@ -38,6 +38,7 @@ if (is_array($flash) && isset($flash['type'], $flash['message'])) {
 
 $csrfToken = getAdminCsrfToken();
 $checkoutSearchEndpoint = appPath('backend/api/librarian-checkout-search.php');
+$printFormUrl = appPath('librarian-print-records.php', ['type' => 'circulation']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('librarian_circulation_post');
@@ -391,6 +392,7 @@ foreach ($rows as $row) {
                 <span class="librarian-section-kicker">Active circulation</span>
                 <h2>Loan records</h2>
               </div>
+              <a class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary" href="<?php echo htmlspecialchars($printFormUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Generate Printable Form</a>
             </div>
             <div class="librarian-panel-content">
               <div class="librarian-table-wrap">

@@ -43,10 +43,24 @@ if ($download && is_array($receipt)) {
 
 $payload = is_array($receipt['payload'] ?? null) ? $receipt['payload'] : [];
 $title = 'Transaction Receipt';
+$documentLabel = 'Receipt';
+$transactionTypeKey = '';
+
 if (is_array($receipt)) {
-  $title = strtoupper(str_replace('_', ' ', (string)($receipt['transaction_type'] ?? 'transaction')));
-  $title = trim($title) !== '' ? $title . ' RECEIPT' : 'TRANSACTION RECEIPT';
+  $transactionTypeKey = strtolower(trim((string)($receipt['transaction_type'] ?? '')));
+
+  if ($transactionTypeKey === 'reservation_create') {
+    $documentLabel = 'Reservation Ticket';
+    $title = 'Reservation Ticket';
+  } else {
+    $documentLabel = 'Receipt';
+    $title = 'Receipt';
+  }
 }
+
+$transactionTypeLabel = $transactionTypeKey !== ''
+  ? ucwords(str_replace('_', ' ', $transactionTypeKey))
+  : '-';
 
 function receiptValue($value): string
 {
@@ -179,7 +193,8 @@ function receiptValue($value): string
         <div><strong>Receipt Code:</strong> <?php echo htmlspecialchars((string)($receipt['receipt_code'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></div>
         <div><strong>Created At:</strong> <?php echo htmlspecialchars((string)($receipt['created_at'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></div>
         <div><strong>Receipt ID:</strong> <?php echo (int)($receipt['id'] ?? 0); ?></div>
-        <div><strong>Type:</strong> <?php echo htmlspecialchars((string)($receipt['transaction_type'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></div>
+        <div><strong>Type:</strong> <?php echo htmlspecialchars($transactionTypeLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div><strong>Document:</strong> <?php echo htmlspecialchars($documentLabel, ENT_QUOTES, 'UTF-8'); ?></div>
         <div><strong>Reference ID:</strong> <?php echo (int)($receipt['transaction_ref_id'] ?? 0); ?></div>
         <div><strong>Borrower User ID:</strong> <?php echo htmlspecialchars(receiptValue($receipt['borrower_user_id'] ?? null), ENT_QUOTES, 'UTF-8'); ?></div>
       </section>

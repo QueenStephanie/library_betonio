@@ -37,6 +37,8 @@ if (is_array($flash) && isset($flash['type'], $flash['message'])) {
   ];
 }
 
+$printFormUrl = appPath('librarian-print-records.php', ['type' => 'fines']);
+
 $report = [
   'period_label' => date('M 1, Y') . ' to ' . date('M j, Y'),
   'total_collections' => 0,
@@ -137,6 +139,7 @@ try {
                 <span class="librarian-section-kicker">Transactions</span>
                 <h2>Collection report rows</h2>
               </div>
+              <a class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary" href="<?php echo htmlspecialchars($printFormUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Generate Printable Form</a>
             </div>
             <div class="librarian-panel-content">
               <div class="librarian-table-wrap">
