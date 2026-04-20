@@ -1450,6 +1450,15 @@
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  body.borrower-print-active {
+    background: #fff !important;
+  }
+
   body.borrower-print-active .admin-shell {
     display: none !important;
   }
@@ -1463,6 +1472,9 @@
     background: #fff !important;
     inset: auto !important;
     min-height: 0 !important;
+    color: #000 !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
   }
 
   body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-dialog {
@@ -1474,6 +1486,146 @@
     border-radius: 0 !important;
     overflow: visible !important;
     margin: 0 !important;
+    background: #fff !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-header {
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    border-bottom-color: #d8d8d8 !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-logo {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-kicker {
+    margin: 0 0 2px !important;
+    font-size: 0.58rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-header h2 {
+    font-size: 1.1rem !important;
+    line-height: 1.08 !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-header p {
+    margin: 3px 0 0 !important;
+    font-size: 0.72rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-body {
+    margin-top: 8px !important;
+    display: block !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-body > * {
+    margin: 0 0 8px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-body > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-status-strip,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-meta-card,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-line-items,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-security-block,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-policy-block,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals {
+    padding: 7px !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-meta-card span {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-meta-card strong {
+    font-size: 0.75rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-meta-card p {
+    font-size: 0.67rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail {
+    grid-template-columns: 84px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail img,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-cover-fallback {
+    width: 84px !important;
+    height: 112px !important;
+    aspect-ratio: auto !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail h3 {
+    font-size: 0.86rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail p,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-line-items p,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-security-values p,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-policy-block ul,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals dt,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals dd {
+    font-size: 0.67rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-book-detail p,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-security-values p {
+    margin: 2px 0 0 !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-line-items h3,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-security-block h3,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-policy-block h3 {
+    margin: 0 0 5px !important;
+    font-size: 0.76rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-line-items ul {
+    gap: 5px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-line-items li {
+    gap: 8px !important;
+    padding-bottom: 5px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-barcode {
+    padding: 4px 6px !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals {
+    gap: 4px !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals .is-grand-total dt,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-totals .is-grand-total dd {
+    font-size: 0.72rem !important;
+  }
+
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-policy-block ul {
+    margin: 0 !important;
+    padding-left: 14px !important;
+    gap: 3px !important;
   }
 
   body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-actions,
