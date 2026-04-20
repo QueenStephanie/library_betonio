@@ -1450,23 +1450,22 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden !important;
+  body.borrower-print-active .admin-shell {
+    display: none !important;
   }
 
-  #borrower-reservation-receipt-modal,
-  #borrower-reservation-receipt-modal * {
-    visibility: visible !important;
-  }
-
-  #borrower-reservation-receipt-modal {
+  body.borrower-print-active #borrower-reservation-receipt-modal {
     position: static !important;
     display: block !important;
+    visibility: visible !important;
     padding: 0 !important;
+    margin: 0 !important;
     background: #fff !important;
+    inset: auto !important;
+    min-height: 0 !important;
   }
 
-  #borrower-reservation-receipt-modal .borrower-receipt-dialog {
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-dialog {
     box-shadow: none !important;
     border: none !important;
     max-height: none !important;
@@ -1474,10 +1473,11 @@
     padding: 0 !important;
     border-radius: 0 !important;
     overflow: visible !important;
+    margin: 0 !important;
   }
 
-  #borrower-reservation-receipt-modal .borrower-receipt-actions,
-  #borrower-reservation-receipt-modal .borrower-receipt-close {
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-actions,
+  body.borrower-print-active #borrower-reservation-receipt-modal .borrower-receipt-close {
     display: none !important;
   }
 }

@@ -419,6 +419,7 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
   <link rel="stylesheet" href="public/css/main.css">
   <link rel="stylesheet" href="public/css/admin.css">
   <link rel="stylesheet" href="public/css/borrower.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
 </head>
 
 <body class="admin-portal-body portal-role-borrower">
@@ -766,8 +767,7 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
       <footer class="borrower-receipt-actions">
         <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-close-action">Close</button>
         <button type="button" class="borrower-btn borrower-btn-primary" id="borrower-receipt-print">Print</button>
-        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-download">Download</button>
-        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-calendar">Add to Calendar</button>
+        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-download">Download PDF</button>
         <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) { return $value !== ''; })), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-receipt-cancel-form">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
           <input type="hidden" name="action" value="cancel_receipt_reservation">
@@ -830,7 +830,6 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
       var closeActionButton = document.getElementById('borrower-receipt-close-action');
       var printButton = document.getElementById('borrower-receipt-print');
       var downloadButton = document.getElementById('borrower-receipt-download');
-      var calendarButton = document.getElementById('borrower-receipt-calendar');
       var lastFocusedElement = null;
 
       if (!modal || !dialog) {
@@ -974,13 +973,10 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
         return canvas;
       }
 
-      function downloadReceiptPdfIfAvailable(canvas, fileBase) {
-        if (isMobileDevice()) {
-          return false;
-        }
-
+      function downloadReceiptPdf(canvas, fileBase) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
-          return false;
+          window.alert('PDF generator is unavailable right now. Please try again after the page fully loads.');
+          return;
         }
 
         try {
@@ -1006,134 +1002,33 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
 
           pdf.addImage(imgData, 'PNG', margin, margin, imageWidth, imageHeight);
           pdf.save(fileBase + '.pdf');
-          return true;
         } catch (error) {
-          return false;
+          window.alert('Unable to generate PDF right now. Please try again.');
         }
       }
 
-      function downloadReceiptImage() {
+      function handleDownloadPdf() {
         var canvas = drawReceiptToCanvas();
         var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-receipt';
-
-        if (downloadReceiptPdfIfAvailable(canvas, fileBase)) {
-          return;
-        }
-
-        var fileName = fileBase.replace(/[^a-z0-9._-]/gi, '_') + '.png';
-
-        if (typeof canvas.toBlob === 'function') {
-          canvas.toBlob(function (blob) {
-            if (!blob) {
-              return;
-            }
-            var url = URL.createObjectURL(blob);
-            var anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = fileName;
-            anchor.style.display = 'none';
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-            URL.revokeObjectURL(url);
-          }, 'image/png');
-          return;
-        }
-
-        var dataUrl = canvas.toDataURL('image/png');
-        var fallbackAnchor = document.createElement('a');
-        fallbackAnchor.href = dataUrl;
-        fallbackAnchor.download = fileName;
-        fallbackAnchor.style.display = 'none';
-        document.body.appendChild(fallbackAnchor);
-        fallbackAnchor.click();
-        document.body.removeChild(fallbackAnchor);
+        downloadReceiptPdf(canvas, fileBase.replace(/[^a-z0-9._-]/gi, '_'));
       }
 
       function printReceipt() {
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('borrower-print-active');
         window.print();
       }
 
-      function escapeIcsText(value) {
-        return String(value || '')
-          .replace(/\\/g, '\\\\')
-          .replace(/\n/g, '\\n')
-          .replace(/,/g, '\\,')
-          .replace(/;/g, '\\;');
-      }
-
-      function toIcsDate(value) {
-        var dateValue = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(dateValue.getTime())) {
-          return '';
-        }
-
-        return dateValue.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-      }
-
-      function addCalendarReminder() {
-        var fallbackStart = new Date(Date.now() + (24 * 60 * 60 * 1000));
-        var start = receiptData.pickupDeadlineIso ? new Date(receiptData.pickupDeadlineIso) : fallbackStart;
-        if (Number.isNaN(start.getTime())) {
-          start = fallbackStart;
-        }
-        var end = new Date(start.getTime() + (30 * 60 * 1000));
-
-        var firstItem = Array.isArray(receiptData.items) && receiptData.items.length > 0 ? receiptData.items[0] : null;
-        var itemLabel = firstItem && firstItem.label ? String(firstItem.label) : 'Library Reservation Pickup';
-        var summary = 'QueenLib Pickup: ' + itemLabel;
-        var description = [
-          'Reservation ID: #' + (receiptData.reservationId || 'N/A'),
-          'Receipt Number: ' + (receiptData.receiptNumber || 'Pending'),
-          'Status: ' + (receiptData.statusLabel || 'Pending'),
-          'Verification Code: ' + (receiptData.verificationCode || 'N/A')
-        ].join('\\n');
-
-        var uid = 'queenlib-reservation-' + (receiptData.reservationId || '0') + '-' + Date.now() + '@local.queenlib';
-        var icsContent = [
-          'BEGIN:VCALENDAR',
-          'VERSION:2.0',
-          'PRODID:-//QueenLib//Reservation//EN',
-          'BEGIN:VEVENT',
-          'UID:' + uid,
-          'DTSTAMP:' + toIcsDate(new Date()),
-          'DTSTART:' + toIcsDate(start),
-          'DTEND:' + toIcsDate(end),
-          'SUMMARY:' + escapeIcsText(summary),
-          'LOCATION:' + escapeIcsText(receiptData.pickupLocation || 'Main Library Desk'),
-          'DESCRIPTION:' + escapeIcsText(description),
-          'END:VEVENT',
-          'END:VCALENDAR'
-        ].join('\r\n');
-
-        var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var anchor = document.createElement('a');
-        var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-reminder';
-        anchor.href = url;
-        anchor.download = fileBase.replace(/[^a-z0-9._-]/gi, '_') + '.ics';
-        anchor.style.display = 'none';
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(url);
-      }
-
-      if (isMobileDevice()) {
-        downloadButton.textContent = 'Download Image';
-      } else {
-        downloadButton.textContent = window.jspdf && typeof window.jspdf.jsPDF === 'function'
-          ? 'Download PDF'
-          : 'Download Image';
-      }
+      downloadButton.textContent = 'Download PDF';
 
       closeButton.addEventListener('click', closeModal);
       closeActionButton.addEventListener('click', closeModal);
       printButton.addEventListener('click', printReceipt);
-      downloadButton.addEventListener('click', downloadReceiptImage);
-      if (calendarButton) {
-        calendarButton.addEventListener('click', addCalendarReminder);
-      }
+      downloadButton.addEventListener('click', handleDownloadPdf);
+
+      window.addEventListener('afterprint', function () {
+        document.body.classList.remove('borrower-print-active');
+      });
 
       modal.addEventListener('click', function (event) {
         if (event.target === modal) {

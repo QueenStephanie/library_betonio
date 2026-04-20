@@ -173,11 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       $coverUpload = $storeUploadedBookCover($_FILES['cover_image'] ?? []);
       if (!$coverUpload['ok']) {
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
         $page_alerts[] = [
           'type' => 'warning',
           'title' => 'Book Cover Skipped',
@@ -203,30 +198,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ];
 
       if (empty($result['ok'])) {
->>>>>>> theirs
         $openAddBookModal = true;
-        $page_alerts[] = [
-          'type' => 'error',
-          'title' => 'Invalid Book Cover',
-          'message' => (string)$coverUpload['message'],
-        ];
-      } else {
-        $bookForm['cover_image_url'] = (string)($coverUpload['path'] ?? '');
+      }
 
-        $result = LibrarianPortalRepository::addBook($db, $bookForm);
-        if (empty($result['ok']) && $bookForm['cover_image_url'] !== '') {
-          $savedCoverPath = APP_ROOT . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string)$bookForm['cover_image_url']);
-          if (is_file($savedCoverPath)) {
-            @unlink($savedCoverPath);
-          }
-        }
-
-<<<<<<< ours
-        $page_alerts[] = [
-          'type' => $result['ok'] ? 'success' : 'error',
-          'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
-          'message' => (string)$result['message'],
-=======
       if (!empty($result['ok'])) {
         $bookForm = [
           'title' => '',
@@ -235,26 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           'publication_date' => '',
           'genre' => '',
           'cover_image_url' => '',
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
         ];
-
-        if (empty($result['ok'])) {
-          $openAddBookModal = true;
-        }
-
-        if (!empty($result['ok'])) {
-          $bookForm = [
-            'title' => '',
-            'author' => '',
-            'isbn' => '',
-            'publication_date' => '',
-            'genre' => '',
-            'cover_image_url' => '',
-          ];
-        }
       }
     }
   }
