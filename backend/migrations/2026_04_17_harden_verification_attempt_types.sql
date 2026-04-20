@@ -1,9 +1,0 @@
--- Superseded migration placeholder.
---
--- This file intentionally contains no SQL statements.
--- Canonical enum change lives in:
---   2026_04_12_expand_verification_attempt_types.sql
---
--- Keeping this file as a documented no-op avoids confusion for environments
--- that already tracked or referenced the 2026_04_17 filename while preventing
--- duplicate alter intent.
