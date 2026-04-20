@@ -1920,14 +1920,19 @@ body {
   }
 
   .admin-sidebar-mobile-current {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: flex-end;
+    min-width: 0;
+    max-width: 100%;
     font-size: 0.82rem;
     font-weight: 600;
     color: #fff;
     text-align: right;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.2;
   }
 
   .admin-sidebar-mobile-toggle {
@@ -2083,6 +2088,34 @@ body {
 
   .admin-sidebar-mobile-current {
     font-size: 0.78rem;
+  }
+
+  .admin-info-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-info-row > span {
+    max-width: 100%;
+  }
+
+  .admin-info-row > strong,
+  .admin-info-row > .admin-access-pill {
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-info-row strong {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .admin-access-pill {
+    white-space: normal;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .admin-profile-header {
