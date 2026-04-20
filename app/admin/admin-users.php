@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
   } else {
     $action = trim((string)($_POST['action'] ?? ''));
-    $superadminOnlyActions = ['create_user', 'update_user', 'toggle_status', 'delete_user'];
+    $superadminOnlyActions = ['create_user', 'update_user', 'toggle_status', 'delete_user', 'edit_password', 'reset_password'];
 
     if (!$isCurrentSuperadmin && in_array($action, $superadminOnlyActions, true)) {
       $page_alerts[] = [
@@ -255,6 +255,7 @@ function roleLabel($role)
                   data-user-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>"
                   data-user-status="<?php echo $isActive ? 'active' : 'inactive'; ?>"
                   data-user-superadmin="<?php echo $isSuperadmin ? '1' : '0'; ?>"
+                  data-can-change-password="<?php echo $isSuperadmin ? '0' : '1'; ?>"
                   data-role-information="<?php echo htmlspecialchars($roleInfo, ENT_QUOTES, 'UTF-8'); ?>">
                   <td>USR-<?php echo str_pad((string)$user['id'], 3, '0', STR_PAD_LEFT); ?></td>
                   <td><?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8'); ?></td>
@@ -277,6 +278,32 @@ function roleLabel($role)
                           title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : 'Edit user'; ?>">
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M4 20H8L19 9L15 5L4 16V20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          class="admin-action-btn"
+                          type="button"
+                          data-open-modal="#editPasswordModal"
+                          data-edit-password
+                          aria-label="Change password"
+                          <?php echo !$isCurrentSuperadmin || $isSuperadmin ? 'disabled' : ''; ?>
+                          title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : ($isSuperadmin ? 'Superadmin password cannot be changed' : 'Change user password'); ?>">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6" />
+                            <path d="M7 11V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                          </svg>
+                        </button>
+                        <button
+                          class="admin-action-btn admin-action-reset"
+                          type="button"
+                          data-open-modal="#resetPasswordModal"
+                          data-reset-password
+                          aria-label="Reset password"
+                          <?php echo !$isCurrentSuperadmin || $isSuperadmin ? 'disabled' : ''; ?>
+                          title="<?php echo !$isCurrentSuperadmin ? htmlspecialchars($roleGovernanceDeniedMessage, ENT_QUOTES, 'UTF-8') : ($isSuperadmin ? 'Superadmin password cannot be reset' : 'Reset user password'); ?>">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                            <path d="M3 12L6 9M3 12L6 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                           </svg>
                         </button>
                         <form method="POST" class="admin-inline-form" data-requires-confirm="true">
@@ -433,6 +460,62 @@ function roleLabel($role)
     </div>
   </div>
 
+  <div id="editPasswordModal" class="admin-modal-backdrop" aria-hidden="true">
+    <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="editPasswordTitle">
+      <div class="admin-modal-header">
+        <h2 id="editPasswordTitle">Change User Password</h2>
+        <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
+      </div>
+      <form class="admin-form-grid" id="editPasswordForm" method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+        <input type="hidden" name="action" value="edit_password">
+        <input id="edit_password_user_id" name="user_id" type="hidden" value="">
+        <div class="admin-form-field admin-span-2">
+          <div id="editPasswordUserInfo" class="admin-info-text"></div>
+        </div>
+        <div class="admin-form-field">
+          <label for="edit_new_password">New Password</label>
+          <input id="edit_new_password" name="new_password" type="password" placeholder="At least 8 characters" required>
+          <small class="admin-field-hint">Min 8 chars with uppercase, lowercase, number, special char</small>
+        </div>
+        <div class="admin-form-field">
+          <label for="edit_confirm_password">Confirm Password</label>
+          <input id="edit_confirm_password" name="confirm_password" type="password" placeholder="Re-enter password" required>
+        </div>
+        <div class="admin-modal-actions">
+          <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
+          <button class="admin-button admin-button-primary" type="submit" <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>>Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="resetPasswordModal" class="admin-modal-backdrop" aria-hidden="true">
+    <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="resetPasswordTitle">
+      <div class="admin-modal-header">
+        <h2 id="resetPasswordTitle">Reset User Password</h2>
+        <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
+      </div>
+      <form class="admin-form-grid" id="resetPasswordForm" method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+        <input type="hidden" name="action" value="reset_password">
+        <input id="reset_password_user_id" name="user_id" type="hidden" value="">
+        <div class="admin-form-field admin-span-2">
+          <div id="resetPasswordUserInfo" class="admin-info-text"></div>
+        </div>
+        <div class="admin-form-field admin-span-2">
+          <div class="admin-alert admin-alert-warning">
+            <strong>Note:</strong> A secure temporary password will be generated. You will need to securely share this password with the user.
+          </div>
+        </div>
+        <div class="admin-modal-actions">
+          <button class="admin-button admin-button-ghost" type="button" data-close-modal>Cancel</button>
+          <button class="admin-button admin-button-primary admin-button-danger" type="submit" <?php echo !$isCurrentSuperadmin ? 'disabled' : ''; ?>>Generate New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <button class="admin-help-fab" type="button" aria-label="Help">?</button>
 
   <?php renderSweetAlertScripts(); ?>
@@ -548,6 +631,43 @@ function roleLabel($role)
         document.getElementById('edit_status').value = row.dataset.userStatus || 'active';
         document.getElementById('edit_role_information').value = row.dataset.roleInformation || '';
       });
+    });
+
+    document.querySelectorAll('[data-edit-password]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var row = button.closest('tr[data-user-id]');
+        if (!row) {
+          return;
+        }
+
+        document.getElementById('edit_password_user_id').value = row.dataset.userId || '';
+        document.getElementById('editPasswordUserInfo').textContent = 'Changing password for: ' + (row.dataset.userName || row.dataset.userEmail || 'User');
+        document.getElementById('edit_new_password').value = '';
+        document.getElementById('edit_confirm_password').value = '';
+      });
+    });
+
+    document.querySelectorAll('[data-reset-password]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var row = button.closest('tr[data-user-id]');
+        if (!row) {
+          return;
+        }
+
+        document.getElementById('reset_password_user_id').value = row.dataset.userId || '';
+        document.getElementById('resetPasswordUserInfo').textContent = 'Resetting password for: ' + (row.dataset.userName || row.dataset.userEmail || 'User');
+      });
+    });
+
+    document.getElementById('editPasswordForm').addEventListener('submit', function(event) {
+      var newPassword = document.getElementById('edit_new_password').value;
+      var confirmPassword = document.getElementById('edit_confirm_password').value;
+      
+      if (newPassword !== confirmPassword) {
+        event.preventDefault();
+        alert('Password and confirmation do not match.');
+        return;
+      }
     });
 
     document.querySelectorAll('form[data-requires-confirm="true"]').forEach(function(form) {

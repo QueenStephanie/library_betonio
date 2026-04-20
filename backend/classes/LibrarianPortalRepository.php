@@ -271,6 +271,7 @@ class LibrarianPortalRepository
     $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
     $hasPublicationDate = self::hasColumn($db, 'books', 'publication_date');
     $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year']);
+    $coverColumn = self::resolveColumn($db, 'books', ['cover_image_url', 'cover_url', 'image_url', 'thumbnail_url', 'cover_image', 'book_cover', 'book_image']);
     $hasIsActive = self::hasColumn($db, 'books', 'is_active');
 
     try {
@@ -335,6 +336,12 @@ class LibrarianPortalRepository
         $columns[] = 'publication_date';
         $values[] = ':publication_date';
         $params[':publication_date'] = (string)($normalized['publication_date'] ?? '');
+      }
+
+      if ($coverColumn !== null) {
+        $columns[] = $coverColumn;
+        $values[] = ':cover_image_url';
+        $params[':cover_image_url'] = trim((string)($input['cover_image_url'] ?? ''));
       }
 
       if ($hasIsActive) {
@@ -788,6 +795,155 @@ class LibrarianPortalRepository
   /**
    * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
    */
+  public static function searchCheckoutBorrowers(PDO $db, string $term = '', int $limit = 20): array
+  {
+    $response = [
+      'rows' => [],
+      'available' => true,
+      'message' => '',
+    ];
+
+    if (!self::tableExists($db, 'users') || !self::hasColumn($db, 'users', 'id')) {
+      $response['available'] = false;
+      $response['message'] = 'Users table is missing. Borrower lookup is unavailable.';
+      return $response;
+    }
+
+    $limit = max(1, min(50, $limit));
+    $term = trim($term);
+
+    $nameParts = [];
+    if (self::hasColumn($db, 'users', 'first_name')) {
+      $nameParts[] = 'u.first_name';
+    }
+    if (self::hasColumn($db, 'users', 'last_name')) {
+      $nameParts[] = 'u.last_name';
+    }
+
+    $nameExpr = empty($nameParts)
+      ? "''"
+      : 'TRIM(CONCAT(' . implode(", ' ', ", $nameParts) . '))';
+    $emailExpr = self::hasColumn($db, 'users', 'email') ? 'u.email' : "''";
+
+    $where = ['1=1'];
+    $params = [];
+
+    if (self::hasColumn($db, 'users', 'is_active')) {
+      $where[] = 'u.is_active = 1';
+    }
+
+    if (self::hasColumn($db, 'users', 'role')) {
+      $where[] = "LOWER(COALESCE(u.role, 'borrower')) = 'borrower'";
+    }
+
+    if ($term !== '') {
+      $where[] = '(
+        ' . $nameExpr . ' LIKE :term
+        OR ' . $emailExpr . ' LIKE :term
+        OR CAST(u.id AS CHAR) LIKE :term
+      )';
+      $params[':term'] = '%' . $term . '%';
+    }
+
+    $sql = 'SELECT
+      u.id,
+      ' . $nameExpr . ' AS display_name,
+      ' . $emailExpr . ' AS email
+      FROM users u
+      WHERE ' . implode(' AND ', $where) . '
+      ORDER BY u.id DESC
+      LIMIT ' . $limit;
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $response['rows'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    return $response;
+  }
+
+  /**
+   * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
+   */
+  public static function searchCheckoutBooks(PDO $db, string $term = '', int $limit = 20): array
+  {
+    $response = [
+      'rows' => [],
+      'available' => true,
+      'message' => '',
+    ];
+
+    if (!self::tableExists($db, 'books') || !self::hasColumn($db, 'books', 'id') || !self::hasColumn($db, 'books', 'title')) {
+      $response['available'] = false;
+      $response['message'] = 'Books table is missing. Book lookup is unavailable.';
+      return $response;
+    }
+
+    if (
+      !self::tableExists($db, 'book_copies')
+      || !self::hasColumn($db, 'book_copies', 'book_id')
+      || !self::hasColumn($db, 'book_copies', 'status')
+    ) {
+      $response['available'] = false;
+      $response['message'] = 'Book copies table is missing. Availability lookup is unavailable.';
+      return $response;
+    }
+
+    $term = trim($term);
+    $limit = max(1, min(50, $limit));
+
+    $authorExpr = self::hasColumn($db, 'books', 'author') ? 'b.author' : "''";
+    $isbnExpr = self::hasColumn($db, 'books', 'isbn') ? 'b.isbn' : "''";
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
+    $categoryExpr = $categoryColumn !== null ? 'b.`' . $categoryColumn . '`' : "''";
+
+    $where = [];
+    $params = [];
+
+    if (self::hasColumn($db, 'books', 'is_active')) {
+      $where[] = 'b.is_active = 1';
+    }
+
+    if ($term !== '') {
+      $where[] = '(
+        b.title LIKE :term
+        OR ' . $authorExpr . ' LIKE :term
+        OR ' . $isbnExpr . ' LIKE :term
+        OR ' . $categoryExpr . ' LIKE :term
+        OR CAST(b.id AS CHAR) LIKE :term
+      )';
+      $params[':term'] = '%' . $term . '%';
+    }
+
+    $whereSql = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
+
+    $sql = 'SELECT
+      b.id,
+      b.title,
+      ' . $authorExpr . ' AS author,
+      ' . $isbnExpr . ' AS isbn,
+      SUM(CASE WHEN bc.status = \'available\' THEN 1 ELSE 0 END) AS available_copies
+      FROM books b
+      LEFT JOIN book_copies bc ON bc.book_id = b.id
+      ' . $whereSql . '
+      GROUP BY b.id, b.title, ' . $authorExpr . ', ' . $isbnExpr . '
+      HAVING available_copies > 0
+      ORDER BY
+        CASE WHEN b.title LIKE :prefix THEN 0 ELSE 1 END,
+        b.title ASC,
+        b.id ASC
+      LIMIT ' . $limit;
+
+    $params[':prefix'] = $term === '' ? '%' : $term . '%';
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $response['rows'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    return $response;
+  }
+
+  /**
+   * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
+   */
   public static function getReadyReservationCheckoutRows(PDO $db, int $limit = 150): array
   {
     $response = [
@@ -1214,7 +1370,7 @@ class LibrarianPortalRepository
   /**
    * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
    */
-  public static function getBooks(PDO $db, string $search = '', int $limit = 250): array
+  public static function getBooks(PDO $db, string $search = '', int $limit = 250, string $type = ''): array
   {
     $response = [
       'rows' => [],
@@ -1234,6 +1390,7 @@ class LibrarianPortalRepository
     $isActiveColumn = self::resolveColumn($db, 'books', ['is_active']);
 
     $search = trim($search);
+    $type = trim($type);
     $limit = max(1, min(500, $limit));
     $where = '';
     $params = [];
@@ -1252,6 +1409,11 @@ class LibrarianPortalRepository
 
     if ($isActiveColumn !== null) {
       $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'b.`' . $isActiveColumn . '` = 1';
+    }
+
+    if ($type !== '' && $categoryColumn !== null) {
+      $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'LOWER(TRIM(COALESCE(b.`' . $categoryColumn . '`, \'\'))) = :type';
+      $params[':type'] = strtolower($type);
     }
 
     $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id');
@@ -1350,6 +1512,46 @@ class LibrarianPortalRepository
     $stmt->execute($params);
     $response['rows'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     return $response;
+  }
+
+  /**
+   * @return list<string>
+   */
+  public static function getBookTypes(PDO $db, int $limit = 250): array
+  {
+    if (!self::tableExists($db, 'books')) {
+      return [];
+    }
+
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
+    if ($categoryColumn === null) {
+      return [];
+    }
+
+    $limit = max(1, min(500, $limit));
+    $isActiveColumn = self::resolveColumn($db, 'books', ['is_active']);
+    $where = 'WHERE COALESCE(TRIM(b.`' . $categoryColumn . '`), \'\') <> \'\'';
+    if ($isActiveColumn !== null) {
+      $where .= ' AND b.`' . $isActiveColumn . '` = 1';
+    }
+
+    $sql = 'SELECT DISTINCT TRIM(b.`' . $categoryColumn . '`) AS type_name
+      FROM books b
+      ' . $where . '
+      ORDER BY type_name ASC
+      LIMIT ' . $limit;
+
+    $rows = $db->query($sql)->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    $types = [];
+    foreach ($rows as $value) {
+      $label = trim((string)$value);
+      if ($label === '') {
+        continue;
+      }
+      $types[] = $label;
+    }
+
+    return $types;
   }
 
   /**

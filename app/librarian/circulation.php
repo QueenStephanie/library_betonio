@@ -37,6 +37,7 @@ if (is_array($flash) && isset($flash['type'], $flash['message'])) {
 }
 
 $csrfToken = getAdminCsrfToken();
+$checkoutSearchEndpoint = appPath('backend/api/librarian-checkout-search.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('librarian_circulation_post');
@@ -150,7 +151,7 @@ $checkoutCandidates = [
 ];
 
 try {
-  $checkoutCandidates = LibrarianPortalRepository::getCheckoutCandidates($db, 250, 250);
+  $checkoutCandidates = LibrarianPortalRepository::getCheckoutCandidates($db, 25, 25);
 } catch (Exception $e) {
   error_log('librarian-circulation checkout candidate error: ' . $e->getMessage());
   $checkoutCandidates['message'] = 'Unable to load checkout form options right now.';
@@ -245,12 +246,20 @@ foreach ($rows as $row) {
                 <p class="librarian-inline-note"><?php echo htmlspecialchars((string)$checkoutCandidates['message'], ENT_QUOTES, 'UTF-8'); ?></p>
               <?php endif; ?>
 
-              <form method="POST" class="admin-inline-form librarian-form-row">
+              <form method="POST" class="admin-inline-form librarian-form-row librarian-checkout-form" id="manual-checkout-form">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <input type="hidden" name="action" value="checkout">
 
+<<<<<<< ours
                 <label class="librarian-form-group">
                   <span>Borrower</span>
+                  <input
+                    id="checkout-borrower-search"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Type borrower name, email, or ID"
+                    aria-describedby="checkout-borrower-hint"
+                  >
                   <select name="borrower_user_id" required>
                     <option value="">Select borrower</option>
                     <?php foreach (($checkoutCandidates['rows']['borrowers'] ?? []) as $borrower): ?>
@@ -265,10 +274,18 @@ foreach ($rows as $row) {
                       <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
                     <?php endforeach; ?>
                   </select>
+                  <small id="checkout-borrower-hint" class="librarian-inline-note">Type at least 2 characters to search active borrowers.</small>
                 </label>
 
                 <label class="librarian-form-group">
                   <span>Title</span>
+                  <input
+                    id="checkout-book-search"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Type title, author, ISBN, or ID"
+                    aria-describedby="checkout-book-hint"
+                  >
                   <select name="book_id" required>
                     <option value="">Select book with available copies</option>
                     <?php foreach (($checkoutCandidates['rows']['books'] ?? []) as $book): ?>
@@ -284,9 +301,79 @@ foreach ($rows as $row) {
                       <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
                     <?php endforeach; ?>
                   </select>
+                  <small id="checkout-book-hint" class="librarian-inline-note">Type at least 2 characters to find books with available copies.</small>
                 </label>
 
                 <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check Out</button>
+=======
+                <div class="librarian-checkout-grid">
+                  <label class="librarian-form-group librarian-checkout-lookup" for="checkout-borrower-search">
+                    <span>Borrower</span>
+                    <div class="librarian-search-control">
+                      <input
+                        id="checkout-borrower-search"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="Type borrower name, email, or ID"
+                        aria-describedby="checkout-borrower-hint"
+                      >
+                      <button type="button" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary librarian-search-clear" data-clear-input="checkout-borrower-search">Clear</button>
+                    </div>
+                    <select name="borrower_user_id" required>
+                      <option value="">Select borrower</option>
+                      <?php foreach (($checkoutCandidates['rows']['borrowers'] ?? []) as $borrower): ?>
+                        <?php
+                        $displayName = trim((string)($borrower['display_name'] ?? ''));
+                        $email = trim((string)($borrower['email'] ?? ''));
+                        $label = $displayName !== '' ? $displayName : ('User #' . (int)($borrower['id'] ?? 0));
+                        if ($email !== '') {
+                          $label .= ' (' . $email . ')';
+                        }
+                        ?>
+                        <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <small id="checkout-borrower-hint" class="librarian-inline-note">Type at least 2 characters to search active borrowers.</small>
+                    <small id="checkout-borrower-selected" class="librarian-selection-pill" hidden></small>
+                  </label>
+
+                  <label class="librarian-form-group librarian-checkout-lookup" for="checkout-book-search">
+                    <span>Book</span>
+                    <div class="librarian-search-control">
+                      <input
+                        id="checkout-book-search"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="Type title, author, ISBN, or ID"
+                        aria-describedby="checkout-book-hint"
+                      >
+                      <button type="button" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary librarian-search-clear" data-clear-input="checkout-book-search">Clear</button>
+                    </div>
+                    <select name="book_id" required>
+                      <option value="">Select book with available copies</option>
+                      <?php foreach (($checkoutCandidates['rows']['books'] ?? []) as $book): ?>
+                        <?php
+                        $title = trim((string)($book['title'] ?? 'Unknown title'));
+                        $author = trim((string)($book['author'] ?? ''));
+                        $label = $title;
+                        if ($author !== '') {
+                          $label .= ' - ' . $author;
+                        }
+                        $label .= ' [' . max(0, (int)($book['available_copies'] ?? 0)) . ' available]';
+                        ?>
+                        <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <small id="checkout-book-hint" class="librarian-inline-note">Type at least 2 characters to find books with available copies.</small>
+                    <small id="checkout-book-selected" class="librarian-selection-pill" hidden></small>
+                  </label>
+                </div>
+
+                <div class="librarian-checkout-actions">
+                  <p id="checkout-submit-note" class="librarian-inline-note">Pick one borrower and one book to enable checkout.</p>
+                  <button type="submit" id="manual-checkout-submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check Out</button>
+                </div>
+>>>>>>> theirs
               </form>
             </div>
           </section>
@@ -465,6 +552,294 @@ foreach ($rows as $row) {
 
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
+  <script>
+    (function() {
+      var endpoint = <?php echo json_encode($checkoutSearchEndpoint, JSON_UNESCAPED_SLASHES); ?>;
+
+      function debounce(fn, wait) {
+        var timer = null;
+        return function() {
+          var args = arguments;
+          clearTimeout(timer);
+          timer = setTimeout(function() {
+            fn.apply(null, args);
+          }, wait);
+        };
+      }
+
+<<<<<<< ours
+      function setHint(hintElement, message) {
+        if (!hintElement) {
+          return;
+        }
+        hintElement.textContent = message;
+      }
+
+=======
+      function setHint(hintElement, message, state) {
+        if (!hintElement) {
+          return;
+        }
+
+        hintElement.classList.remove('is-loading', 'is-success', 'is-error');
+        if (state) {
+          hintElement.classList.add(state);
+        }
+        hintElement.textContent = message;
+      }
+
+      function getSelectRows(selectElement) {
+        if (!selectElement) {
+          return [];
+        }
+
+        var rows = [];
+        Array.prototype.forEach.call(selectElement.options, function(option, index) {
+          if (index === 0) {
+            return;
+          }
+
+          rows.push({
+            id: option.value,
+            label: option.textContent || ''
+          });
+        });
+
+        return rows;
+      }
+
+>>>>>>> theirs
+      function populateSelect(selectElement, rows, placeholder) {
+        if (!selectElement) {
+          return;
+        }
+
+        var previousValue = selectElement.value;
+        selectElement.innerHTML = '';
+
+        var placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder;
+        selectElement.appendChild(placeholderOption);
+
+        var hasPreviousValue = false;
+        rows.forEach(function(row) {
+          var option = document.createElement('option');
+          option.value = String(row.id || '');
+          option.textContent = String(row.label || '');
+          selectElement.appendChild(option);
+
+          if (option.value !== '' && option.value === previousValue) {
+            hasPreviousValue = true;
+          }
+        });
+
+        if (hasPreviousValue) {
+          selectElement.value = previousValue;
+        }
+      }
+
+<<<<<<< ours
+=======
+      function setSelectedPill(selectElement, pillElement) {
+        if (!selectElement || !pillElement) {
+          return;
+        }
+
+        if (selectElement.value === '') {
+          pillElement.hidden = true;
+          pillElement.textContent = '';
+          return;
+        }
+
+        var selectedOption = selectElement.options[selectElement.selectedIndex];
+        var label = selectedOption ? String(selectedOption.textContent || '').trim() : '';
+        if (label === '') {
+          pillElement.hidden = true;
+          pillElement.textContent = '';
+          return;
+        }
+
+        pillElement.hidden = false;
+        pillElement.textContent = 'Selected: ' + label;
+      }
+
+      function syncCheckoutSubmitState() {
+        var form = document.getElementById('manual-checkout-form');
+        var submitButton = document.getElementById('manual-checkout-submit');
+        var submitNote = document.getElementById('checkout-submit-note');
+        if (!form || !submitButton || !submitNote) {
+          return;
+        }
+
+        var borrowerSelect = form.querySelector('select[name="borrower_user_id"]');
+        var bookSelect = form.querySelector('select[name="book_id"]');
+        var ready = borrowerSelect && bookSelect && borrowerSelect.value !== '' && bookSelect.value !== '';
+
+        submitButton.disabled = !ready;
+        submitButton.classList.toggle('is-ready', !!ready);
+        submitNote.textContent = ready
+          ? 'Selection complete. Submit to create the loan now.'
+          : 'Pick one borrower and one book to enable checkout.';
+      }
+
+>>>>>>> theirs
+      async function requestLookup(type, query) {
+        var url = endpoint + '?type=' + encodeURIComponent(type) + '&q=' + encodeURIComponent(query) + '&limit=20';
+        var response = await fetch(url, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Lookup request failed');
+        }
+
+        var payload = await response.json();
+        if (!payload || payload.success !== true || !Array.isArray(payload.rows)) {
+          throw new Error(String((payload && payload.error) || 'Invalid lookup response'));
+        }
+
+        return payload.rows;
+      }
+
+      function wireLookup(config) {
+        var inputElement = document.getElementById(config.inputId);
+        var selectElement = config.selectElement;
+        var hintElement = document.getElementById(config.hintId);
+<<<<<<< ours
+=======
+        var selectedPill = document.getElementById(config.selectedPillId);
+        var clearButton = document.querySelector('[data-clear-input="' + config.inputId + '"]');
+>>>>>>> theirs
+
+        if (!inputElement || !selectElement) {
+          return;
+        }
+
+<<<<<<< ours
+=======
+        var defaultRows = getSelectRows(selectElement);
+        var requestToken = 0;
+
+        var updateSelectionState = function() {
+          setSelectedPill(selectElement, selectedPill);
+          syncCheckoutSubmitState();
+        };
+
+        selectElement.addEventListener('change', updateSelectionState);
+
+        if (clearButton) {
+          clearButton.addEventListener('click', function() {
+            inputElement.value = '';
+            populateSelect(selectElement, defaultRows, config.placeholder);
+            setHint(hintElement, config.minCharsMessage);
+            updateSelectionState();
+            inputElement.focus();
+          });
+        }
+
+>>>>>>> theirs
+        var runLookup = debounce(async function() {
+          var query = inputElement.value.trim();
+
+          if (query.length < 2) {
+<<<<<<< ours
+            setHint(hintElement, config.minCharsMessage);
+            return;
+          }
+
+          setHint(hintElement, 'Searching...');
+
+          try {
+            var rows = await requestLookup(config.type, query);
+=======
+            populateSelect(selectElement, defaultRows, config.placeholder);
+            setHint(hintElement, config.minCharsMessage);
+            updateSelectionState();
+            return;
+          }
+
+          requestToken += 1;
+          var currentToken = requestToken;
+          inputElement.classList.add('is-searching');
+          setHint(hintElement, 'Searching...', 'is-loading');
+
+          try {
+            var rows = await requestLookup(config.type, query);
+            if (currentToken !== requestToken) {
+              return;
+            }
+
+>>>>>>> theirs
+            populateSelect(selectElement, rows, config.placeholder);
+
+            if (rows.length === 0) {
+              setHint(hintElement, 'No matches found. Try a different keyword.');
+            } else {
+<<<<<<< ours
+              setHint(hintElement, rows.length + ' match(es) found. Select one from the list.');
+            }
+          } catch (error) {
+            setHint(hintElement, 'Search failed. Keep typing or refresh the page.');
+=======
+              setHint(hintElement, rows.length + ' match(es) found. Select one from the list.', 'is-success');
+            }
+            updateSelectionState();
+          } catch (error) {
+            if (currentToken === requestToken) {
+              setHint(hintElement, 'Search failed. Keep typing or refresh the page.', 'is-error');
+            }
+          } finally {
+            if (currentToken === requestToken) {
+              inputElement.classList.remove('is-searching');
+            }
+>>>>>>> theirs
+          }
+        }, 260);
+
+        inputElement.addEventListener('input', runLookup);
+<<<<<<< ours
+=======
+        updateSelectionState();
+>>>>>>> theirs
+      }
+
+      wireLookup({
+        inputId: 'checkout-borrower-search',
+        hintId: 'checkout-borrower-hint',
+<<<<<<< ours
+=======
+        selectedPillId: 'checkout-borrower-selected',
+>>>>>>> theirs
+        selectElement: document.querySelector('select[name="borrower_user_id"]'),
+        type: 'borrowers',
+        placeholder: 'Select borrower',
+        minCharsMessage: 'Type at least 2 characters to search active borrowers.'
+      });
+
+      wireLookup({
+        inputId: 'checkout-book-search',
+        hintId: 'checkout-book-hint',
+<<<<<<< ours
+=======
+        selectedPillId: 'checkout-book-selected',
+>>>>>>> theirs
+        selectElement: document.querySelector('select[name="book_id"]'),
+        type: 'books',
+        placeholder: 'Select book with available copies',
+        minCharsMessage: 'Type at least 2 characters to find books with available copies.'
+      });
+<<<<<<< ours
+=======
+
+      syncCheckoutSubmitState();
+>>>>>>> theirs
+    })();
+  </script>
 </body>
 
 </html>

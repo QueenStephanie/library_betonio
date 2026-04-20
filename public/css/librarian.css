@@ -323,7 +323,7 @@
 
 .portal-role-librarian .librarian-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) auto auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr) auto auto;
   gap: 12px;
   align-items: end;
 }
@@ -365,8 +365,105 @@
   align-items: end;
 }
 
+.portal-role-librarian .librarian-checkout-form {
+  gap: 14px;
+}
+
+.portal-role-librarian .librarian-checkout-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portal-role-librarian .librarian-checkout-lookup {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(121, 93, 63, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 241, 228, 0.72));
+}
+
+.portal-role-librarian .librarian-search-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.portal-role-librarian .librarian-search-clear {
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+}
+
+.portal-role-librarian .librarian-search-control input.is-searching {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.85), rgba(248, 221, 188, 0.45));
+}
+
+.portal-role-librarian .librarian-selection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: #7c4d21;
+  border: 1px solid rgba(184, 110, 49, 0.24);
+  background: rgba(252, 238, 216, 0.94);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-role-librarian .librarian-inline-note.is-loading {
+  color: #8a6639;
+}
+
+.portal-role-librarian .librarian-inline-note.is-success {
+  color: #2f7a4d;
+}
+
+.portal-role-librarian .librarian-inline-note.is-error {
+  color: #a83f2d;
+}
+
+.portal-role-librarian .librarian-checkout-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 4px;
+  border-top: 1px dashed rgba(121, 93, 63, 0.22);
+}
+
+.portal-role-librarian #manual-checkout-submit[disabled] {
+  opacity: 0.54;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.portal-role-librarian #manual-checkout-submit.is-ready {
+  box-shadow: 0 10px 20px rgba(172, 91, 38, 0.22);
+}
+
 .portal-role-librarian .librarian-table-panel .librarian-panel-content {
   padding-top: 18px;
+}
+
+.portal-role-librarian .admin-form-help {
+  display: block;
+  margin-top: 8px;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
 }
 
 .portal-role-librarian .librarian-table-wrap {
@@ -523,6 +620,19 @@
   .portal-role-librarian .librarian-toolbar,
   .portal-role-librarian .librarian-form-row,
   .portal-role-librarian .librarian-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-role-librarian .librarian-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-role-librarian .librarian-checkout-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portal-role-librarian .librarian-search-control {
     grid-template-columns: 1fr;
   }
 

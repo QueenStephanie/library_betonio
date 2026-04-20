@@ -68,6 +68,14 @@ function ensureAdminDashboardSchema(PDO $pdo, $database)
     "ALTER TABLE users ADD COLUMN is_superadmin BOOLEAN NOT NULL DEFAULT FALSE AFTER role"
   );
 
+  ensureColumn(
+    $pdo,
+    $database,
+    'books',
+    'cover_image_url',
+    "ALTER TABLE books ADD COLUMN cover_image_url VARCHAR(1024) NULL AFTER published_year"
+  );
+
   $pdo->exec(
     "CREATE TABLE IF NOT EXISTS role_profiles (
       id INT PRIMARY KEY AUTO_INCREMENT,

@@ -44,7 +44,101 @@ $bookForm = [
   'isbn' => '',
   'publication_date' => '',
   'genre' => '',
+  'cover_image_url' => '',
 ];
+
+$storeUploadedBookCover = static function (array $file): array {
+  $uploadError = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+  if ($uploadError === UPLOAD_ERR_NO_FILE) {
+    return [
+      'ok' => true,
+      'message' => '',
+      'path' => '',
+    ];
+  }
+
+  if ($uploadError !== UPLOAD_ERR_OK) {
+    return [
+      'ok' => false,
+      'message' => 'Book cover upload failed. Please try again.',
+      'path' => '',
+    ];
+  }
+
+  $tmpName = (string)($file['tmp_name'] ?? '');
+  $fileSize = (int)($file['size'] ?? 0);
+  if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+    return [
+      'ok' => false,
+      'message' => 'Uploaded file is invalid.',
+      'path' => '',
+    ];
+  }
+
+  if ($fileSize <= 0 || $fileSize > (5 * 1024 * 1024)) {
+    return [
+      'ok' => false,
+      'message' => 'Book cover must be an image up to 5MB.',
+      'path' => '',
+    ];
+  }
+
+  $imageInfo = @getimagesize($tmpName);
+  if (!is_array($imageInfo) || empty($imageInfo['mime'])) {
+    return [
+      'ok' => false,
+      'message' => 'Book cover must be a valid image file.',
+      'path' => '',
+    ];
+  }
+
+  $allowedMimeToExtension = [
+    'image/jpeg' => 'jpg',
+    'image/png' => 'png',
+    'image/webp' => 'webp',
+    'image/gif' => 'gif',
+  ];
+  $mime = strtolower(trim((string)$imageInfo['mime']));
+  if (!isset($allowedMimeToExtension[$mime])) {
+    return [
+      'ok' => false,
+      'message' => 'Book cover format must be JPG, PNG, WEBP, or GIF.',
+      'path' => '',
+    ];
+  }
+
+  $uploadDir = APP_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'book-covers';
+  if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+    return [
+      'ok' => false,
+      'message' => 'Unable to create upload directory for book covers.',
+      'path' => '',
+    ];
+  }
+
+  try {
+    $token = bin2hex(random_bytes(16));
+  } catch (Exception $e) {
+    $token = uniqid('book', true);
+    $token = preg_replace('/[^a-zA-Z0-9]/', '', (string)$token) ?: (string)time();
+  }
+
+  $fileName = 'book-cover-' . $token . '.' . $allowedMimeToExtension[$mime];
+  $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
+  if (!move_uploaded_file($tmpName, $targetPath)) {
+    return [
+      'ok' => false,
+      'message' => 'Unable to save uploaded book cover. Please try again.',
+      'path' => '',
+    ];
+  }
+
+  return [
+    'ok' => true,
+    'message' => 'Cover uploaded.',
+    'path' => 'public/uploads/book-covers/' . $fileName,
+  ];
+};
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
@@ -57,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bookForm['isbn'] = trim((string)($_POST['isbn'] ?? ''));
     $bookForm['publication_date'] = trim((string)($_POST['publication_date'] ?? ''));
     $bookForm['genre'] = trim((string)($_POST['genre'] ?? ''));
+    $bookForm['cover_image_url'] = '';
 
     if (!$originCheck['valid']) {
       $openAddBookModal = true;
@@ -76,39 +171,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'message' => 'Invalid or missing security token. Please refresh and try again.',
       ];
     } else {
-      $result = LibrarianPortalRepository::addBook($db, $bookForm);
-      $page_alerts[] = [
-        'type' => $result['ok'] ? 'success' : 'error',
-        'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
-        'message' => (string)$result['message'],
-      ];
-
-      if (empty($result['ok'])) {
+      $coverUpload = $storeUploadedBookCover($_FILES['cover_image'] ?? []);
+      if (!$coverUpload['ok']) {
         $openAddBookModal = true;
-      }
-
-      if (!empty($result['ok'])) {
-        $bookForm = [
-          'title' => '',
-          'author' => '',
-          'isbn' => '',
-          'publication_date' => '',
-          'genre' => '',
+        $page_alerts[] = [
+          'type' => 'error',
+          'title' => 'Invalid Book Cover',
+          'message' => (string)$coverUpload['message'],
         ];
+      } else {
+        $bookForm['cover_image_url'] = (string)($coverUpload['path'] ?? '');
+
+        $result = LibrarianPortalRepository::addBook($db, $bookForm);
+        if (empty($result['ok']) && $bookForm['cover_image_url'] !== '') {
+          $savedCoverPath = APP_ROOT . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string)$bookForm['cover_image_url']);
+          if (is_file($savedCoverPath)) {
+            @unlink($savedCoverPath);
+          }
+        }
+
+        $page_alerts[] = [
+          'type' => $result['ok'] ? 'success' : 'error',
+          'title' => $result['ok'] ? 'Book Added' : 'Add Book Failed',
+          'message' => (string)$result['message'],
+        ];
+
+        if (empty($result['ok'])) {
+          $openAddBookModal = true;
+        }
+
+        if (!empty($result['ok'])) {
+          $bookForm = [
+            'title' => '',
+            'author' => '',
+            'isbn' => '',
+            'publication_date' => '',
+            'genre' => '',
+            'cover_image_url' => '',
+          ];
+        }
       }
     }
   }
 }
 
 $search = trim((string)($_GET['q'] ?? ''));
+$typeFilter = trim((string)($_GET['type'] ?? ''));
 $catalog = [
   'rows' => [],
   'available' => false,
   'message' => 'Catalog unavailable.',
 ];
 
+$bookTypeOptions = [];
+
 try {
-  $catalog = LibrarianPortalRepository::getBooks($db, $search, 300);
+  $bookTypeOptions = LibrarianPortalRepository::getBookTypes($db, 250);
+  $catalog = LibrarianPortalRepository::getBooks($db, $search, 300, $typeFilter);
 } catch (Exception $e) {
   error_log('librarian-books list error: ' . $e->getMessage());
   $catalog['message'] = 'Unable to load books catalog right now.';
@@ -213,7 +332,7 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
                 <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
               </div>
 
-              <form method="POST" class="admin-form-grid">
+              <form method="POST" class="admin-form-grid" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <input type="hidden" name="action" value="add_book">
 
@@ -242,6 +361,12 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
                   <input id="add_book_genre" type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
                 </div>
 
+                <div class="admin-form-field admin-span-2">
+                  <label for="add_book_cover_image">Book Cover</label>
+                  <input id="add_book_cover_image" type="file" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
+                  <small class="admin-form-help">Optional. Upload JPG, PNG, WEBP, or GIF (max 5MB).</small>
+                </div>
+
                 <div class="admin-modal-actions">
                   <button type="button" class="admin-button admin-button-ghost" data-close-modal>Cancel</button>
                   <button type="submit" class="admin-button admin-button-primary">Add Book</button>
@@ -268,6 +393,16 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
                 <div class="librarian-search">
                   <label for="librarian-book-search">Search books</label>
                   <input id="librarian-book-search" type="search" name="q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search by title, author, ISBN, category">
+                </div>
+                <div class="librarian-search">
+                  <label for="librarian-book-type">Filter by type</label>
+                  <select id="librarian-book-type" name="type">
+                    <option value="">All types</option>
+                    <?php foreach ($bookTypeOptions as $bookType): ?>
+                      <?php $selected = strtolower($typeFilter) === strtolower((string)$bookType); ?>
+                      <option value="<?php echo htmlspecialchars((string)$bookType, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $selected ? 'selected' : ''; ?>><?php echo htmlspecialchars((string)$bookType, ENT_QUOTES, 'UTF-8'); ?></option>
+                    <?php endforeach; ?>
+                  </select>
                 </div>
                 <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Search</button>
                 <a href="librarian-books.php" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary">Reset</a>

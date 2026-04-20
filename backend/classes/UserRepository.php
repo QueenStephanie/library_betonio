@@ -344,6 +344,35 @@ class UserRepository
     }
   }
 
+  public static function updateUserPassword(PDO $db, $userId, $newPasswordHash)
+  {
+    $userId = (int)$userId;
+    if ($userId <= 0) {
+      return false;
+    }
+
+    if (self::isSuperadminUser($db, $userId)) {
+      throw new RuntimeException('Superadmin password cannot be changed through this method.');
+    }
+
+    try {
+      $stmt = $db->prepare(
+        'UPDATE users
+         SET password_hash = :password_hash, updated_at = NOW()
+         WHERE id = :id
+         LIMIT 1'
+      );
+      $stmt->execute([
+        ':password_hash' => (string)$newPasswordHash,
+        ':id' => $userId,
+      ]);
+      return $stmt->rowCount() > 0;
+    } catch (Exception $e) {
+      error_log('UserRepository::updateUserPassword error: ' . $e->getMessage());
+      return false;
+    }
+  }
+
   private static function replaceRoleProfile(PDO $db, $userId, $role, $roleInformation)
   {
     $deleteStmt = $db->prepare('DELETE FROM role_profiles WHERE user_id = :user_id');
