@@ -220,6 +220,7 @@ class LibrarianPortalRepository
     ];
   }
 
+
   /**
    * @param array<string,mixed> $input
    * @return array{ok: bool, message: string, book_id?: int}
@@ -249,7 +250,7 @@ class LibrarianPortalRepository
     $hasIsbn = self::hasColumn($db, 'books', 'isbn');
     $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
     $hasPublicationDate = self::hasColumn($db, 'books', 'publication_date');
-    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year']);
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year', 'publish_year']);
     $coverColumn = self::resolveColumn($db, 'books', ['cover_image_url', 'cover_url', 'image_url', 'thumbnail_url', 'cover_image', 'book_cover', 'book_image']);
     $hasIsActive = self::hasColumn($db, 'books', 'is_active');
 
@@ -457,7 +458,7 @@ class LibrarianPortalRepository
       $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
       if ($loanStatusColumn !== null) {
         $col = "`$loanStatusColumn`";
-        $summary['stats']['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$col} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
+        $summary['stats']['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$col} IN ('active', 'overdue', 'borrowed', 'checked_out')")->fetchColumn();
       }
       if ($loanStatusColumn !== null && $loanDueColumn !== null) {
         $statusCol = "`$loanStatusColumn`";
@@ -493,7 +494,7 @@ class LibrarianPortalRepository
 
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
 
     if ($loanStatusColumn === null || $loanDueColumn === null) {
@@ -518,13 +519,20 @@ class LibrarianPortalRepository
     $bookJoin = ($hasBookCopies && $hasBooks && self::hasColumn($db, 'book_copies', 'book_id')) ? ' LEFT JOIN books b ON b.id = bc.book_id' : '';
     $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = l.' . $userCol : '';
 
+    $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date', 'borrowed_at']);
+    $loanReturnedAtColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date', 'returned_date']);
+    $loanFineColumn = self::resolveColumn($db, 'loans', ['fine_amount', 'fine']);
+    $checkedOutExpr = $loanCheckedOutColumn !== null ? 'l.`' . $loanCheckedOutColumn . '`' : 'NULL';
+    $returnedAtExpr = $loanReturnedAtColumn !== null ? 'l.`' . $loanReturnedAtColumn . '`' : 'NULL';
+    $fineAmountExpr = $loanFineColumn !== null ? 'l.`' . $loanFineColumn . '`' : '0';
+
     $sql = "SELECT
       l.id,
       l.{$statusCol} AS loan_status,
-      l.checked_out_at,
+      {$checkedOutExpr} AS checked_out_at,
       l.{$dueCol} AS due_at,
-      l.returned_at,
-      l.fine_amount,
+      {$returnedAtExpr} AS returned_at,
+      {$fineAmountExpr} AS fine_amount,
       " . ($hasBookCopies && self::hasColumn($db, 'book_copies', 'barcode') ? 'bc.barcode' : "''") . " AS barcode,
       " . ($hasBooks ? 'b.title' : "''") . " AS title,
       " . ($hasBooks ? 'b.author' : "''") . " AS author,
@@ -941,8 +949,8 @@ class LibrarianPortalRepository
     $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
     $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
-    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
-    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'reserved_at', 'created_at']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
 
     if ($reservationIdColumn === null || $reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null) {
       $response['available'] = false;
@@ -1554,8 +1562,8 @@ class LibrarianPortalRepository
     $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
     $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
-    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
-    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'reserved_at', 'created_at']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
     $reservationPickedUpColumn = self::resolveColumn($db, 'reservations', ['picked_up_at']);
 
     if ($reservationIdColumn === null || $reservationStatusColumn === null) {
@@ -1721,6 +1729,7 @@ class LibrarianPortalRepository
       return ['ok' => false, 'message' => 'Unable to update reservation right now.'];
     }
   }
+
 
   /**
    * @return array{all_time_collections:int, all_time_amount:float}
