@@ -1013,10 +1013,18 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
         downloadReceiptPdf(canvas, fileBase.replace(/[^a-z0-9._-]/gi, '_'));
       }
 
+      function queuePrintDialog() {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            window.print();
+          });
+        });
+      }
+
       function printReceipt() {
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('borrower-print-active');
-        window.print();
+        queuePrintDialog();
       }
 
       downloadButton.textContent = 'Download PDF';
@@ -1025,6 +1033,12 @@ $showFeeBreakdown = abs($receiptSubtotal) > 0.0001 || abs($receiptTaxesFees) > 0
       closeActionButton.addEventListener('click', closeModal);
       printButton.addEventListener('click', printReceipt);
       downloadButton.addEventListener('click', handleDownloadPdf);
+
+      window.addEventListener('beforeprint', function () {
+        if (modal.getAttribute('aria-hidden') === 'false') {
+          document.body.classList.add('borrower-print-active');
+        }
+      });
 
       window.addEventListener('afterprint', function () {
         document.body.classList.remove('borrower-print-active');

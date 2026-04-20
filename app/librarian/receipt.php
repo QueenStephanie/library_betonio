@@ -166,23 +166,38 @@ function receiptValue($value): string
     }
 
     @media print {
+      html,
       body {
         background: #fff;
+        margin: 0;
         padding: 0;
       }
 
-      .receipt-wrap {
+      body * {
+        visibility: hidden;
+      }
+
+      #receipt,
+      #receipt * {
+        visibility: visible;
+      }
+
+      #receipt {
         border: 0;
         border-radius: 0;
         max-width: none;
         padding: 0;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
       }
     }
   </style>
 </head>
 
 <body>
-  <main class="receipt-wrap">
+  <main class="receipt-wrap" id="receipt">
     <?php if (!is_array($receipt)): ?>
       <h1>Receipt Not Found</h1>
       <p class="missing">No receipt was found for the provided identifier.</p>
@@ -232,7 +247,11 @@ function receiptValue($value): string
   <?php if ($autoPrint && is_array($receipt)): ?>
     <script>
       window.addEventListener('load', function () {
-        window.print();
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            window.print();
+          });
+        });
       });
     </script>
   <?php endif; ?>
