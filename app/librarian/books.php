@@ -174,7 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $coverUpload = $storeUploadedBookCover($_FILES['cover_image'] ?? []);
       if (!$coverUpload['ok']) {
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
         $page_alerts[] = [
           'type' => 'warning',
           'title' => 'Book Cover Skipped',
@@ -232,6 +235,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           'publication_date' => '',
           'genre' => '',
           'cover_image_url' => '',
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
         ];
 
