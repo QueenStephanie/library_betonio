@@ -1,4 +1,4 @@
-name: 🚀 Deploy to mikesordilla-libsys-lab.free.nf
+name: 🚀 Deploy to queenlib-online-lab.free.nf
 
 on:
   workflow_dispatch: # Uncomment below to deploy on push instead
@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: 🎉 Deploy to mikesordilla-libsys-lab.free.nf
+    name: 🎉 Deploy to queenlib-online-lab.free.nf
     runs-on: ubuntu-latest
 
     steps:
@@ -21,6 +21,6 @@ jobs:
           server: ftpupload.net # Change if using another host
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /mikesordilla-libsys-lab.free.nf/htdocs/ # Replace with your correct path
+          server-dir: /queenlib-online-lab.free.nf/htdocs/ # Replace with your correct path
           retries: 3
           retryDelay: 10
