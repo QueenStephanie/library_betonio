@@ -214,7 +214,7 @@ function requireAdminAuth($redirectPath = 'login.php')
   if (!isAdminAuthenticated() || !isActiveAdminSession()) {
     unset($_SESSION['show_admin_welcome']);
     unset($_SESSION['admin_profile']);
-    setFlash('warning', 'Staff access requires a librarian or admin account.');
+    setFlashPageAlert('warning', 'Access Denied', 'Staff access requires a librarian or admin account.');
     redirect(appPath($redirectPath, ['force' => 1]));
   }
 }
@@ -714,7 +714,7 @@ function setFlash($type, $message)
  */
 function denyWithFlashRedirect($redirectPath = 'index.php', $message = 'You do not have permission to access this page.')
 {
-  setFlash('error', (string)$message);
+  setFlashPageAlert('error', 'Access Denied', (string)$message);
   redirect($redirectPath);
 }
 

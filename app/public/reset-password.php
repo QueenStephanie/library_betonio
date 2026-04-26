@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $authService->resetPassword($email, $reset_token, $password, $password_confirm);
 
     if ($result['success']) {
-      setFlash('success', 'Password reset successfully! You can now log in with your new password.');
+      setFlashPageAlert('success', 'Password Reset', 'Password reset successfully! You can now log in with your new password.');
       redirect('login.php');
     } else {
       $error = $result['error'];

@@ -21,7 +21,7 @@ $mainCssHref = $cssPaths['main'];
 $adminCssHref = $cssPaths['admin'];
 $librarianCssHref = $cssPaths['librarian'];
 
-$page_alerts = getFlashPageAlerts();
+$page_alerts = getStoredPageAlerts();
 
 $csrfToken = getAdminCsrfToken();
 $printFormUrl = appPath('librarian-print-records.php', ['type' => 'reservations']);

@@ -66,16 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       if ($result['success']) {
         logVerificationAttempt($email, 'login_attempt', true);
-        setFlash('success', $result['message']);
         $postLoginRedirect = resolveAuthenticatedHomePath();
         if (strpos($postLoginRedirect, 'admin-dashboard.php') === 0) {
           $_SESSION['show_admin_welcome'] = true;
         } else {
-          $_SESSION['page_alerts'][] = [
-            'type' => 'success',
-            'title' => 'Welcome Back!',
-            'message' => $result['message']
-          ];
+          setFlashPageAlert('success', 'Welcome Back!', $result['message']);
         }
         redirect($postLoginRedirect);
       } else {
@@ -94,7 +89,7 @@ if (isset($_GET['timeout'])) {
   $_SESSION['show_timeout_alert'] = true;
 }
 
-$page_alerts = [];
+$page_alerts = getStoredPageAlerts();
 if ($error) {
   $page_alerts[] = [
     'type' => 'error',

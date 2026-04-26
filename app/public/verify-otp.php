@@ -119,7 +119,7 @@ if (!empty($token)) {
 
       if ($token_result['success']) {
         logVerificationAttempt($email, 'otp_verify', true);
-        setFlash('success', 'Email verified successfully. You can now log in.');
+        setFlashPageAlert('success', 'Email Verified', 'Email verified successfully. You can now log in.');
         redirect(appPath('login.php'));
       }
 
