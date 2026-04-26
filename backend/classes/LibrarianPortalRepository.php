@@ -120,6 +120,17 @@ class LibrarianPortalRepository
     return strtoupper($normalized);
   }
 
+  private static function buildCopyBarcode(int $bookId): string
+  {
+    try {
+      $token = bin2hex(random_bytes(4));
+    } catch (Exception $e) {
+      $token = substr(sha1($bookId . '|' . microtime(true)), 0, 8);
+    }
+
+    return 'BK' . $bookId . '-' . strtoupper($token);
+  }
+
   private static function isValidIsbn(string $isbn): bool
   {
     $normalized = self::normalizeIsbn($isbn);
@@ -137,6 +148,72 @@ class LibrarianPortalRepository
     }
 
     return false;
+  }
+
+  /**
+   * @return array{ok: bool, message: string, inserted_books?: int, inserted_copies?: int}
+   */
+  public static function backfillBookCopies(PDO $db, int $copiesPerBook = 1): array
+  {
+    if (!self::tableExists($db, 'books') || !self::tableExists($db, 'book_copies')) {
+      return ['ok' => false, 'message' => 'Book copies table is missing.'];
+    }
+
+    if (!self::hasColumn($db, 'book_copies', 'book_id') || !self::hasColumn($db, 'book_copies', 'barcode')) {
+      return ['ok' => false, 'message' => 'Book copies schema is incompatible.'];
+    }
+
+    $copiesPerBook = max(1, min(50, $copiesPerBook));
+
+    $bookStmt = $db->query(
+      'SELECT b.id FROM books b LEFT JOIN book_copies bc ON bc.book_id = b.id GROUP BY b.id HAVING COUNT(bc.id) = 0'
+    );
+    $bookIds = $bookStmt ? $bookStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+    if (empty($bookIds)) {
+      return [
+        'ok' => true,
+        'message' => 'No missing copies found.',
+        'inserted_books' => 0,
+        'inserted_copies' => 0,
+      ];
+    }
+
+    try {
+      $db->beginTransaction();
+      $insertStmt = $db->prepare('INSERT INTO book_copies (book_id, barcode, status) VALUES (:book_id, :barcode, :status)');
+
+      $insertedBooks = 0;
+      $insertedCopies = 0;
+      foreach ($bookIds as $bookIdValue) {
+        $bookId = (int)$bookIdValue;
+        if ($bookId <= 0) {
+          continue;
+        }
+
+        $insertedBooks++;
+        for ($i = 0; $i < $copiesPerBook; $i++) {
+          $insertStmt->execute([
+            ':book_id' => $bookId,
+            ':barcode' => self::buildCopyBarcode($bookId),
+            ':status' => 'available',
+          ]);
+          $insertedCopies++;
+        }
+      }
+
+      $db->commit();
+      return [
+        'ok' => true,
+        'message' => 'Backfill completed successfully.',
+        'inserted_books' => $insertedBooks,
+        'inserted_copies' => $insertedCopies,
+      ];
+    } catch (Exception $e) {
+      $db->rollBack();
+      error_log('LibrarianPortalRepository::backfillBookCopies error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Backfill failed. Please try again.'];
+    }
   }
 
   /**
@@ -254,6 +331,20 @@ class LibrarianPortalRepository
     $coverColumn = self::resolveColumn($db, 'books', ['cover_image_url', 'cover_url', 'image_url', 'thumbnail_url', 'cover_image', 'book_cover', 'book_image']);
     $hasIsActive = self::hasColumn($db, 'books', 'is_active');
 
+    $initialCopies = (int)($input['initial_copies'] ?? 1);
+    if ($initialCopies < 0) {
+      $initialCopies = 0;
+    } elseif ($initialCopies > 200) {
+      $initialCopies = 200;
+    }
+
+    $canCreateCopies = $initialCopies > 0
+      && self::tableExists($db, 'book_copies')
+      && self::hasColumn($db, 'book_copies', 'book_id')
+      && self::hasColumn($db, 'book_copies', 'barcode')
+      && self::hasColumn($db, 'book_copies', 'status');
+
+    $transactionStarted = false;
     try {
       if ($hasIsbn && $isbnNormalized !== '') {
         $existingIsbnStmt = $db->query("SELECT id, isbn FROM books WHERE COALESCE(isbn, '') <> ''");
@@ -285,6 +376,11 @@ class LibrarianPortalRepository
       $duplicateByIdentityId = (int)$duplicateStmt->fetchColumn();
       if ($duplicateByIdentityId > 0) {
         return ['ok' => false, 'message' => 'Duplicate entry: the same title/author/publication year already exists.'];
+      }
+
+      if ($canCreateCopies) {
+        $db->beginTransaction();
+        $transactionStarted = true;
       }
 
       $columns = ['title', 'author'];
@@ -335,12 +431,31 @@ class LibrarianPortalRepository
       $insertStmt->execute($params);
 
       $bookId = (int)$db->lastInsertId();
+
+      if ($canCreateCopies && $bookId > 0) {
+        $copyInsertStmt = $db->prepare('INSERT INTO book_copies (book_id, barcode, status) VALUES (:book_id, :barcode, :status)');
+        for ($i = 0; $i < $initialCopies; $i++) {
+          $copyInsertStmt->execute([
+            ':book_id' => $bookId,
+            ':barcode' => self::buildCopyBarcode($bookId),
+            ':status' => 'available',
+          ]);
+        }
+      }
+
+      if ($transactionStarted) {
+        $db->commit();
+        $transactionStarted = false;
+      }
       return [
         'ok' => true,
         'message' => 'Book added successfully.',
         'book_id' => $bookId,
       ];
     } catch (PDOException $e) {
+      if ($transactionStarted) {
+        $db->rollBack();
+      }
       $sqlState = (string)$e->getCode();
       if ($sqlState === '23000') {
         return ['ok' => false, 'message' => 'Duplicate entry detected while saving this book.'];
@@ -349,6 +464,9 @@ class LibrarianPortalRepository
       error_log('LibrarianPortalRepository::addBook error: ' . $e->getMessage());
       return ['ok' => false, 'message' => 'Unable to add book right now.'];
     } catch (Exception $e) {
+      if ($transactionStarted) {
+        $db->rollBack();
+      }
       error_log('LibrarianPortalRepository::addBook error: ' . $e->getMessage());
       return ['ok' => false, 'message' => 'Unable to add book right now.'];
     }

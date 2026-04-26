@@ -274,21 +274,26 @@ $truncateCatalogText = static function (string $value, int $limit = 180): string
   return rtrim(substr($normalized, 0, max(1, $limit - 1))) . '...';
 };
 
-$resolveCatalogCoverUrl = static function (string $raw): string {
+$resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): string {
   $value = trim($raw);
-  if ($value === '') {
-    return '';
+  if ($value !== '') {
+    if (preg_match('/^https?:\/\//i', $value) === 1) {
+      return $value;
+    }
+
+    if (str_starts_with($value, '//')) {
+      return appPath('images/admin_pic.jpg');
+    }
+
+    if (str_starts_with($value, '/')) {
+      return $value;
+    }
+
+    return appPath(ltrim($value, '/'));
   }
 
-  if (preg_match('/^https?:\/\//i', $value) === 1) {
-    return $value;
-  }
-
-  if (str_starts_with($value, '/')) {
-    return $value;
-  }
-
-  return appPath(ltrim($value, '/'));
+  $placeholderPath = appPath('images/book-covers-big-2019101610.jpg');
+  return $placeholderPath;
 };
 
 $formatReceiptMoney = static function ($value, string $currency = 'PHP'): string {
@@ -422,7 +427,9 @@ $receiptBookIsbn = trim((string)($firstReceiptItem['isbn'] ?? 'N/A'));
 $receiptBookCallNumber = trim((string)($firstReceiptItem['call_number'] ?? 'N/A'));
 $receiptBookCategory = trim((string)($firstReceiptItem['category'] ?? 'General'));
 $receiptBookCoverRaw = trim((string)($firstReceiptItem['cover_image_url'] ?? ''));
-$receiptBookCoverUrl = $receiptBookCoverRaw !== '' ? $resolveCatalogCoverUrl($receiptBookCoverRaw) : '';
+$receiptBookCoverUrl = $receiptBookCoverRaw !== ''
+  ? $resolveCatalogCoverUrl($receiptBookCoverRaw, $receiptBookIsbn)
+  : $resolveCatalogCoverUrl('', $receiptBookIsbn);
 
 $receiptBarcodeDisplay = preg_replace('/[^A-Z0-9]/', '', strtoupper($receiptVerificationCode !== '' ? $receiptVerificationCode : ('R' . $receiptReservationId)));
 $isReceiptExpiringSoon = false;
@@ -448,9 +455,9 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
-<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
-<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
 </head>
 
@@ -547,469 +554,475 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
             </div>
           </section>
 
-      <?php if (empty($catalogRows)): ?>
-        <div class="borrower-empty">No catalog titles matched your filters.</div>
-      <?php else: ?>
-        <div class="catalog-grid">
-          <?php foreach ($catalogRows as $row): ?>
-            <?php
-            $availableCopies = max(0, (int)($row['available_copies'] ?? 0));
-            $totalCopies = max(0, (int)($row['total_copies'] ?? 0));
-            if ($totalCopies < $availableCopies) {
-              $totalCopies = $availableCopies;
-            }
+          <?php if (empty($catalogRows)): ?>
+            <div class="borrower-empty">No catalog titles matched your filters.</div>
+          <?php else: ?>
+            <div class="catalog-grid">
+              <?php foreach ($catalogRows as $row): ?>
+                <?php
+                $availableCopies = max(0, (int)($row['available_copies'] ?? 0));
+                $totalCopies = max(0, (int)($row['total_copies'] ?? 0));
+                if ($totalCopies < $availableCopies) {
+                  $totalCopies = $availableCopies;
+                }
 
-            $titleLabel = trim((string)($row['title'] ?? ''));
-            if ($titleLabel === '') {
-              $titleLabel = 'Unknown Title';
-            }
-            $authorLabel = trim((string)($row['author'] ?? ''));
-            if ($authorLabel === '') {
-              $authorLabel = 'Unknown Author';
-            }
+                $titleLabel = trim((string)($row['title'] ?? ''));
+                if ($titleLabel === '') {
+                  $titleLabel = 'Unknown Title';
+                }
+                $authorLabel = trim((string)($row['author'] ?? ''));
+                if ($authorLabel === '') {
+                  $authorLabel = 'Unknown Author';
+                }
 
-            $categoryLabel = trim((string)($row['category'] ?? ''));
-            $yearLabel = trim((string)($row['published_year'] ?? ''));
-            $isbnLabel = trim((string)($row['isbn'] ?? ''));
+                $categoryLabel = trim((string)($row['category'] ?? ''));
+                $yearLabel = trim((string)($row['published_year'] ?? ''));
+                $isbnLabel = trim((string)($row['isbn'] ?? ''));
 
-            $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''));
-            $bookDescription = trim((string)($row['description'] ?? ''));
-            if ($bookDescription === '') {
-              $bookDescription = 'A ' . ($categoryLabel !== '' ? strtolower($categoryLabel) : 'library') . ' title by ' . $authorLabel
-                . ($yearLabel !== '' ? ' (' . $yearLabel . ')' : '') . '.';
-            }
-            $bookDescription = $truncateCatalogText($bookDescription, 170);
+                $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''), $isbnLabel);
+                $bookDescription = trim((string)($row['description'] ?? ''));
+                if ($bookDescription === '') {
+                  $bookDescription = 'A ' . ($categoryLabel !== '' ? strtolower($categoryLabel) : 'library') . ' title by ' . $authorLabel
+                    . ($yearLabel !== '' ? ' (' . $yearLabel . ')' : '') . '.';
+                }
+                $bookDescription = $truncateCatalogText($bookDescription, 170);
 
-            $placeholderSeed = strtoupper(substr($titleLabel, 0, 1));
-            if (!preg_match('/[A-Z0-9]/', $placeholderSeed)) {
-              $placeholderSeed = '#';
-            }
-            ?>
-            <article class="catalog-item borrower-card">
-              <div class="catalog-item-cover">
-                <?php if ($coverUrl !== ''): ?>
-                  <img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Cover of <?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async">
-                <?php else: ?>
-                  <div class="catalog-cover-placeholder" aria-hidden="true"><?php echo htmlspecialchars($placeholderSeed, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-              </div>
+                $availabilityLabel = $availableCopies > 0 ? 'Available' : ($totalCopies === 0 ? 'Inventory not set' : 'Unavailable');
+                $availabilityDetail = $totalCopies === 0
+                  ? 'Ask staff to add copies'
+                  : $availableCopies . ' of ' . $totalCopies . ' copies ready';
+                $canReserve = $totalCopies > 0;
 
-              <div class="catalog-item-main">
-                <div class="catalog-item-tags">
-                  <span class="borrower-chip"><?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : 'General', ENT_QUOTES, 'UTF-8'); ?></span>
-                  <span class="borrower-chip"><?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : 'Year N/A', ENT_QUOTES, 'UTF-8'); ?></span>
-                </div>
-                <h3><?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
-                <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars($authorLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-                <p class="catalog-description"><?php echo htmlspecialchars($bookDescription, ENT_QUOTES, 'UTF-8'); ?></p>
-                <p class="catalog-meta catalog-meta-secondary">
-                  <?php if ($categoryLabel !== ''): ?>
-                    <span>Category: <?php echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-                  <?php endif; ?>
-                  <?php if ($yearLabel !== ''): ?>
-                    <span>Year: <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-                  <?php endif; ?>
-                  <span>ISBN: <?php echo htmlspecialchars($isbnLabel !== '' ? $isbnLabel : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
-                </p>
-              </div>
-              <div class="catalog-actions">
-                <div class="availability<?php echo $availableCopies > 0 ? ' is-available' : ' is-unavailable'; ?>">
-                  <strong><?php echo $availableCopies > 0 ? 'Available' : 'Unavailable'; ?></strong>
-                  <span><?php echo $availableCopies; ?> of <?php echo $totalCopies; ?> copies ready</span>
-                </div>
-                <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) {
-                                                return $value !== '';
-                                              })), ENT_QUOTES, 'UTF-8'); ?>">
-                  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                  <input type="hidden" name="book_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                  <button type="submit" class="borrower-btn borrower-btn-secondary">Reserve</button>
-                </form>
-              </div>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+                $placeholderSeed = strtoupper(substr($titleLabel, 0, 1));
+                if (!preg_match('/[A-Z0-9]/', $placeholderSeed)) {
+                  $placeholderSeed = '#';
+                }
+                ?>
+                <article class="catalog-item borrower-card">
+                  <div class="catalog-item-cover">
+                    <?php if ($coverUrl !== ''): ?>
+                      <img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Cover of <?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" decoding="async">
+                    <?php else: ?>
+                      <div class="catalog-cover-placeholder" aria-hidden="true"><?php echo htmlspecialchars($placeholderSeed, ENT_QUOTES, 'UTF-8'); ?></div>
+                    <?php endif; ?>
+                  </div>
+
+                  <div class="catalog-item-main">
+                    <div class="catalog-item-tags">
+                      <span class="borrower-chip"><?php echo htmlspecialchars($categoryLabel !== '' ? $categoryLabel : 'General', ENT_QUOTES, 'UTF-8'); ?></span>
+                      <span class="borrower-chip"><?php echo htmlspecialchars($yearLabel !== '' ? $yearLabel : 'Year N/A', ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                    <h3><?php echo htmlspecialchars($titleLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
+                    <p class="catalog-meta catalog-meta-primary"><?php echo htmlspecialchars($authorLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="catalog-description"><?php echo htmlspecialchars($bookDescription, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="catalog-meta catalog-meta-secondary">
+                      <?php if ($categoryLabel !== ''): ?>
+                        <span>Category: <?php echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                      <?php endif; ?>
+                      <?php if ($yearLabel !== ''): ?>
+                        <span>Year: <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                      <?php endif; ?>
+                      <span>ISBN: <?php echo htmlspecialchars($isbnLabel !== '' ? $isbnLabel : 'N/A', ENT_QUOTES, 'UTF-8'); ?></span>
+                    </p>
+                  </div>
+                  <div class="catalog-actions">
+                    <div class="availability<?php echo $availableCopies > 0 ? ' is-available' : ' is-unavailable'; ?>">
+                      <strong><?php echo htmlspecialchars($availabilityLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+                      <span><?php echo htmlspecialchars($availabilityDetail, ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                    <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) {
+                                                  return $value !== '';
+                                                })), ENT_QUOTES, 'UTF-8'); ?>">
+                      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                      <input type="hidden" name="book_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                      <button type="submit" class="borrower-btn borrower-btn-secondary" <?php echo $canReserve ? '' : 'disabled'; ?>>Reserve</button>
+                    </form>
+                  </div>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </div>
       </div>
     </main>
   </div>
 
   <?php if ($receiptIsConfirmed): ?>
-  <div
-    id="borrower-reservation-receipt-modal"
-    class="borrower-receipt-modal"
-    role="presentation"
-    aria-hidden="true"
-  >
     <div
-      class="borrower-receipt-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="borrower-receipt-title"
-      aria-describedby="borrower-receipt-summary"
-      tabindex="-1"
-    >
-      <button type="button" class="borrower-receipt-close" id="borrower-receipt-close" aria-label="Close receipt overlay">&times;</button>
+      id="borrower-reservation-receipt-modal"
+      class="borrower-receipt-modal"
+      role="presentation"
+      aria-hidden="true">
+      <div
+        class="borrower-receipt-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="borrower-receipt-title"
+        aria-describedby="borrower-receipt-summary"
+        tabindex="-1">
+        <button type="button" class="borrower-receipt-close" id="borrower-receipt-close" aria-label="Close receipt overlay">&times;</button>
 
-      <section id="receipt" class="receipt" role="document">
-        <header class="section center">
-          <p class="brand">QueenLib</p>
-          <p class="small muted">Main Library</p>
-          <h2 id="borrower-receipt-title" class="title"><?php echo htmlspecialchars($receiptTypeLabel, ENT_QUOTES, 'UTF-8'); ?></h2>
-        </header>
+        <section id="receipt" class="receipt" role="document">
+          <header class="section center">
+            <p class="brand">QueenLib</p>
+            <p class="small muted">Main Library</p>
+            <h2 id="borrower-receipt-title" class="title"><?php echo htmlspecialchars($receiptTypeLabel, ENT_QUOTES, 'UTF-8'); ?></h2>
+          </header>
 
-        <div class="divider" aria-hidden="true"></div>
+          <div class="divider" aria-hidden="true"></div>
 
-        <section class="section">
-          <div class="row">
-            <span class="small muted">Receipt No</span>
-            <strong><?php echo htmlspecialchars($receiptNumber !== '' ? $receiptNumber : 'Pending', ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-          <div class="row">
-            <span class="small muted">Date</span>
-            <strong><?php echo htmlspecialchars($receiptDateDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="row">
-            <span class="small muted">Borrower Name</span>
-            <strong><?php echo htmlspecialchars($receiptCustomerName, ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="row">
-            <span class="small muted">Book Title</span>
-            <strong><?php echo htmlspecialchars((string)($firstReceiptItem['label'] ?? 'Reservation item'), ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-          <?php if ($receiptBookAuthor !== ''): ?>
+          <section class="section">
             <div class="row">
-              <span class="small muted">Author</span>
-              <strong><?php echo htmlspecialchars($receiptBookAuthor, ENT_QUOTES, 'UTF-8'); ?></strong>
+              <span class="small muted">Receipt No</span>
+              <strong><?php echo htmlspecialchars($receiptNumber !== '' ? $receiptNumber : 'Pending', ENT_QUOTES, 'UTF-8'); ?></strong>
             </div>
-          <?php endif; ?>
+            <div class="row">
+              <span class="small muted">Date</span>
+              <strong><?php echo htmlspecialchars($receiptDateDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="row">
+              <span class="small muted">Borrower Name</span>
+              <strong><?php echo htmlspecialchars($receiptCustomerName, ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="row">
+              <span class="small muted">Book Title</span>
+              <strong><?php echo htmlspecialchars((string)($firstReceiptItem['label'] ?? 'Reservation item'), ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+            <?php if ($receiptBookAuthor !== ''): ?>
+              <div class="row">
+                <span class="small muted">Author</span>
+                <strong><?php echo htmlspecialchars($receiptBookAuthor, ENT_QUOTES, 'UTF-8'); ?></strong>
+              </div>
+            <?php endif; ?>
+          </section>
+
+          <section class="section" role="status" aria-live="polite">
+            <div class="row">
+              <span class="small muted"><?php echo htmlspecialchars($receiptHasBorrowField ? 'Due Date' : 'Pickup Until', ENT_QUOTES, 'UTF-8'); ?></span>
+              <strong><?php echo htmlspecialchars($receiptDeadlineDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+            <div class="row">
+              <span class="small muted">Status</span>
+              <strong class="status status-<?php echo htmlspecialchars($receiptStatusKey, ENT_QUOTES, 'UTF-8'); ?><?php echo $isReceiptExpiringSoon ? ' status-expiring' : ''; ?>"><?php echo htmlspecialchars($receiptStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+          </section>
+
+          <div class="divider" aria-hidden="true"></div>
+          <p id="borrower-receipt-summary" class="small muted">Present this receipt at the library circulation desk.</p>
+          <p class="small muted">Thank you for using QueenLib.</p>
         </section>
 
-        <section class="section" role="status" aria-live="polite">
-          <div class="row">
-            <span class="small muted"><?php echo htmlspecialchars($receiptHasBorrowField ? 'Due Date' : 'Pickup Until', ENT_QUOTES, 'UTF-8'); ?></span>
-            <strong><?php echo htmlspecialchars($receiptDeadlineDisplay, ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-          <div class="row">
-            <span class="small muted">Status</span>
-            <strong class="status status-<?php echo htmlspecialchars($receiptStatusKey, ENT_QUOTES, 'UTF-8'); ?><?php echo $isReceiptExpiringSoon ? ' status-expiring' : ''; ?>"><?php echo htmlspecialchars($receiptStatusLabel, ENT_QUOTES, 'UTF-8'); ?></strong>
-          </div>
-        </section>
-
-        <div class="divider" aria-hidden="true"></div>
-        <p id="borrower-receipt-summary" class="small muted">Present this receipt at the library circulation desk.</p>
-        <p class="small muted">Thank you for using QueenLib.</p>
-      </section>
-
-      <footer class="borrower-receipt-actions">
-        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-close-action">Close</button>
-        <button type="button" class="borrower-btn borrower-btn-primary" id="borrower-receipt-print">Print</button>
-        <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-download">Download PDF</button>
-        <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) { return $value !== ''; })), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-receipt-cancel-form">
-          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-          <input type="hidden" name="action" value="cancel_receipt_reservation">
-          <input type="hidden" name="reservation_id" value="<?php echo (int)$receiptReservationId; ?>">
-          <button type="submit" class="borrower-btn borrower-btn-danger" id="borrower-receipt-cancel">Cancel Reservation</button>
-        </form>
-      </footer>
+        <footer class="borrower-receipt-actions">
+          <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-close-action">Close</button>
+          <button type="button" class="borrower-btn borrower-btn-primary" id="borrower-receipt-print">Print</button>
+          <button type="button" class="borrower-btn borrower-btn-secondary" id="borrower-receipt-download">Download PDF</button>
+          <form method="POST" action="<?php echo htmlspecialchars(appPath('catalog.php', array_filter(['q' => $query, 'category' => $category], static function ($value) {
+                                        return $value !== '';
+                                      })), ENT_QUOTES, 'UTF-8'); ?>" class="borrower-receipt-cancel-form">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($reserveCsrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="action" value="cancel_receipt_reservation">
+            <input type="hidden" name="reservation_id" value="<?php echo (int)$receiptReservationId; ?>">
+            <button type="submit" class="borrower-btn borrower-btn-danger" id="borrower-receipt-cancel">Cancel Reservation</button>
+          </form>
+        </footer>
+      </div>
     </div>
-  </div>
 
-  <script>
-    window.borrowerReservationReceipt = <?php echo json_encode([
-      'confirmed' => $receiptIsConfirmed,
-      'reservationId' => $receiptReservationId,
-      'receiptCode' => $receiptCode,
-      'receiptNumber' => $receiptNumber,
-      'receiptTypeLabel' => $receiptTypeLabel,
-      'verificationCode' => $receiptVerificationCode,
-      'queuePosition' => $receiptQueuePosition,
-      'customerName' => $receiptCustomerName,
-      'customerEmail' => $receiptCustomerEmail,
-      'transactionDate' => $receiptDateDisplay,
-      'generatedOn' => $receiptGeneratedDisplay,
-      'pickupDeadline' => $pickupDeadlineDisplay,
-      'deadlineLabel' => $receiptDeadlineLabel,
-      'deadlineDisplay' => $receiptDeadlineDisplay,
-      'pickupDeadlineIso' => $pickupDeadlineRaw,
-      'reservationExpiry' => $reservationExpiryDisplay,
-      'pickupLocation' => $receiptPickupLocation,
-      'statusKey' => $receiptStatusKey,
-      'statusLabel' => $receiptStatusLabel,
-      'statusHeadline' => $receiptStatusHeadline,
-      'feesLabel' => $receiptFeesLabel,
-      'showFeeBreakdown' => $showFeeBreakdown,
-      'bookIsbn' => $receiptBookIsbn,
-      'bookCallNumber' => $receiptBookCallNumber,
-      'bookCategory' => $receiptBookCategory,
-      'bookCoverUrl' => $receiptBookCoverUrl,
-      'policies' => $receiptPolicies,
-      'items' => $receiptItems,
-      'subtotal' => $receiptSubtotal,
-      'taxesFees' => $receiptTaxesFees,
-      'totalAmount' => $receiptTotalAmount,
-      'currency' => $receiptCurrency,
-      'paymentMethod' => $receiptPaymentMethod,
-      'fileBase' => $receiptFileBase,
-      'barcodeText' => $receiptBarcodeDisplay,
-      'cancelAction' => 'cancel_receipt_reservation',
-    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-  </script>
-  <script>
-    (function () {
-      'use strict';
+    <script>
+      window.borrowerReservationReceipt = <?php echo json_encode([
+                                            'confirmed' => $receiptIsConfirmed,
+                                            'reservationId' => $receiptReservationId,
+                                            'receiptCode' => $receiptCode,
+                                            'receiptNumber' => $receiptNumber,
+                                            'receiptTypeLabel' => $receiptTypeLabel,
+                                            'verificationCode' => $receiptVerificationCode,
+                                            'queuePosition' => $receiptQueuePosition,
+                                            'customerName' => $receiptCustomerName,
+                                            'customerEmail' => $receiptCustomerEmail,
+                                            'transactionDate' => $receiptDateDisplay,
+                                            'generatedOn' => $receiptGeneratedDisplay,
+                                            'pickupDeadline' => $pickupDeadlineDisplay,
+                                            'deadlineLabel' => $receiptDeadlineLabel,
+                                            'deadlineDisplay' => $receiptDeadlineDisplay,
+                                            'pickupDeadlineIso' => $pickupDeadlineRaw,
+                                            'reservationExpiry' => $reservationExpiryDisplay,
+                                            'pickupLocation' => $receiptPickupLocation,
+                                            'statusKey' => $receiptStatusKey,
+                                            'statusLabel' => $receiptStatusLabel,
+                                            'statusHeadline' => $receiptStatusHeadline,
+                                            'feesLabel' => $receiptFeesLabel,
+                                            'showFeeBreakdown' => $showFeeBreakdown,
+                                            'bookIsbn' => $receiptBookIsbn,
+                                            'bookCallNumber' => $receiptBookCallNumber,
+                                            'bookCategory' => $receiptBookCategory,
+                                            'bookCoverUrl' => $receiptBookCoverUrl,
+                                            'policies' => $receiptPolicies,
+                                            'items' => $receiptItems,
+                                            'subtotal' => $receiptSubtotal,
+                                            'taxesFees' => $receiptTaxesFees,
+                                            'totalAmount' => $receiptTotalAmount,
+                                            'currency' => $receiptCurrency,
+                                            'paymentMethod' => $receiptPaymentMethod,
+                                            'fileBase' => $receiptFileBase,
+                                            'barcodeText' => $receiptBarcodeDisplay,
+                                            'cancelAction' => 'cancel_receipt_reservation',
+                                          ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    </script>
+    <script>
+      (function() {
+        'use strict';
 
-      var receiptData = window.borrowerReservationReceipt || null;
-      if (!receiptData || !receiptData.confirmed) {
-        return;
-      }
-
-      var modal = document.getElementById('borrower-reservation-receipt-modal');
-      var dialog = modal ? modal.querySelector('.borrower-receipt-dialog') : null;
-      var closeButton = document.getElementById('borrower-receipt-close');
-      var closeActionButton = document.getElementById('borrower-receipt-close-action');
-      var printButton = document.getElementById('borrower-receipt-print');
-      var downloadButton = document.getElementById('borrower-receipt-download');
-      var lastFocusedElement = null;
-
-      if (!modal || !dialog) {
-        return;
-      }
-
-      function isMobileDevice() {
-        if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) {
-          return true;
-        }
-
-        var ua = window.navigator && window.navigator.userAgent ? window.navigator.userAgent : '';
-        return /Android|iPhone|iPad|iPod|Mobile|Opera Mini|IEMobile/i.test(ua);
-      }
-
-      function getFocusableElements() {
-        return Array.prototype.slice.call(
-          dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-        ).filter(function (element) {
-          return !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true';
-        });
-      }
-
-      function openModal() {
-        lastFocusedElement = document.activeElement;
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('borrower-receipt-open');
-        dialog.focus();
-      }
-
-      function closeModal() {
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('borrower-receipt-open');
-        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
-          lastFocusedElement.focus();
-        }
-      }
-
-      function formatMoney(value) {
-        var amount = Number(value);
-        if (!Number.isFinite(amount)) {
-          amount = 0;
-        }
-
-        var currency = typeof receiptData.currency === 'string' && receiptData.currency ? receiptData.currency : 'PHP';
-        return currency + ' ' + amount.toFixed(2);
-      }
-
-      function drawReceiptToCanvas() {
-        var canvas = document.createElement('canvas');
-        var context = canvas.getContext('2d');
-        var width = 1240;
-
-        var lines = [
-          'QueenLib - Main Library',
-          String(receiptData.receiptTypeLabel || 'Reservation Receipt'),
-          '',
-          'Receipt Number: ' + (receiptData.receiptNumber || 'Pending'),
-          'Date & Time: ' + (receiptData.transactionDate || ''),
-          '',
-          'Name: ' + (receiptData.customerName || 'Borrower User'),
-          ''
-        ];
-
-        var items = Array.isArray(receiptData.items) ? receiptData.items : [];
-        var firstItem = items.length > 0 ? items[0] : null;
-        var firstLabel = firstItem && firstItem.label ? String(firstItem.label) : 'Reservation item';
-        var firstDetails = firstItem && firstItem.details ? String(firstItem.details) : '';
-        if (firstDetails.toLowerCase().indexOf('author:') === 0) {
-          firstDetails = firstDetails.slice(7).trim();
-        }
-
-        lines.push('Title: ' + firstLabel);
-        if (firstDetails) {
-          lines.push('Author: ' + firstDetails);
-        }
-
-        lines.push('');
-        lines.push((receiptData.deadlineLabel || 'Pickup Deadline') + ': ' + (receiptData.deadlineDisplay || receiptData.pickupDeadline || 'Pending schedule'));
-        lines.push('Status: ' + (receiptData.statusLabel || 'Pending'));
-        lines.push('');
-        lines.push('Present this receipt at the library circulation desk.');
-        lines.push('Thank you for using QueenLib.');
-
-        var paddingX = 48;
-        var lineHeight = 42;
-        var height = Math.max(820, (lines.length * lineHeight) + 130);
-
-        canvas.width = width;
-        canvas.height = height;
-
-        context.fillStyle = '#ffffff';
-        context.fillRect(0, 0, width, height);
-
-        context.fillStyle = '#2b1c11';
-        context.font = '700 48px "Outfit", Arial, sans-serif';
-        context.fillText(String(receiptData.receiptTypeLabel || 'Reservation Receipt'), paddingX, 78);
-
-        context.strokeStyle = '#d8c7b2';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.moveTo(paddingX, 96);
-        context.lineTo(width - paddingX, 96);
-        context.stroke();
-
-        context.fillStyle = '#3e3025';
-        context.font = '500 27px "Outfit", Arial, sans-serif';
-
-        var y = 146;
-        lines.forEach(function (line) {
-          context.fillText(line, paddingX, y);
-          y += lineHeight;
-        });
-
-        return canvas;
-      }
-
-      function downloadReceiptPdf(canvas, fileBase) {
-        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
-          window.alert('PDF generator is unavailable right now. Please try again after the page fully loads.');
+        var receiptData = window.borrowerReservationReceipt || null;
+        if (!receiptData || !receiptData.confirmed) {
           return;
         }
 
-        try {
-          var pdf = new window.jspdf.jsPDF({
-            orientation: 'portrait',
-            unit: 'pt',
-            format: 'a4'
-          });
+        var modal = document.getElementById('borrower-reservation-receipt-modal');
+        var dialog = modal ? modal.querySelector('.borrower-receipt-dialog') : null;
+        var closeButton = document.getElementById('borrower-receipt-close');
+        var closeActionButton = document.getElementById('borrower-receipt-close-action');
+        var printButton = document.getElementById('borrower-receipt-print');
+        var downloadButton = document.getElementById('borrower-receipt-download');
+        var lastFocusedElement = null;
 
-          var pageWidth = pdf.internal.pageSize.getWidth();
-          var pageHeight = pdf.internal.pageSize.getHeight();
-          var margin = 24;
-          var imgData = canvas.toDataURL('image/png');
-          var maxWidth = pageWidth - (margin * 2);
-          var maxHeight = pageHeight - (margin * 2);
-          var imageWidth = maxWidth;
-          var imageHeight = canvas.height * (imageWidth / canvas.width);
+        if (!modal || !dialog) {
+          return;
+        }
 
-          if (imageHeight > maxHeight) {
-            imageHeight = maxHeight;
-            imageWidth = canvas.width * (imageHeight / canvas.height);
+        function isMobileDevice() {
+          if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) {
+            return true;
           }
 
-          pdf.addImage(imgData, 'PNG', margin, margin, imageWidth, imageHeight);
-          pdf.save(fileBase + '.pdf');
-        } catch (error) {
-          window.alert('Unable to generate PDF right now. Please try again.');
+          var ua = window.navigator && window.navigator.userAgent ? window.navigator.userAgent : '';
+          return /Android|iPhone|iPad|iPod|Mobile|Opera Mini|IEMobile/i.test(ua);
         }
-      }
 
-      function handleDownloadPdf() {
-        var canvas = drawReceiptToCanvas();
-        var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-receipt';
-        downloadReceiptPdf(canvas, fileBase.replace(/[^a-z0-9._-]/gi, '_'));
-      }
-
-      function queuePrintDialog() {
-        window.requestAnimationFrame(function () {
-          window.requestAnimationFrame(function () {
-            window.print();
+        function getFocusableElements() {
+          return Array.prototype.slice.call(
+            dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+          ).filter(function(element) {
+            return !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true';
           });
-        });
-      }
-
-      function printReceipt() {
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('borrower-print-active');
-        queuePrintDialog();
-      }
-
-      downloadButton.textContent = 'Download PDF';
-
-      closeButton.addEventListener('click', closeModal);
-      closeActionButton.addEventListener('click', closeModal);
-      printButton.addEventListener('click', printReceipt);
-      downloadButton.addEventListener('click', handleDownloadPdf);
-
-      window.addEventListener('beforeprint', function () {
-        if (modal.getAttribute('aria-hidden') === 'false') {
-          document.body.classList.add('borrower-print-active');
-        }
-      });
-
-      window.addEventListener('afterprint', function () {
-        document.body.classList.remove('borrower-print-active');
-      });
-
-      modal.addEventListener('click', function (event) {
-        if (event.target === modal) {
-          closeModal();
-        }
-      });
-
-      document.addEventListener('keydown', function (event) {
-        if (modal.getAttribute('aria-hidden') === 'true') {
-          return;
         }
 
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          closeModal();
-          return;
+        function openModal() {
+          lastFocusedElement = document.activeElement;
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('borrower-receipt-open');
+          dialog.focus();
         }
 
-        if ((event.ctrlKey || event.metaKey) && (event.key === 'p' || event.key === 'P')) {
-          event.preventDefault();
-          printReceipt();
-          return;
+        function closeModal() {
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('borrower-receipt-open');
+          if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+            lastFocusedElement.focus();
+          }
         }
 
-        if (event.key === 'Tab') {
-          var focusable = getFocusableElements();
-          if (focusable.length === 0) {
-            event.preventDefault();
+        function formatMoney(value) {
+          var amount = Number(value);
+          if (!Number.isFinite(amount)) {
+            amount = 0;
+          }
+
+          var currency = typeof receiptData.currency === 'string' && receiptData.currency ? receiptData.currency : 'PHP';
+          return currency + ' ' + amount.toFixed(2);
+        }
+
+        function drawReceiptToCanvas() {
+          var canvas = document.createElement('canvas');
+          var context = canvas.getContext('2d');
+          var width = 1240;
+
+          var lines = [
+            'QueenLib - Main Library',
+            String(receiptData.receiptTypeLabel || 'Reservation Receipt'),
+            '',
+            'Receipt Number: ' + (receiptData.receiptNumber || 'Pending'),
+            'Date & Time: ' + (receiptData.transactionDate || ''),
+            '',
+            'Name: ' + (receiptData.customerName || 'Borrower User'),
+            ''
+          ];
+
+          var items = Array.isArray(receiptData.items) ? receiptData.items : [];
+          var firstItem = items.length > 0 ? items[0] : null;
+          var firstLabel = firstItem && firstItem.label ? String(firstItem.label) : 'Reservation item';
+          var firstDetails = firstItem && firstItem.details ? String(firstItem.details) : '';
+          if (firstDetails.toLowerCase().indexOf('author:') === 0) {
+            firstDetails = firstDetails.slice(7).trim();
+          }
+
+          lines.push('Title: ' + firstLabel);
+          if (firstDetails) {
+            lines.push('Author: ' + firstDetails);
+          }
+
+          lines.push('');
+          lines.push((receiptData.deadlineLabel || 'Pickup Deadline') + ': ' + (receiptData.deadlineDisplay || receiptData.pickupDeadline || 'Pending schedule'));
+          lines.push('Status: ' + (receiptData.statusLabel || 'Pending'));
+          lines.push('');
+          lines.push('Present this receipt at the library circulation desk.');
+          lines.push('Thank you for using QueenLib.');
+
+          var paddingX = 48;
+          var lineHeight = 42;
+          var height = Math.max(820, (lines.length * lineHeight) + 130);
+
+          canvas.width = width;
+          canvas.height = height;
+
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, width, height);
+
+          context.fillStyle = '#2b1c11';
+          context.font = '700 48px "Outfit", Arial, sans-serif';
+          context.fillText(String(receiptData.receiptTypeLabel || 'Reservation Receipt'), paddingX, 78);
+
+          context.strokeStyle = '#d8c7b2';
+          context.lineWidth = 2;
+          context.beginPath();
+          context.moveTo(paddingX, 96);
+          context.lineTo(width - paddingX, 96);
+          context.stroke();
+
+          context.fillStyle = '#3e3025';
+          context.font = '500 27px "Outfit", Arial, sans-serif';
+
+          var y = 146;
+          lines.forEach(function(line) {
+            context.fillText(line, paddingX, y);
+            y += lineHeight;
+          });
+
+          return canvas;
+        }
+
+        function downloadReceiptPdf(canvas, fileBase) {
+          if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+            window.alert('PDF generator is unavailable right now. Please try again after the page fully loads.');
             return;
           }
 
-          var first = focusable[0];
-          var last = focusable[focusable.length - 1];
+          try {
+            var pdf = new window.jspdf.jsPDF({
+              orientation: 'portrait',
+              unit: 'pt',
+              format: 'a4'
+            });
 
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
+            var pageWidth = pdf.internal.pageSize.getWidth();
+            var pageHeight = pdf.internal.pageSize.getHeight();
+            var margin = 24;
+            var imgData = canvas.toDataURL('image/png');
+            var maxWidth = pageWidth - (margin * 2);
+            var maxHeight = pageHeight - (margin * 2);
+            var imageWidth = maxWidth;
+            var imageHeight = canvas.height * (imageWidth / canvas.width);
+
+            if (imageHeight > maxHeight) {
+              imageHeight = maxHeight;
+              imageWidth = canvas.width * (imageHeight / canvas.height);
+            }
+
+            pdf.addImage(imgData, 'PNG', margin, margin, imageWidth, imageHeight);
+            pdf.save(fileBase + '.pdf');
+          } catch (error) {
+            window.alert('Unable to generate PDF right now. Please try again.');
           }
         }
-      });
 
-      openModal();
-    })();
-  </script>
+        function handleDownloadPdf() {
+          var canvas = drawReceiptToCanvas();
+          var fileBase = typeof receiptData.fileBase === 'string' && receiptData.fileBase ? receiptData.fileBase : 'reservation-receipt';
+          downloadReceiptPdf(canvas, fileBase.replace(/[^a-z0-9._-]/gi, '_'));
+        }
+
+        function queuePrintDialog() {
+          window.requestAnimationFrame(function() {
+            window.requestAnimationFrame(function() {
+              window.print();
+            });
+          });
+        }
+
+        function printReceipt() {
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('borrower-print-active');
+          queuePrintDialog();
+        }
+
+        downloadButton.textContent = 'Download PDF';
+
+        closeButton.addEventListener('click', closeModal);
+        closeActionButton.addEventListener('click', closeModal);
+        printButton.addEventListener('click', printReceipt);
+        downloadButton.addEventListener('click', handleDownloadPdf);
+
+        window.addEventListener('beforeprint', function() {
+          if (modal.getAttribute('aria-hidden') === 'false') {
+            document.body.classList.add('borrower-print-active');
+          }
+        });
+
+        window.addEventListener('afterprint', function() {
+          document.body.classList.remove('borrower-print-active');
+        });
+
+        modal.addEventListener('click', function(event) {
+          if (event.target === modal) {
+            closeModal();
+          }
+        });
+
+        document.addEventListener('keydown', function(event) {
+          if (modal.getAttribute('aria-hidden') === 'true') {
+            return;
+          }
+
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeModal();
+            return;
+          }
+
+          if ((event.ctrlKey || event.metaKey) && (event.key === 'p' || event.key === 'P')) {
+            event.preventDefault();
+            printReceipt();
+            return;
+          }
+
+          if (event.key === 'Tab') {
+            var focusable = getFocusableElements();
+            if (focusable.length === 0) {
+              event.preventDefault();
+              return;
+            }
+
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+        });
+
+        openModal();
+      })();
+    </script>
   <?php endif; ?>
 </body>
 

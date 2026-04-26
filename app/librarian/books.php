@@ -32,6 +32,7 @@ $bookForm = [
   'publication_date' => '',
   'genre' => '',
   'cover_image_url' => '',
+  'initial_copies' => 1,
 ];
 
 $storeUploadedBookCover = static function (array $file): array {
@@ -128,16 +129,17 @@ $storeUploadedBookCover = static function (array $file): array {
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-$originCheck = validateStateChangingRequestOrigin('librarian_books_post');
-    $submittedToken = getPost('csrf_token', '');
-    $action = strtolower(getPost('action'));
+  $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
+  $submittedToken = getPost('csrf_token', '');
+  $action = strtolower(getPost('action', ''));
 
-    if ($action === 'add_book') {
-        $bookForm['title'] = getPost('title');
-        $bookForm['author'] = getPost('author');
-        $bookForm['isbn'] = getPost('isbn');
-        $bookForm['publication_date'] = getPost('publication_date');
-        $bookForm['genre'] = getPost('genre');
+  if ($action === 'add_book') {
+    $bookForm['title'] = getPost('title');
+    $bookForm['author'] = getPost('author');
+    $bookForm['isbn'] = getPost('isbn');
+    $bookForm['publication_date'] = getPost('publication_date');
+    $bookForm['genre'] = getPost('genre');
+    $bookForm['initial_copies'] = (int)getPost('initial_copies', '1');
     $bookForm['cover_image_url'] = '';
 
     if (!$originCheck['valid']) {
@@ -196,8 +198,40 @@ $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
           'publication_date' => '',
           'genre' => '',
           'cover_image_url' => '',
+          'initial_copies' => 1,
         ];
       }
+    }
+  } elseif ($action === 'backfill_copies') {
+    if (!$originCheck['valid']) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      error_log('Blocked librarian-books POST due to origin validation: ' . json_encode($originCheck));
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Origin validation failed. Please refresh and try again.',
+      ];
+    } elseif (!validateAdminCsrfToken($submittedToken)) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Invalid or missing security token. Please refresh and try again.',
+      ];
+    } else {
+      $copiesPerBook = (int)getPost('backfill_copies', '1');
+      $result = LibrarianPortalRepository::backfillBookCopies($db, $copiesPerBook);
+      $detail = '';
+      if (!empty($result['ok'])) {
+        $detail = ' Added copies for ' . (int)($result['inserted_books'] ?? 0)
+          . ' titles (' . (int)($result['inserted_copies'] ?? 0) . ' copies total).';
+      }
+
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Backfill Complete' : 'Backfill Failed',
+        'message' => (string)($result['message'] ?? 'Backfill completed.') . $detail,
+      ];
     }
   }
 }
@@ -250,21 +284,26 @@ $truncateCatalogText = static function (string $value, int $limit = 190): string
   return rtrim(substr($normalized, 0, max(1, $limit - 1))) . '...';
 };
 
-$resolveCatalogCoverUrl = static function (string $raw): string {
+$resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): string {
   $value = trim($raw);
-  if ($value === '') {
-    return '';
+  if ($value !== '') {
+    if (preg_match('/^https?:\/\//i', $value) === 1) {
+      return $value;
+    }
+
+    if (str_starts_with($value, '//')) {
+      return appPath('images/admin_pic.jpg');
+    }
+
+    if (str_starts_with($value, '/')) {
+      return $value;
+    }
+
+    return appPath(ltrim($value, '/'));
   }
 
-  if (preg_match('/^https?:\/\//i', $value) === 1) {
-    return $value;
-  }
-
-  if (str_starts_with($value, '/')) {
-    return $value;
-  }
-
-  return appPath(ltrim($value, '/'));
+  $placeholderPath = appPath('images/book-covers-big-2019101610.jpg');
+  return $placeholderPath;
 };
 ?>
 <!DOCTYPE html>
@@ -303,6 +342,20 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
               <p class="librarian-page-subtitle">Add books and update catalog entries.</p>
               <div class="librarian-hero-actions">
                 <button type="button" class="admin-button admin-button-primary librarian-btn librarian-btn-primary" data-open-modal="#addBookModal">Add Book</button>
+                <form method="POST" class="librarian-backfill-form">
+                  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                  <input type="hidden" name="action" value="backfill_copies">
+                  <label class="sr-only" for="backfill_copies">Copies per book</label>
+                  <input
+                    id="backfill_copies"
+                    class="admin-input"
+                    type="number"
+                    name="backfill_copies"
+                    min="1"
+                    max="50"
+                    value="1">
+                  <button type="submit" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary">Backfill Copies</button>
+                </form>
               </div>
             </div>
             <aside class="librarian-hero-card">
@@ -346,6 +399,17 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
                 <div class="admin-form-field admin-span-2">
                   <label for="add_book_genre">Genre</label>
                   <input id="add_book_genre" type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="add_book_initial_copies">Initial Copies</label>
+                  <input
+                    id="add_book_initial_copies"
+                    type="number"
+                    name="initial_copies"
+                    min="0"
+                    max="200"
+                    value="<?php echo (int)($bookForm['initial_copies'] ?? 1); ?>">
                 </div>
 
                 <div class="admin-form-field admin-span-2">
@@ -447,7 +511,7 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
                     }
                     $bookDescription = $truncateCatalogText($bookDescription, 185);
 
-                    $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''));
+                    $coverUrl = $resolveCatalogCoverUrl((string)($row['cover_image_url'] ?? ''), $isbn);
                     $placeholderSeed = strtoupper(substr($titleLabel, 0, 1));
                     if (!preg_match('/[A-Z0-9]/', $placeholderSeed)) {
                       $placeholderSeed = '#';
@@ -553,7 +617,7 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
     });
 
     <?php if ($openAddBookModal): ?>
-    openModal(document.getElementById('addBookModal'));
+      openModal(document.getElementById('addBookModal'));
     <?php endif; ?>
   </script>
 </body>
