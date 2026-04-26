@@ -10,6 +10,10 @@
  */
 function redirect($path, $status = 302)
 {
+    // Prevent browser from caching the redirect itself
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+
   if (strpos($path, 'http://') !== 0 && strpos($path, 'https://') !== 0) {
     if ($path === '') {
       $path = '/';

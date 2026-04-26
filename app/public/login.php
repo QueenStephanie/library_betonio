@@ -15,6 +15,11 @@ require_once 'includes/auth.php';
 require_once 'includes/functions.php';
 require_once APP_ROOT . '/includes/services/AuthService.php';
 
+// Prevent Chrome from serving stale cached login page after logout
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 $error = '';
 $success = '';
 $csrf_scope = 'login';

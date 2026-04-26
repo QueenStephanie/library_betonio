@@ -152,6 +152,8 @@ ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_secure', $isHttps ? '1' : '0');
 ini_set('session.cookie_samesite', 'Strict');
 
+session_cache_limiter('nocache');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

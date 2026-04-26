@@ -46,6 +46,13 @@ RewriteRule ^\.env\.example$ - [F,L]
     <FilesMatch "\.(?:css|js|jpg|jpeg|png|gif|svg|woff|woff2)$">
         Header set Cache-Control "public, max-age=31536000"
     </FilesMatch>
+
+    # Prevent caching of all PHP responses by default (critical for auth pages)
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_authz_core.c>
