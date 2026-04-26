@@ -65,6 +65,36 @@ if (!slides.length || !dots.length) {
   startAutoPlay();
 }
 
+// Logout confirmation via SweetAlert2 for ALL logout links across the app
+document.addEventListener('click', function (e) {
+  var logoutLink = e.target.closest('.admin-nav-logout, .borrower-nav-link.is-logout, .borrower-action-card.is-danger');
+  if (!logoutLink) return;
+  var href = logoutLink.getAttribute('href');
+  if (!href || (href.indexOf('logout.php') === -1 && href.indexOf('admin-logout.php') === -1)) return;
+  e.preventDefault();
+  function doLogout() { window.location.href = href; }
+  if (typeof window.SweetAlerts !== 'undefined' && window.SweetAlerts.confirmLogout) {
+    window.SweetAlerts.confirmLogout(doLogout);
+  } else if (typeof window.Swal !== 'undefined' && typeof window.Swal.fire === 'function') {
+    window.Swal.fire({
+      icon: 'question',
+      title: 'Logout',
+      text: 'Are you sure you want to logout?',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Logout',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#d24718',
+      cancelButtonColor: '#999',
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then(function (result) {
+      if (result.isConfirmed) doLogout();
+    });
+  } else {
+    doLogout();
+  }
+});
+
 const mobileSidebar = document.querySelector(".admin-sidebar-mobile");
 
 if (mobileSidebar) {
@@ -76,7 +106,7 @@ if (mobileSidebar) {
   if (toggleButton && overlay && drawer) {
     const mobileMedia = window.matchMedia("(max-width: 980px)");
 
-    const setDrawerState = (isOpen) => {
+  const setDrawerState = (isOpen) => {
       mobileSidebar.classList.toggle("is-open", isOpen);
       toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
       drawer.setAttribute("aria-hidden", isOpen ? "false" : "true");

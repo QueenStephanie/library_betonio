@@ -70,7 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (strpos($postLoginRedirect, 'admin-dashboard.php') === 0) {
           $_SESSION['show_admin_welcome'] = true;
         } else {
-          setFlashPageAlert('success', 'Welcome Back!', $result['message']);
+          $userName = trim(($result['user']['first_name'] ?? '') . ' ' . ($result['user']['last_name'] ?? ''));
+          $welcomeMessage = $userName !== '' ? 'Welcome back, ' . $userName . '!' : ($result['message'] ?? 'Login successful');
+          setFlashPageAlert('success', 'Welcome Back!', $welcomeMessage);
         }
         redirect($postLoginRedirect);
       } else {
@@ -137,6 +139,13 @@ if (isset($_SESSION['show_timeout_alert'])) {
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="public/css/auth.css">
+  <script>
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+  </script>
 </head>
 
 <body>

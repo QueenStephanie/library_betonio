@@ -15,6 +15,11 @@ require_once 'includes/auth.php';
 require_once 'includes/functions.php';
 require_once APP_ROOT . '/backend/classes/CirculationRepository.php';
 
+// Prevent browser caching — this page switches between dashboard and landing view
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 // Check session timeout
 if (isset($_SESSION['user_id'])) {
   checkSessionTimeout();
@@ -77,15 +82,23 @@ $borrowerCssHref = $cssPaths['borrower'];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
-<?php if ($is_logged_in): ?>
-  <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
-  <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-<?php endif; ?>
+  <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+  <?php if ($is_logged_in): ?>
+    <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+    <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <?php endif; ?>
+  <script>
+    // Fix Chrome bfcache issue: force reload when page is restored from cache
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+  </script>
 </head>
 
-<body<?php if ($is_logged_in): ?> class="admin-portal-body portal-role-borrower"<?php endif; ?>>
+<body<?php if ($is_logged_in): ?> class="admin-portal-body portal-role-borrower" <?php endif; ?>>
 
   <?php if ($is_logged_in && $user): ?>
     <div class="admin-shell">
@@ -344,10 +357,11 @@ $borrowerCssHref = $cssPaths['borrower'];
       </div>
     </footer>
 
-  <?php renderSweetAlertScripts(); ?>
-  <?php renderPageAlerts($page_alerts); ?>
   <?php endif; ?>
 
-</body>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
+
+  </body>
 
 </html>

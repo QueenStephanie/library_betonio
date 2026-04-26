@@ -47,10 +47,11 @@ if ($show_admin_welcome) {
 
 $page_alerts = [];
 if ($show_admin_welcome) {
+  $adminDisplayName = (string)($admin_profile['name'] ?? 'Administrator');
   $page_alerts[] = [
     'type' => 'success',
     'title' => 'Admin Access Granted',
-    'message' => 'Welcome back, Administrator. You now have full system access.'
+    'message' => 'Welcome back, ' . htmlspecialchars($adminDisplayName, ENT_QUOTES, 'UTF-8') . '. You now have full system access.'
   ];
 }
 
