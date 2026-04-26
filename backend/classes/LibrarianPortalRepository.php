@@ -99,6 +99,16 @@ class LibrarianPortalRepository
     return isset($map[strtolower($column)]);
   }
 
+  /**
+   * Safely quote SQL identifier for safe interpolation
+   */
+  private static function quoteIdentifier(string $identifier): string {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $identifier)) {
+      throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
+    }
+    return '`' . str_replace('`', '``', $identifier) . '`';
+  }
+
   private static function resolveColumn(PDO $db, string $table, array $candidates): ?string
   {
     foreach ($candidates as $candidate) {

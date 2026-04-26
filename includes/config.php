@@ -237,7 +237,15 @@ class Database
             try {
                 $dsn = 'mysql:host=' . DB_HOST . ';port=' . (int)$port . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
                 $this->conn = new PDO($dsn, DB_USER, DB_PASSWORD);
+                
+                // SQL Injection Hardening
                 $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $this->conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+                $this->conn->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
+                
+                // Enable strict SQL mode
+                $this->conn->exec("SET sql_mode = 'STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION,ONLY_FULL_GROUP_BY'");
+                
                 return $this->conn;
             } catch (PDOException $e) {
                 $lastError = $e;

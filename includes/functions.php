@@ -1,6 +1,20 @@
 <?php
 
 /**
+ * SQL Security Helpers
+ * Safely quote identifier names (columns, tables) for safe interpolation
+ * @param PDO $db
+ * @param string $identifier
+ * @return string Quoted safe identifier
+ */
+function quoteIdentifier(PDO $db, string $identifier): string {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $identifier)) {
+        throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
+    }
+    return '`' . str_replace('`', '``', $identifier) . '`';
+}
+
+/**
  * Helper Functions
  * Utility functions for the application
  */

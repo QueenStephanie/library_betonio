@@ -1,0 +1,8 @@
+AGENTS.md
+CLAUDE.md
+sqli_audit_report.md
+backend\vendor\phpmailer\phpmailer\README.md
+backend\vendor\phpmailer\phpmailer\SECURITY.md
+backend\vendor\phpmailer\phpmailer\SMTPUTF8.md
+images\admin_pic.jpg
+images\book-covers-big-2019101610.jpg
