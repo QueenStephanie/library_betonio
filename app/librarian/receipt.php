@@ -16,13 +16,12 @@ $receiptId = isset($_GET['receipt_id']) ? (int)$_GET['receipt_id'] : 0;
 $receiptCode = trim((string)($_GET['receipt_code'] ?? ''));
 $autoPrint = isset($_GET['auto_print']) && (string)$_GET['auto_print'] === '1';
 $download = isset($_GET['download']) && (string)$_GET['download'] === '1';
-$receiptRepositoryClass = 'ReceiptRepository';
 
 $receipt = null;
 if ($receiptId > 0) {
-  $receipt = $receiptRepositoryClass::findById($db, $receiptId);
+    $receipt = ReceiptRepository::findById($db, $receiptId);
 } elseif ($receiptCode !== '') {
-  $receipt = $receiptRepositoryClass::findByCode($db, $receiptCode);
+    $receipt = ReceiptRepository::findByCode($db, $receiptCode);
 }
 
 if (!is_array($receipt)) {

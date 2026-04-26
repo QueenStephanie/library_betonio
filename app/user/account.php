@@ -52,17 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $last_name = getPost('last_name');
 
       $result = $accountService->updateProfile((int)($_SESSION['user_id'] ?? 0), $first_name, $last_name);
-      if (!empty($result['success'])) {
-        $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-        $_SESSION['show_profile_success'] = true;
-        $auth = new AuthManager($db);
-        $user = $auth->getCurrentUser();
-      } else {
-        $error = (string)($result['error'] ?? 'Failed to update profile');
-      }
+if (!empty($result['success'])) {
+            $_SESSION['show_profile_success'] = true;
+            $auth = new AuthManager($db);
+            $user = $auth->getCurrentUser();
+            $_SESSION['user_name'] = ($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '');
+} else {
+    $error = (string)($result['error'] ?? 'Failed to update profile');
     }
-
-    if ($action === 'change_password') {
+} elseif ($action === 'change_password') {
       $current_password = getPost('current_password');
       $new_password = getPost('new_password');
       $new_password_confirm = getPost('new_password_confirm');
@@ -108,13 +106,17 @@ if (isset($_SESSION['show_password_success'])) {
   ];
 }
 
-$currentPage = 'account';
 $accountFullName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
 if ($accountFullName === '') {
   $accountFullName = 'Borrower User';
 }
 $accountInitials = strtoupper(substr((string)($user['first_name'] ?? 'B'), 0, 1) . substr((string)($user['last_name'] ?? 'U'), 0, 1));
 $accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verification pending';
+
+$cssPaths = getBorrowerCssPaths();
+$mainCssHref = $cssPaths['main'];
+$borrowerCssHref = $cssPaths['borrower'];
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string)filemtime(APP_ROOT . '/public/css/admin.css')]), ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -128,9 +130,9 @@ $accountStatusLabel = !empty($user['is_verified']) ? 'Verified account' : 'Verif
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/admin.css">
-  <link rel="stylesheet" href="public/css/borrower.css">
+<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
 </head>
 
 <body class="admin-portal-body portal-role-borrower">

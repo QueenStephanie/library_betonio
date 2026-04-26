@@ -17,25 +17,12 @@ $currentUserEmail = (string)($_SESSION['user_email'] ?? 'librarian@local.librari
 $currentRole = PermissionGate::resolveAdminRole();
 $roleLabel = PermissionGate::getRoleLabel($currentRole);
 
-$mainCssFile = APP_ROOT . '/public/css/main.css';
-$adminCssFile = APP_ROOT . '/public/css/admin.css';
-$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
-$mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
-$adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
-$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
-$mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
-$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
-$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
+$cssPaths = getLibrarianCssPaths();
+$mainCssHref = $cssPaths['main'];
+$adminCssHref = $cssPaths['admin'];
+$librarianCssHref = $cssPaths['librarian'];
 
-$page_alerts = [];
-$flash = getFlash();
-if (is_array($flash) && isset($flash['type'], $flash['message'])) {
-  $page_alerts[] = [
-    'type' => (string)$flash['type'],
-    'title' => 'Notice',
-    'message' => (string)$flash['message'],
-  ];
-}
+$page_alerts = getFlashPageAlerts();
 
 $printFormUrl = appPath('librarian-print-records.php', ['type' => 'fines']);
 

@@ -896,3 +896,92 @@ function renderPageAlerts(array $alerts)
 
   echo '<script>PageAlerts.run(' . $payload . ');</script>' . PHP_EOL;
 }
+
+function appendReceiptAlertMeta(array &$alert, array $result): void
+{
+    if (empty($result['ok'])) {
+        return;
+    }
+
+    $receiptId = (int)($result['receipt_id'] ?? 0);
+    if ($receiptId <= 0) {
+        return;
+    }
+
+    $receiptCode = trim((string)($result['receipt_code'] ?? ''));
+    $receiptViewUrl = trim((string)($result['receipt_print_url'] ?? ''));
+    if ($receiptViewUrl === '') {
+        $receiptViewUrl = appPath('librarian-receipt.php', [
+            'receipt_id' => $receiptId,
+        ]);
+    }
+
+    $appendQuery = static function (string $url, string $query): string {
+        $separator = strpos($url, '?') === false ? '?' : '&';
+        return $url . $separator . $query;
+    };
+
+    $receiptPrintUrl = $appendQuery($receiptViewUrl, 'auto_print=1');
+    $receiptDownloadUrl = $appendQuery($receiptViewUrl, 'download=1');
+    $alert['onConfirmOpen'] = $receiptPrintUrl;
+    $alert['receipt'] = [
+        'id' => $receiptId,
+        'code' => $receiptCode,
+        'viewUrl' => $receiptViewUrl,
+        'printUrl' => $receiptPrintUrl,
+        'downloadUrl' => $receiptDownloadUrl,
+        'mobileFileName' => ($receiptCode !== '' ? strtolower($receiptCode) : ('receipt-' . $receiptId)) . '.html',
+    ];
+
+    if ($receiptCode !== '') {
+        $alert['message'] .= ' Receipt: ' . $receiptCode . '.';
+    }
+}
+
+function getLibrarianCssPaths(): array
+{
+    $mainCssFile = APP_ROOT . '/public/css/main.css';
+    $adminCssFile = APP_ROOT . '/public/css/admin.css';
+    $librarianCssFile = APP_ROOT . '/public/css/librarian.css';
+    $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
+    $adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
+    $librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
+    return [
+        'main' => htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8'),
+        'admin' => htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8'),
+        'librarian' => htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8'),
+    ];
+}
+
+function getFlashPageAlerts(): array
+{
+    $page_alerts = [];
+    $flash = getFlash();
+    if (is_array($flash) && isset($flash['type'], $flash['message'])) {
+        $page_alerts[] = [
+            'type' => (string)$flash['type'],
+            'title' => 'Notice',
+            'message' => (string)$flash['message'],
+        ];
+    }
+    return $page_alerts;
+}
+
+function formatBorrowerName(string $firstName = '', string $lastName = '', string $email = ''): string
+{
+    $name = trim($firstName . ' ' . $lastName);
+    $name = preg_replace('/\s+/', ' ', $name);
+    return $name !== '' ? $name : $email;
+}
+
+function getBorrowerCssPaths(): array
+{
+    $mainCssFile = APP_ROOT . '/public/css/main.css';
+    $borrowerCssFile = APP_ROOT . '/public/css/borrower.css';
+    $mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
+    $borrowerCssVersion = file_exists($borrowerCssFile) ? (string)filemtime($borrowerCssFile) : (string)time();
+    return [
+        'main' => htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8'),
+        'borrower' => htmlspecialchars(appPath('public/css/borrower.css', ['v' => $borrowerCssVersion]), ENT_QUOTES, 'UTF-8'),
+    ];
+}

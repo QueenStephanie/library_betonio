@@ -60,6 +60,11 @@ if ($borrowerFullName === '') {
 $accountStatusLabel = !empty($user['is_verified']) ? 'Verified Account' : 'Verification Pending';
 $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending';
 
+$cssPaths = getBorrowerCssPaths();
+$mainCssHref = $cssPaths['main'];
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string)filemtime(APP_ROOT . '/public/css/admin.css')]), ENT_QUOTES, 'UTF-8');
+$borrowerCssHref = $cssPaths['borrower'];
+
 // If logged in, show dashboard view, else show landing page
 ?>
 <!DOCTYPE html>
@@ -72,11 +77,11 @@ $accountStatusClass = !empty($user['is_verified']) ? 'is-verified' : 'is-pending
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <?php if ($is_logged_in): ?>
-    <link rel="stylesheet" href="public/css/admin.css">
-    <link rel="stylesheet" href="public/css/borrower.css">
-  <?php endif; ?>
+<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+<?php if ($is_logged_in): ?>
+<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+<?php endif; ?>
 </head>
 
 <body<?php if ($is_logged_in): ?> class="admin-portal-body portal-role-borrower"<?php endif; ?>>

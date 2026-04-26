@@ -16,93 +16,40 @@ $currentUserEmail = (string)($_SESSION['user_email'] ?? 'librarian@local.librari
 $currentRole = PermissionGate::resolveAdminRole();
 $roleLabel = PermissionGate::getRoleLabel($currentRole);
 
-$mainCssFile = APP_ROOT . '/public/css/main.css';
-$adminCssFile = APP_ROOT . '/public/css/admin.css';
-$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
-$mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
-$adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
-$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
-$mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
-$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
-$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
+$cssPaths = getLibrarianCssPaths();
+$mainCssHref = $cssPaths['main'];
+$adminCssHref = $cssPaths['admin'];
+$librarianCssHref = $cssPaths['librarian'];
 
-$page_alerts = [];
-$flash = getFlash();
-if (is_array($flash) && isset($flash['type'], $flash['message'])) {
-  $page_alerts[] = [
-    'type' => (string)$flash['type'],
-    'title' => 'Notice',
-    'message' => (string)$flash['message'],
-  ];
-}
+$page_alerts = getFlashPageAlerts();
 
 $csrfToken = getAdminCsrfToken();
 $printFormUrl = appPath('librarian-print-records.php', ['type' => 'reservations']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $originCheck = validateStateChangingRequestOrigin('librarian_reservations_post');
-  $submittedToken = $_POST['csrf_token'] ?? '';
+    $originCheck = validateStateChangingRequestOrigin('librarian_reservations_post');
+    $submittedToken = getPost('csrf_token', '');
 
-  if (!$originCheck['valid']) {
-    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
-    error_log('Blocked librarian-reservations POST due to origin validation: ' . json_encode($originCheck));
-    $page_alerts[] = [
-      'type' => 'error',
-      'title' => 'Security Validation Failed',
-      'message' => 'Origin validation failed. Please refresh and try again.',
-    ];
-  } elseif (!validateAdminCsrfToken($submittedToken)) {
-    logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
-    $page_alerts[] = [
-      'type' => 'error',
-      'title' => 'Security Validation Failed',
-      'message' => 'Invalid or missing security token. Please refresh and try again.',
-    ];
-  } else {
-    $action = strtolower(trim((string)($_POST['action'] ?? '')));
-    $reservationId = (int)($_POST['reservation_id'] ?? 0);
+    if (!$originCheck['valid']) {
+        logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+        error_log('Blocked librarian-reservations POST due to origin validation: ' . json_encode($originCheck));
+        $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Security Validation Failed',
+            'message' => 'Origin validation failed. Please refresh and try again.',
+        ];
+    } elseif (!validateAdminCsrfToken($submittedToken)) {
+        logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+        $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Security Validation Failed',
+            'message' => 'Invalid or missing security token. Please refresh and try again.',
+        ];
+} else {
+        $action = strtolower(getPost('action'));
+        $reservationId = (int)getPost('reservation_id');
 
-    $appendReceiptAlertMeta = static function (array &$alert, array $result): void {
-      if (empty($result['ok'])) {
-        return;
-      }
-
-      $receiptId = (int)($result['receipt_id'] ?? 0);
-      if ($receiptId <= 0) {
-        return;
-      }
-
-      $receiptCode = trim((string)($result['receipt_code'] ?? ''));
-      $receiptViewUrl = trim((string)($result['receipt_print_url'] ?? ''));
-      if ($receiptViewUrl === '') {
-        $receiptViewUrl = appPath('librarian-receipt.php', [
-          'receipt_id' => $receiptId,
-        ]);
-      }
-
-      $appendQuery = static function (string $url, string $query): string {
-        $separator = strpos($url, '?') === false ? '?' : '&';
-        return $url . $separator . $query;
-      };
-
-      $receiptPrintUrl = $appendQuery($receiptViewUrl, 'auto_print=1');
-      $receiptDownloadUrl = $appendQuery($receiptViewUrl, 'download=1');
-      $alert['onConfirmOpen'] = $receiptPrintUrl;
-      $alert['receipt'] = [
-        'id' => $receiptId,
-        'code' => $receiptCode,
-        'viewUrl' => $receiptViewUrl,
-        'printUrl' => $receiptPrintUrl,
-        'downloadUrl' => $receiptDownloadUrl,
-        'mobileFileName' => ($receiptCode !== '' ? strtolower($receiptCode) : ('receipt-' . $receiptId)) . '.html',
-      ];
-
-      if ($receiptCode !== '') {
-        $alert['message'] .= ' Receipt: ' . $receiptCode . '.';
-      }
-    };
-
-    if ($action === 'checkout') {
+        if ($action === 'checkout') {
       $actorUserId = (int)($_SESSION['user_id'] ?? 0);
       $result = LibrarianPortalRepository::checkoutReadyReservation($db, $reservationId, $actorUserId);
       $alert = [
@@ -225,13 +172,14 @@ $rows = $queue['rows'];
                 </tr>
               <?php else: ?>
                 <?php foreach ($rows as $row): ?>
-                  <?php
-                  $status = strtolower(trim((string)($row['status'] ?? '')));
-                  $borrowerName = trim(((string)($row['borrower_first_name'] ?? '')) . ' ' . ((string)($row['borrower_last_name'] ?? '')));
-                  if ($borrowerName === '') {
-                    $borrowerName = (string)($row['borrower_email'] ?? 'N/A');
-                  }
-                  $bookLabel = trim((string)($row['book_title'] ?? ''));
+<?php
+$status = strtolower(trim((string)($row['status'] ?? '')));
+$borrowerName = formatBorrowerName(
+    (string)($row['borrower_first_name'] ?? ''),
+    (string)($row['borrower_last_name'] ?? ''),
+    (string)($row['borrower_email'] ?? 'N/A')
+);
+$bookLabel = trim((string)($row['book_title'] ?? ''));
                   if ($bookLabel === '') {
                     $bookLabel = 'Unknown title';
                   }
@@ -246,7 +194,7 @@ $rows = $queue['rows'];
                     <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><span class="admin-badge <?php echo $status === 'pending' ? 'is-librarian' : 'is-admin'; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></span></td>
-                    <td><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime((string)($row['queued_at'] ?? 'now'))), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime($row['queued_at'] ?: 'now')), ENT_QUOTES, 'UTF-8'); ?></td>
                     <td class="librarian-col-action">
                       <div class="admin-actions">
                         <?php if ($status === 'pending'): ?>

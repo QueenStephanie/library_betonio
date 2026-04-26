@@ -57,47 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       setFlash('success', $message);
     } else {
       setFlash('error', (string)($result['message'] ?? 'Unable to renew loan right now.'));
-    }
-  }
-
-  redirect(appPath('history.php'));
+}
 }
 
-$activeLoans = [
-  'available' => false,
-  'message' => 'Active loans are unavailable right now.',
-  'rows' => [],
-];
-
-$loanHistory = [
-  'available' => false,
-  'message' => 'Loan history is unavailable right now.',
-  'rows' => [],
-];
-
-try {
-  $activeLoans = CirculationRepository::getBorrowerActiveLoans($db, $userId, 150);
-  $loanHistory = CirculationRepository::getBorrowerLoanHistory($db, $userId, 200);
-} catch (Exception $e) {
-  error_log('borrower history load error: ' . $e->getMessage());
-  $activeLoans['message'] = 'Unable to load active loans right now.';
-  $loanHistory['message'] = 'Unable to load borrowing history right now.';
-}
-
-$flash = getFlash();
-$currentPage = 'history';
-$activeLoanRows = is_array($activeLoans['rows'] ?? null) ? $activeLoans['rows'] : [];
-$loanHistoryRows = is_array($loanHistory['rows'] ?? null) ? $loanHistory['rows'] : [];
-$renewableLoanCount = 0;
-foreach ($activeLoanRows as $activeLoanSummary) {
-  if (!empty($activeLoanSummary['can_renew'])) {
-    $renewableLoanCount++;
-  }
-}
-$closedFineTotal = 0.0;
-foreach ($loanHistoryRows as $loanHistorySummary) {
-  $closedFineTotal += (float)($loanHistorySummary['fine_amount'] ?? 0);
-}
+$cssPaths = getBorrowerCssPaths();
+$mainCssHref = $cssPaths['main'];
+$borrowerCssHref = $cssPaths['borrower'];
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string)filemtime(APP_ROOT . '/public/css/admin.css')]), ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -109,9 +75,9 @@ foreach ($loanHistoryRows as $loanHistorySummary) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/admin.css">
-  <link rel="stylesheet" href="public/css/borrower.css">
+<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
 </head>
 
 <body class="admin-portal-body portal-role-borrower">

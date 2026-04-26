@@ -11,7 +11,7 @@ require_once APP_ROOT . '/backend/classes/PermissionGate.php';
 require_once APP_ROOT . '/backend/classes/LibrarianPortalRepository.php';
 require_once APP_ROOT . '/backend/classes/FineReporting.php';
 
-requireAdminAuth();
+PermissionGate::requirePageAccess('librarian', 'print_records');
 
 $reportType = strtolower(trim((string)($_GET['type'] ?? '')));
 $autoPrint = isset($_GET['auto_print']) && (string)($_GET['auto_print']) === '1';
@@ -258,64 +258,17 @@ $printCssHref = htmlspecialchars(appPath('public/css/print.css', ['v' => $printC
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($rows as $row): ?>
-                <?php
-                $borrowerName = trim(((string)($row['borrower_first_name'] ?? '')) . ' ' . ((string)($row['borrower_last_name'] ?? '')));
-                if ($borrowerName === '') {
-                  $borrowerName = trim((string)($row['borrower_email'] ?? ''));
-                }
-                if ($borrowerName === '') {
-                  $borrowerName = 'N/A';
-                }
-
-                $bookLabel = trim((string)($row['title'] ?? ''));
-                if ($bookLabel === '') {
-                  $bookLabel = 'Unknown title';
-                }
-                $author = trim((string)($row['author'] ?? ''));
-                if ($author !== '') {
-                  $bookLabel .= ' - ' . $author;
-                }
-
-                $status = !empty($row['is_overdue']) ? 'Overdue' : 'Active';
-                ?>
-                <tr>
-                  <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
-                  <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
-                  <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
-                  <td><?php echo htmlspecialchars($formatText($row['barcode'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                  <td><?php echo htmlspecialchars($formatDateTime($row['due_at'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                  <td><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php elseif ($reportType === 'reservations'): ?>
-        <div class="print-table-wrap">
-          <table class="print-table">
-            <thead>
-              <tr>
-                <th>Reservation ID</th>
-                <th>Queue Position</th>
-                <th>Borrower</th>
-                <th>Book</th>
-                <th>Status</th>
-                <th>Queued At</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($rows as $row): ?>
-                <?php
-                $borrowerName = trim(((string)($row['borrower_first_name'] ?? '')) . ' ' . ((string)($row['borrower_last_name'] ?? '')));
-                if ($borrowerName === '') {
-                  $borrowerName = trim((string)($row['borrower_email'] ?? ''));
-                }
-                if ($borrowerName === '') {
-                  $borrowerName = 'N/A';
-                }
-
-                $bookLabel = trim((string)($row['book_title'] ?? ''));
+<?php foreach ($rows as $row): ?>
+<?php
+$borrowerName = formatBorrowerName(
+    (string)($row['borrower_first_name'] ?? ''),
+    (string)($row['borrower_last_name'] ?? ''),
+    (string)($row['borrower_email'] ?? '')
+);
+if ($borrowerName === '') {
+    $borrowerName = 'N/A';
+}
+$bookLabel = trim((string)($row['book_title'] ?? ''));
                 if ($bookLabel === '') {
                   $bookLabel = 'Unknown title';
                 }

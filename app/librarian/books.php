@@ -16,25 +16,12 @@ $currentUserEmail = (string)($_SESSION['user_email'] ?? 'librarian@local.librari
 $currentRole = PermissionGate::resolveAdminRole();
 $roleLabel = PermissionGate::getRoleLabel($currentRole);
 
-$mainCssFile = APP_ROOT . '/public/css/main.css';
-$adminCssFile = APP_ROOT . '/public/css/admin.css';
-$librarianCssFile = APP_ROOT . '/public/css/librarian.css';
-$mainCssVersion = file_exists($mainCssFile) ? (string)filemtime($mainCssFile) : (string)time();
-$adminCssVersion = file_exists($adminCssFile) ? (string)filemtime($adminCssFile) : (string)time();
-$librarianCssVersion = file_exists($librarianCssFile) ? (string)filemtime($librarianCssFile) : (string)time();
-$mainCssHref = htmlspecialchars(appPath('public/css/main.css', ['v' => $mainCssVersion]), ENT_QUOTES, 'UTF-8');
-$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => $adminCssVersion]), ENT_QUOTES, 'UTF-8');
-$librarianCssHref = htmlspecialchars(appPath('public/css/librarian.css', ['v' => $librarianCssVersion]), ENT_QUOTES, 'UTF-8');
+$cssPaths = getLibrarianCssPaths();
+$mainCssHref = $cssPaths['main'];
+$adminCssHref = $cssPaths['admin'];
+$librarianCssHref = $cssPaths['librarian'];
 
-$page_alerts = [];
-$flash = getFlash();
-if (is_array($flash) && isset($flash['type'], $flash['message'])) {
-  $page_alerts[] = [
-    'type' => (string)$flash['type'],
-    'title' => 'Notice',
-    'message' => (string)$flash['message'],
-  ];
-}
+$page_alerts = getFlashPageAlerts();
 
 $csrfToken = getAdminCsrfToken();
 $openAddBookModal = false;
@@ -141,16 +128,16 @@ $storeUploadedBookCover = static function (array $file): array {
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
-  $submittedToken = $_POST['csrf_token'] ?? '';
-  $action = strtolower(trim((string)($_POST['action'] ?? '')));
+$originCheck = validateStateChangingRequestOrigin('librarian_books_post');
+    $submittedToken = getPost('csrf_token', '');
+    $action = strtolower(getPost('action'));
 
-  if ($action === 'add_book') {
-    $bookForm['title'] = trim((string)($_POST['title'] ?? ''));
-    $bookForm['author'] = trim((string)($_POST['author'] ?? ''));
-    $bookForm['isbn'] = trim((string)($_POST['isbn'] ?? ''));
-    $bookForm['publication_date'] = trim((string)($_POST['publication_date'] ?? ''));
-    $bookForm['genre'] = trim((string)($_POST['genre'] ?? ''));
+    if ($action === 'add_book') {
+        $bookForm['title'] = getPost('title');
+        $bookForm['author'] = getPost('author');
+        $bookForm['isbn'] = getPost('isbn');
+        $bookForm['publication_date'] = getPost('publication_date');
+        $bookForm['genre'] = getPost('genre');
     $bookForm['cover_image_url'] = '';
 
     if (!$originCheck['valid']) {
@@ -389,7 +376,7 @@ $resolveCatalogCoverUrl = static function (string $raw): string {
               </div>
             </div>
             <div class="librarian-panel-content">
-              <form method="GET" class="librarian-toolbar" action="librarian-books.php">
+              <form method="GET" class="librarian-toolbar" action="<?php echo htmlspecialchars(appPath('librarian-books.php'), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="librarian-search">
                   <label for="librarian-book-search">Search books</label>
                   <input id="librarian-book-search" type="search" name="q" value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search by title, author, ISBN, category">

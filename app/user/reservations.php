@@ -61,7 +61,6 @@ try {
 }
 
 $flash = getFlash();
-$currentPage = 'reservations';
 $reservationRows = is_array($activeReservations['rows'] ?? null) ? $activeReservations['rows'] : [];
 $readyReservations = 0;
 $queuedReservations = 0;
@@ -73,6 +72,11 @@ foreach ($reservationRows as $reservationSummary) {
     $queuedReservations++;
   }
 }
+
+$cssPaths = getBorrowerCssPaths();
+$mainCssHref = $cssPaths['main'];
+$borrowerCssHref = $cssPaths['borrower'];
+$adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string)filemtime(APP_ROOT . '/public/css/admin.css')]), ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -84,9 +88,9 @@ foreach ($reservationRows as $reservationSummary) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/main.css">
-  <link rel="stylesheet" href="public/css/admin.css">
-  <link rel="stylesheet" href="public/css/borrower.css">
+<link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
 </head>
 
 <body class="admin-portal-body portal-role-borrower">
