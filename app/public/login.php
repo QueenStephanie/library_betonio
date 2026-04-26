@@ -70,6 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $postLoginRedirect = resolveAuthenticatedHomePath();
         if (strpos($postLoginRedirect, 'admin-dashboard.php') === 0) {
           $_SESSION['show_admin_welcome'] = true;
+        } else {
+          $_SESSION['page_alerts'][] = [
+            'type' => 'success',
+            'title' => 'Welcome Back!',
+            'message' => $result['message']
+          ];
         }
         redirect($postLoginRedirect);
       } else {

@@ -27,18 +27,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $submittedToken = getPost('csrf_token');
   $action = strtolower(trim((string)getPost('action', '')));
   $loanId = (int)getPost('loan_id', '0');
+  $historyRedirect = appPath('history.php');
 
   if (!$originCheck['valid']) {
     logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
     error_log('Blocked borrower history POST due to origin validation: ' . json_encode($originCheck));
     clearPublicCsrfToken($renewScope);
-    setFlash('error', 'Security check failed. Please refresh and try again.');
+    setFlashPageAlert('error', 'Security Error', 'Security check failed. Please refresh and try again.', $historyRedirect);
   } elseif (!validatePublicCsrfToken($submittedToken, $renewScope)) {
     logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
     clearPublicCsrfToken($renewScope);
-    setFlash('error', 'Invalid or missing security token. Please refresh and try again.');
+    setFlashPageAlert('error', 'Security Error', 'Invalid or missing security token. Please refresh and try again.', $historyRedirect);
   } elseif ($action !== 'renew') {
-    setFlash('error', 'Unsupported action.');
+    setFlashPageAlert('error', 'Invalid Action', 'Unsupported action.', $historyRedirect);
   } else {
     $result = CirculationRepository::renewBorrowerLoan(
       $db,
@@ -54,9 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($newDueAt !== '') {
         $message .= ' New due date: ' . $newDueAt . '.';
       }
-      setFlash('success', $message);
+      setFlashPageAlert('success', 'Loan Renewed!', $message, $historyRedirect);
     } else {
-      setFlash('error', (string)($result['message'] ?? 'Unable to renew loan right now.'));
+      setFlashPageAlert('error', 'Renewal Failed', (string)($result['message'] ?? 'Unable to renew loan right now.'), $historyRedirect);
     }
   }
 }
@@ -102,7 +103,7 @@ foreach ($loanHistoryRows as $row) {
   $closedFineTotal += (float)($row['fine_amount'] ?? 0);
 }
 
-$flash = getFlash();
+$page_alerts = getStoredPageAlerts();
 
 $cssPaths = getBorrowerCssPaths();
 $mainCssHref = $cssPaths['main'];
@@ -122,6 +123,7 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
   <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 
 <body class="admin-portal-body portal-role-borrower">
@@ -175,12 +177,6 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
               <p class="borrower-stat-value">₱<?php echo number_format($closedFineTotal, 2); ?></p>
             </article>
           </section>
-
-          <?php if ($flash): ?>
-            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-            </div>
-          <?php endif; ?>
 
           <?php if (!$activeLoans['available']): ?>
             <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
@@ -321,6 +317,8 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
       </div>
     </main>
   </div>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

@@ -11,4 +11,4 @@ require_once 'includes/auth.php';
 
 clearAdminCsrfToken();
 AuthSupport::clearSession();
-redirect(appPath('login.php', ['logout' => 1]));
+redirect(appPath('logout.php'));

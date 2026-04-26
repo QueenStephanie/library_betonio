@@ -23,6 +23,15 @@ $category = trim((string)($_GET['category'] ?? ''));
 $reserveScope = 'borrower_catalog_reserve';
 $reserveCsrfToken = getPublicCsrfToken($reserveScope);
 
+$redirectQuery = [];
+if ($query !== '') {
+  $redirectQuery['q'] = $query;
+}
+if ($category !== '') {
+  $redirectQuery['category'] = $category;
+}
+$catalogRedirectUrl = appPath('catalog.php', $redirectQuery);
+
 $resolveBookValue = static function (array $row, array $candidates, string $fallback = ''): string {
   foreach ($candidates as $candidate) {
     if (array_key_exists($candidate, $row)) {
@@ -48,18 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
     error_log('Blocked borrower catalog POST due to origin validation: ' . json_encode($originCheck));
     clearPublicCsrfToken($reserveScope);
-    setFlash('error', 'Security check failed. Please refresh and try again.');
+    setFlashPageAlert('error', 'Security Error', 'Security check failed. Please refresh and try again.', $catalogRedirectUrl);
   } elseif (!validatePublicCsrfToken($submittedToken, $reserveScope)) {
     logVerificationAttempt((string)($user['email'] ?? ''), 'csrf_reject', false);
     clearPublicCsrfToken($reserveScope);
-    setFlash('error', 'Invalid or missing security token. Please refresh and try again.');
+    setFlashPageAlert('error', 'Security Error', 'Invalid or missing security token. Please refresh and try again.', $catalogRedirectUrl);
   } else {
     if ($action === 'cancel_receipt_reservation') {
       $cancelResult = CirculationRepository::cancelBorrowerReservation($db, $currentUserId, $reservationId);
       if (!empty($cancelResult['ok'])) {
-        setFlash('success', 'Reservation cancelled successfully.');
+        setFlashPageAlert('success', 'Reservation Cancelled', 'Reservation cancelled successfully.', $catalogRedirectUrl);
       } else {
-        setFlash('error', (string)($cancelResult['message'] ?? 'Unable to cancel reservation.'));
+        setFlashPageAlert('error', 'Cancellation Failed', (string)($cancelResult['message'] ?? 'Unable to cancel reservation.'), $catalogRedirectUrl);
       }
       unset($_SESSION['borrower_catalog_reservation_receipt']);
     } else {
@@ -198,22 +207,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $message .= ' Receipt details are temporarily unavailable.';
         }
 
-        setFlash('success', $message);
+        $_SESSION['page_alerts'] = [];
       } else {
-        setFlash('error', (string)($result['message'] ?? 'Unable to create reservation.'));
+        setFlashPageAlert('error', 'Reservation Failed', (string)($result['message'] ?? 'Unable to create reservation.'), $catalogRedirectUrl);
       }
     }
   }
 
-  $redirectQuery = [];
-  if ($query !== '') {
-    $redirectQuery['q'] = $query;
-  }
-  if ($category !== '') {
-    $redirectQuery['category'] = $category;
-  }
-
-  redirect(appPath('catalog.php', $redirectQuery));
+  redirect($catalogRedirectUrl);
 }
 
 $catalog = [
@@ -230,7 +231,7 @@ try {
   $catalog['message'] = 'Unable to load catalog right now.';
 }
 
-$flash = getFlash();
+$page_alerts = getStoredPageAlerts();
 $reservationReceiptOverlay = null;
 if (isset($_SESSION['borrower_catalog_reservation_receipt']) && is_array($_SESSION['borrower_catalog_reservation_receipt'])) {
   $reservationReceiptOverlay = $_SESSION['borrower_catalog_reservation_receipt'];
@@ -458,6 +459,7 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
   <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
 </head>
 
@@ -504,12 +506,6 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
               <p class="borrower-stat-value"><?php echo (int)$catalogAvailableCopies; ?></p>
             </article>
           </section>
-
-          <?php if ($flash): ?>
-            <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-              <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-            </div>
-          <?php endif; ?>
 
           <?php if (!$catalog['available']): ?>
             <div class="borrower-alert borrower-alert-error" role="status" aria-live="polite">
@@ -1024,6 +1020,8 @@ $adminCssHref = htmlspecialchars(appPath('public/css/admin.css', ['v' => (string
       })();
     </script>
   <?php endif; ?>
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
 </body>
 
 </html>

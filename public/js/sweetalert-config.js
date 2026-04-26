@@ -280,6 +280,104 @@ const SweetAlerts = {
   },
 
   /**
+   * Book Reserved Success
+   * @param {function} callback - Callback when OK is clicked
+   */
+  bookReserved: function (callback) {
+    Swal.fire({
+      icon: "success",
+      title: "Book Reserved!",
+      text: "Your reservation has been placed. Check your reservations page for updates.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    }).then((result) => {
+      if (result.isConfirmed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
+   * Loan Renewed Success
+   * @param {function} callback - Callback when OK is clicked
+   */
+  loanRenewed: function (callback) {
+    Swal.fire({
+      icon: "success",
+      title: "Loan Renewed!",
+      text: "Your loan has been renewed successfully.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    }).then((result) => {
+      if (result.isConfirmed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
+   * Reservation Cancelled Success
+   * @param {function} callback - Callback when OK is clicked
+   */
+  reservationCancelled: function (callback) {
+    Swal.fire({
+      icon: "success",
+      title: "Reservation Cancelled",
+      text: "Your reservation has been cancelled successfully.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    }).then((result) => {
+      if (result.isConfirmed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
+   * Generic Transaction Complete
+   * @param {function} callback - Callback when OK is clicked
+   */
+  transactionComplete: function (callback) {
+    Swal.fire({
+      icon: "success",
+      title: "Transaction Complete",
+      text: "The operation was completed successfully.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    }).then((result) => {
+      if (result.isConfirmed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
+   * Generic Operation Failed
+   * @param {function} callback - Callback when OK is clicked
+   */
+  operationFailed: function (callback) {
+    Swal.fire({
+      icon: "error",
+      title: "Operation Failed",
+      text: "Something went wrong. Please try again.",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d24718",
+    }).then((result) => {
+      if (result.isConfirmed && callback) {
+        callback();
+      }
+    });
+  },
+
+  /**
    * Close any open alert
    */
   close: function () {

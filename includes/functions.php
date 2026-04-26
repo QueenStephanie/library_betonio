@@ -985,6 +985,38 @@ function getFlashPageAlerts(): array
     return $page_alerts;
 }
 
+/**
+ * Store a page alert descriptor in the session for display after redirect.
+ * Works with renderPageAlerts() on the next page load.
+ */
+function setFlashPageAlert(string $type, string $title, string $message, string $redirect = '', array $extra = []): void
+{
+    $alert = array_merge([
+        'type' => $type,
+        'title' => $title,
+        'message' => $message,
+        'redirect' => $redirect,
+    ], $extra);
+
+    if (!isset($_SESSION['page_alerts'])) {
+        $_SESSION['page_alerts'] = [];
+    }
+    $_SESSION['page_alerts'][] = $alert;
+}
+
+/**
+ * Retrieve and clear stored page alerts from the session.
+ */
+function getStoredPageAlerts(): array
+{
+    $alerts = [];
+    if (isset($_SESSION['page_alerts']) && is_array($_SESSION['page_alerts'])) {
+        $alerts = $_SESSION['page_alerts'];
+        unset($_SESSION['page_alerts']);
+    }
+    return $alerts;
+}
+
 function formatBorrowerName(string $firstName = '', string $lastName = '', string $email = ''): string
 {
     $name = trim($firstName . ' ' . $lastName);

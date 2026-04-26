@@ -51,7 +51,7 @@ if ($is_logged_in && $user && isset($user['id'])) {
     }
   }
 }
-$flash = getFlash();
+$page_alerts = getStoredPageAlerts();
 $currentPage = 'dashboard';
 $borrowerFullName = trim((string)($user['first_name'] ?? '') . ' ' . (string)($user['last_name'] ?? ''));
 if ($borrowerFullName === '') {
@@ -79,8 +79,9 @@ $borrowerCssHref = $cssPaths['borrower'];
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo $mainCssHref; ?>">
 <?php if ($is_logged_in): ?>
-<link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
-<link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
+  <link rel="stylesheet" href="<?php echo $borrowerCssHref; ?>">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 <?php endif; ?>
 </head>
 
@@ -118,12 +119,6 @@ $borrowerCssHref = $cssPaths['borrower'];
                 <p><?php echo htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
               </aside>
             </section>
-
-            <?php if ($flash): ?>
-              <div class="borrower-alert <?php echo (($flash['type'] ?? '') === 'success') ? 'borrower-alert-success' : 'borrower-alert-error'; ?>" role="status" aria-live="polite">
-                <?php echo htmlspecialchars((string)$flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-              </div>
-            <?php endif; ?>
 
             <section class="borrower-dashboard-stats borrower-stat-grid" aria-label="Borrower statistics">
               <article class="borrower-card borrower-stat-card">
@@ -349,6 +344,8 @@ $borrowerCssHref = $cssPaths['borrower'];
       </div>
     </footer>
 
+  <?php renderSweetAlertScripts(); ?>
+  <?php renderPageAlerts($page_alerts); ?>
   <?php endif; ?>
 
 </body>
