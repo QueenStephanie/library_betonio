@@ -156,12 +156,12 @@ if (isset($_SESSION['show_timeout_alert'])) {
         <form class="auth-form" method="POST" action="login.php">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
           <label for="email">Email Address</label>
-          <input id="email" name="email" type="email" placeholder="jane@example.com"
+          <input id="email" name="email" type="email"
             autocomplete="email" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
 
           <label for="password">Password</label>
           <div class="password-field">
-            <input id="password" name="password" type="password" placeholder="Your password"
+            <input id="password" name="password" type="password"
               autocomplete="current-password" required>
             <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true">

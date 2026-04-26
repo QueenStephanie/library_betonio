@@ -125,20 +125,20 @@ if ($error) {
         <form class="auth-form" method="POST" action="register.php">
           <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
           <label for="first_name">First Name</label>
-          <input id="first_name" name="first_name" type="text" placeholder="Jane" autocomplete="given-name"
+          <input id="first_name" name="first_name" type="text" autocomplete="given-name"
             required value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
 
           <label for="last_name">Last Name</label>
-          <input id="last_name" name="last_name" type="text" placeholder="Austen" autocomplete="family-name"
+          <input id="last_name" name="last_name" type="text" autocomplete="family-name"
             required value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
 
           <label for="email">Email Address</label>
-          <input id="email" name="email" type="email" placeholder="jane@example.com" autocomplete="email"
+          <input id="email" name="email" type="email" autocomplete="email"
             required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
 
           <label for="password">Password</label>
           <div class="password-field">
-            <input id="password" name="password" type="password" placeholder="At least 8 characters"
+            <input id="password" name="password" type="password"
               autocomplete="new-password" minlength="8" data-password-primary required>
             <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -154,7 +154,7 @@ if ($error) {
 
           <label for="password_confirm">Confirm Password</label>
           <div class="password-field">
-            <input id="password_confirm" name="password_confirm" type="password" placeholder="Repeat your password"
+            <input id="password_confirm" name="password_confirm" type="password"
               autocomplete="new-password" minlength="8" data-password-confirm required>
             <button class="toggle-password" type="button" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true">
