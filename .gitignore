@@ -22,7 +22,7 @@ build/
 .env.production
 .env.staging
 .env.development
-
+.env.example
 # Backup files
 *.bak
 *.backup
