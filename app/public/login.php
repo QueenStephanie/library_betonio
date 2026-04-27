@@ -67,14 +67,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($result['success']) {
         logVerificationAttempt($email, 'login_attempt', true);
         $postLoginRedirect = resolveAuthenticatedHomePath();
-        if (strpos($postLoginRedirect, 'admin-dashboard.php') === 0) {
-          $_SESSION['show_admin_welcome'] = true;
-        } else {
-          $userName = trim(($result['user']['first_name'] ?? '') . ' ' . ($result['user']['last_name'] ?? ''));
-          $welcomeMessage = $userName !== '' ? 'Welcome back, ' . $userName . '!' : ($result['message'] ?? 'Login successful');
-          setFlashPageAlert('success', 'Welcome Back!', $welcomeMessage);
-        }
-        redirect($postLoginRedirect);
+        $userName = trim(($result['user']['first_name'] ?? '') . ' ' . ($result['user']['last_name'] ?? ''));
+        $welcomeTitle = 'Login Successful';
+        $welcomeMessage = $userName !== '' ? 'Welcome back, ' . $userName . '!' : 'Login successful';
+        $_SESSION['login_success_modal'] = [
+          'title' => $welcomeTitle,
+          'message' => $welcomeMessage,
+          'redirect' => $postLoginRedirect,
+        ];
+        // Don't redirect yet — the modal will be shown on this page, then redirect after user clicks OK
+        // We need to re-render the page with the modal
+        $showLoginSuccessModal = true;
+        // Regenerate CSRF token for the page re-render
+        $csrf_token = getPublicCsrfToken($csrf_scope);
+
       } else {
         logVerificationAttempt($email, 'login_attempt', false);
         if (isset($result['unverified']) && $result['unverified']) {
@@ -194,6 +200,31 @@ if (isset($_SESSION['show_timeout_alert'])) {
   <script src="public/js/auth.js"></script>
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
-</body>
 
+  <?php if (!empty($showLoginSuccessModal) && isset($_SESSION['login_success_modal'])): ?>
+  <?php
+    $modalData = $_SESSION['login_success_modal'];
+    $modalTitle = htmlspecialchars($modalData['title'], ENT_QUOTES, 'UTF-8');
+    $modalMessage = htmlspecialchars($modalData['message'], ENT_QUOTES, 'UTF-8');
+    $modalRedirect = htmlspecialchars($modalData['redirect'], ENT_QUOTES, 'UTF-8');
+    unset($_SESSION['login_success_modal']);
+  ?>
+  <script>
+    (function() {
+      var redirectPath = '<?php echo $modalRedirect; ?>';
+      Swal.fire({
+        icon: 'success',
+        title: '<?php echo $modalTitle; ?>',
+        text: '<?php echo $modalMessage; ?>',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d24718',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then(function() {
+        window.location.href = redirectPath;
+      });
+    })();
+  </script>
+  <?php endif; ?>
+</body>
 </html>

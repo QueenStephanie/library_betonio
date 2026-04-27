@@ -39,21 +39,8 @@ $admin_profile['phone'] = '(555) 123-4567';
 $admin_profile['admin_id'] = 'ADM-0045';
 $admin_profile['address'] = 'Administrator Office';
 
-// Check for admin welcome alert
-$show_admin_welcome = isset($_SESSION['show_admin_welcome']);
-if ($show_admin_welcome) {
-  unset($_SESSION['show_admin_welcome']);
-}
-
 $page_alerts = [];
-if ($show_admin_welcome) {
-  $adminDisplayName = (string)($admin_profile['name'] ?? 'Administrator');
-  $page_alerts[] = [
-    'type' => 'success',
-    'title' => 'Admin Access Granted',
-    'message' => 'Welcome back, ' . htmlspecialchars($adminDisplayName, ENT_QUOTES, 'UTF-8') . '. You now have full system access.'
-  ];
-}
+
 
 $circulationOverview = [
   'catalog_titles' => 0,
