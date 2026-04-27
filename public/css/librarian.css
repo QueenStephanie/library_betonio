@@ -666,3 +666,25 @@
     align-items: flex-start;
   }
 }
+
+/* ── Pagination ────────────────────────────── */
+.portal-role-librarian .librarian-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px 0;
+}
+
+.portal-role-librarian .librarian-pagination-info {
+  font-size: 0.875rem;
+  color: var(--text-muted, #7a6a5a);
+  font-weight: 500;
+}
+
+.portal-role-librarian .librarian-pagination-controls {
+  display: flex;
+  gap: 8px;
+}

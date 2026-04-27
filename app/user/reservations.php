@@ -22,6 +22,35 @@ $cancelScope = 'borrower_reservations_cancel';
 $cancelToken = getPublicCsrfToken($cancelScope);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Rate limiting: max 5 POST requests per 60 seconds
+  $rateLimitKey = 'rate_limit_borrower_reservations_' . session_id();
+  $rateLimitWindow = 60;
+  $rateLimitMax = 5;
+  $now = time();
+
+  if (!isset($_SESSION['_rate_limits'])) {
+    $_SESSION['_rate_limits'] = [];
+  }
+
+  // Clean old entries
+  foreach ($_SESSION['_rate_limits'] as $key => $data) {
+    if ($data['reset_at'] < $now) {
+      unset($_SESSION['_rate_limits'][$key]);
+    }
+  }
+
+  // Check current limit
+  $rateData = $_SESSION['_rate_limits'][$rateLimitKey] ?? ['count' => 0, 'reset_at' => $now + $rateLimitWindow];
+  if ($rateData['count'] >= $rateLimitMax) {
+    logVerificationAttempt((string)($user['email'] ?? ''), 'login_blocked', false);
+    setFlashPageAlert('error', 'Too Many Requests', 'Please wait before making another request.', appPath('reservations.php'));
+    redirect(appPath('reservations.php'));
+  }
+
+  // Increment counter
+  $rateData['count']++;
+  $_SESSION['_rate_limits'][$rateLimitKey] = $rateData;
+
   $originCheck = validateStateChangingRequestOrigin('borrower_reservations_cancel_post');
   $submittedToken = getPost('csrf_token');
   $reservationId = (int)getPost('reservation_id', '0');

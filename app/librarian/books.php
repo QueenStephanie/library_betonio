@@ -208,6 +208,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $search = trim((string)($_GET['q'] ?? ''));
 $typeFilter = trim((string)($_GET['type'] ?? ''));
+$currentPage = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 50;
 $catalog = [
   'rows' => [],
   'available' => false,
@@ -218,7 +220,7 @@ $bookTypeOptions = [];
 
 try {
   $bookTypeOptions = LibrarianPortalRepository::getBookTypes($db, 250);
-  $catalog = LibrarianPortalRepository::getBooks($db, $search, 300, $typeFilter);
+  $catalog = LibrarianPortalRepository::getBooks($db, $search, $perPage, $typeFilter, $currentPage);
 } catch (Exception $e) {
   error_log('librarian-books list error: ' . $e->getMessage());
   $catalog['message'] = 'Unable to load books catalog right now.';
@@ -232,6 +234,17 @@ foreach ($rows as $rowSummary) {
   $totalCopiesCount += max(0, (int)($rowSummary['total_copies'] ?? 0));
   $availableCopiesCount += max(0, (int)($rowSummary['available_copies'] ?? 0));
 }
+
+// Build pagination URLs
+$paginationBaseUrl = appPath('librarian-books.php');
+$paginationQuery = [];
+if ($search !== '') {
+  $paginationQuery['q'] = $search;
+}
+if ($typeFilter !== '') {
+  $paginationQuery['type'] = $typeFilter;
+}
+$paginationQueryString = http_build_query($paginationQuery);
 
 $truncateCatalogText = static function (string $value, int $limit = 190): string {
   $normalized = trim(preg_replace('/\s+/', ' ', $value) ?? '');
@@ -353,7 +366,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                 </div>
 
                 <div class="admin-form-field admin-span-2">
-                  <label for="add_book_genre">Genre</label>
+                  <label for="add_book_genre">Category</label>
                   <input id="add_book_genre" type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
                 </div>
 
@@ -443,6 +456,17 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
               <?php if (empty($rows)): ?>
                 <div class="librarian-empty">No books matched the current search.</div>
               <?php else: ?>
+                <div class="librarian-pagination">
+                  <span class="librarian-pagination-info">Page <?php echo $currentPage; ?> &middot; <?php echo $resultCount; ?> books shown</span>
+                  <div class="librarian-pagination-controls">
+                    <?php if ($currentPage > 1): ?>
+                      <a class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary" href="<?php echo htmlspecialchars($paginationBaseUrl . '?' . ($paginationQueryString !== '' ? $paginationQueryString . '&' : '') . 'page=' . ($currentPage - 1), ENT_QUOTES, 'UTF-8'); ?>">&laquo; Previous</a>
+                    <?php endif; ?>
+                    <?php if ($resultCount >= $perPage): ?>
+                      <a class="admin-button admin-button-primary librarian-btn librarian-btn-primary" href="<?php echo htmlspecialchars($paginationBaseUrl . '?' . ($paginationQueryString !== '' ? $paginationQueryString . '&' : '') . 'page=' . ($currentPage + 1), ENT_QUOTES, 'UTF-8'); ?>">Next &raquo;</a>
+                    <?php endif; ?>
+                  </div>
+                </div>
                 <div class="librarian-books-grid">
                   <?php foreach ($rows as $row): ?>
                     <?php

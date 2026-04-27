@@ -244,6 +244,62 @@ $bookLabel = trim((string)($row['book_title'] ?? ''));
 
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.admin-inline-form');
+    forms.forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const actionInput = form.querySelector('input[name="action"]');
+        const action = actionInput ? actionInput.value : '';
+        const reservationId = form.querySelector('input[name="reservation_id"]')?.value || '';
+
+        let title = 'Confirm action';
+        let text = 'Are you sure you want to perform this action?';
+        let icon = 'question';
+        let confirmButtonColor = '#3085d6';
+
+        if (action === 'approve') {
+          title = 'Approve Reservation';
+          text = 'This will mark the reservation as ready for pickup. The borrower will be notified via email.';
+          icon = 'success';
+          confirmButtonColor = '#27ae60';
+        } else if (action === 'reject') {
+          title = 'Reject Reservation';
+          text = 'This will cancel the reservation request. The borrower will not be able to pick up this book.';
+          icon = 'warning';
+          confirmButtonColor = '#e74c3c';
+        } else if (action === 'cancel') {
+          title = 'Cancel Reservation';
+          text = 'This will cancel the reservation. The borrower will lose their place in the queue.';
+          icon = 'warning';
+          confirmButtonColor = '#e74c3c';
+        } else if (action === 'checkout') {
+          title = 'Checkout from Reservation';
+          text = 'This will check out the book to the borrower from this ready reservation.';
+          icon = 'question';
+          confirmButtonColor = '#3498db';
+        }
+
+        Swal.fire({
+          title: title,
+          text: text,
+          icon: icon,
+          showCancelButton: true,
+          confirmButtonColor: confirmButtonColor,
+          cancelButtonColor: '#95a5a6',
+          confirmButtonText: 'Yes, proceed',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true
+        }).then((result) => {
+          if (result.isConfirmed) {
+            form.submit();
+          }
+        });
+      });
+    });
+  });
+  </script>
 </body>
 
 </html>

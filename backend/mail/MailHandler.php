@@ -314,6 +314,79 @@ class MailHandler
     }
 
     /**
+     * Send reservation ready for pickup notification email.
+     */
+    public function sendReservationReadyEmail($email, $name, $bookTitle, $bookAuthor, $readyUntil)
+    {
+        try {
+            $this->mail->addAddress($email);
+            $this->mail->isHTML(true);
+            $this->mail->Subject = 'Your Reservation is Ready for Pickup - Library Betonio';
+
+            $body = $this->getReservationReadyEmailTemplate($name, $bookTitle, $bookAuthor, $readyUntil);
+
+            $this->mail->Body = $body;
+            $this->mail->AltBody = "Hello {$name},\n\nYour reserved book \"{$bookTitle}\" by {$bookAuthor} is now ready for pickup.\n\nPlease visit the library to check out your book before it expires.\n\nThis reservation will expire if not picked up on time.\n\n- Library Betonio";
+
+            $this->mail->send();
+
+            return ['success' => true, 'message' => 'Reservation ready email sent successfully'];
+        } catch (Throwable $e) {
+            error_log("Error sending reservation ready email: " . $e->getMessage());
+            return $this->errorResponse('Failed to send reservation ready email', $e);
+        } finally {
+            $this->mail->clearAllRecipients();
+            $this->mail->clearAttachments();
+        }
+    }
+
+    /**
+     * Reservation Ready Email HTML Template
+     */
+    private function getReservationReadyEmailTemplate($name, $bookTitle, $bookAuthor, $readyUntil)
+    {
+        return <<<HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px; }
+                .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background-color: white; padding: 30px; }
+                .footer { text-align: center; color: #777; font-size: 12px; margin-top: 20px; }
+                .details { background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Library Betonio</h1>
+                    <p>Reservation Ready for Pickup</p>
+                </div>
+                <div class="content">
+                    <h2>Hello {$name},</h2>
+                    <p>Great news! Your reserved book is now ready for pickup.</p>
+                    <div class="details">
+                        <strong>Book:</strong> {$bookTitle}<br>
+                        <strong>Author:</strong> {$bookAuthor}<br>
+                        <strong>Ready until:</strong> {$readyUntil}
+                    </div>
+                    <p>Please visit the library to check out your book before it expires.</p>
+                    <p style="color: #e74c3c; font-weight: bold;">This reservation will expire if not picked up on time.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2026 Library Betonio. All rights reserved.</p>
+                    <p>This is an automated notification. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        HTML;
+    }
+
+    /**
      * Send test email
      */
     public function sendTestEmail($email, $name)

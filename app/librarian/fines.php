@@ -24,7 +24,62 @@ $librarianCssHref = $cssPaths['librarian'];
 
 $page_alerts = getStoredPageAlerts();
 
+$csrfToken = getAdminCsrfToken();
 $printFormUrl = appPath('librarian-print-records.php', ['type' => 'fines']);
+
+// Handle fine collection form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && getPost('action') === 'collect_fine') {
+    $originCheck = validateStateChangingRequestOrigin('librarian_fines_collect');
+    $submittedToken = getPost('csrf_token', '');
+
+    if (!$originCheck['valid'] || !validateAdminCsrfToken($submittedToken)) {
+        $page_alerts[] = [
+            'type' => 'error',
+            'title' => 'Security Validation Failed',
+            'message' => 'Invalid request origin or security token. Please refresh and try again.',
+        ];
+    } else {
+        $borrowerUserId = (int)getPost('borrower_user_id');
+        $amount = (float)getPost('amount');
+        $notes = trim(getPost('notes', ''));
+
+        if ($borrowerUserId <= 0 || $amount <= 0) {
+            $page_alerts[] = [
+                'type' => 'error',
+                'title' => 'Invalid Input',
+                'message' => 'Please select a borrower and enter a valid amount.',
+            ];
+        } else {
+            try {
+                $receiptCode = 'FINE-' . strtoupper(bin2hex(random_bytes(4)));
+                $actorUserId = (int)($_SESSION['user_id'] ?? 0);
+
+                $stmt = $db->prepare('INSERT INTO fine_collections (borrower_user_id, collected_by_user_id, receipt_code, amount, status, notes, collected_at) VALUES (:borrower_user_id, :collected_by_user_id, :receipt_code, :amount, :status, :notes, NOW())');
+                $stmt->execute([
+                    ':borrower_user_id' => $borrowerUserId,
+                    ':collected_by_user_id' => $actorUserId,
+                    ':receipt_code' => $receiptCode,
+                    ':amount' => $amount,
+                    ':status' => 'collected',
+                    ':notes' => $notes,
+                ]);
+
+                $page_alerts[] = [
+                    'type' => 'success',
+                    'title' => 'Fine Collected',
+                    'message' => 'Payment of ' . number_format($amount, 2) . ' recorded successfully. Receipt: ' . $receiptCode,
+                ];
+            } catch (Exception $e) {
+                error_log('Fine collection error: ' . $e->getMessage());
+                $page_alerts[] = [
+                    'type' => 'error',
+                    'title' => 'Collection Failed',
+                    'message' => 'Unable to record fine collection. Please try again.',
+                ];
+            }
+        }
+    }
+}
 
 $report = [
   'period_label' => date('M 1, Y') . ' to ' . date('M j, Y'),
@@ -118,6 +173,56 @@ try {
               <p class="librarian-stat-label">All-Time Collections</p>
               <p class="librarian-stat-value"><?php echo (int)$totals['all_time_collections']; ?></p>
             </article>
+          </section>
+
+          <section class="librarian-card librarian-surface-card">
+            <div class="librarian-panel-heading">
+              <div>
+                <span class="librarian-section-kicker">Collection</span>
+                <h2>Record a fine payment</h2>
+              </div>
+            </div>
+            <div class="librarian-panel-content">
+              <form method="POST" class="librarian-form librarian-form-compact" id="fine-collection-form">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="collect_fine">
+                <div class="librarian-form-row">
+                  <div class="librarian-form-group">
+                    <label for="borrower_user_id">Borrower</label>
+                    <select name="borrower_user_id" id="borrower_user_id" required class="librarian-form-input">
+                      <option value="">-- Select Borrower --</option>
+                      <?php
+                      try {
+                        $borrowerStmt = $db->query("SELECT id, first_name, last_name, email FROM users WHERE is_active = 1 AND LOWER(COALESCE(role, 'borrower')) = 'borrower' ORDER BY last_name ASC, first_name ASC LIMIT 200");
+                        $borrowers = $borrowerStmt->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($borrowers as $b) {
+                          $name = trim((string)($b['first_name'] ?? '') . ' ' . (string)($b['last_name'] ?? ''));
+                          $email = (string)($b['email'] ?? '');
+                          $label = $name !== '' ? $name . ' (' . $email . ')' : $email;
+                          echo '<option value="' . (int)$b['id'] . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+                        }
+                      } catch (Exception $e) {
+                        error_log('Borrower lookup error: ' . $e->getMessage());
+                      }
+                      ?>
+                    </select>
+                  </div>
+                  <div class="librarian-form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" required class="librarian-form-input" placeholder="0.00">
+                  </div>
+                </div>
+                <div class="librarian-form-row">
+                  <div class="librarian-form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <input type="text" name="notes" id="notes" class="librarian-form-input" placeholder="e.g. Overdue fine for book XYZ" maxlength="255">
+                  </div>
+                </div>
+                <div class="librarian-form-actions">
+                  <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary" onclick="return confirm('Record this fine payment?')">Record Payment</button>
+                </div>
+              </form>
+            </div>
           </section>
 
           <section class="librarian-card librarian-surface-card librarian-table-panel">

@@ -102,6 +102,29 @@ CREATE TABLE IF NOT EXISTS fine_collections (
     INDEX idx_fine_collections_collector (collected_by_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Fine Assessments (tracking fines assessed on overdue loans)
+CREATE TABLE IF NOT EXISTS fine_assessments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    loan_id INT NOT NULL,
+    borrower_user_id INT NULL,
+    assessed_by_user_id INT NULL,
+    amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    reason VARCHAR(255) NULL,
+    status ENUM('pending', 'paid', 'waived', 'voided') NOT NULL DEFAULT 'pending',
+    assessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    paid_at DATETIME NULL,
+    waived_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
+    FOREIGN KEY (borrower_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (assessed_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_fine_assessments_loan (loan_id),
+    INDEX idx_fine_assessments_borrower (borrower_user_id),
+    INDEX idx_fine_assessments_status (status),
+    INDEX idx_fine_assessments_assessed_at (assessed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Generic transaction receipts for circulation and financial events
 CREATE TABLE IF NOT EXISTS transaction_receipts (
     id INT PRIMARY KEY AUTO_INCREMENT,
