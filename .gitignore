@@ -16,13 +16,13 @@ build/
 *.sublime-project
 
 # Environment - CRITICAL: Never commit sensitive data
-.env
-.env.local
-.env.*.local
-.env.production
-.env.staging
-.env.development
-.env.example
+*.env
+*.env.local
+*.env.*.local
+*.env.production
+*.env.staging
+*.env.development
+*.env.example
 # Backup files
 *.bak
 *.backup
