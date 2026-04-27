@@ -202,38 +202,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
       }
     }
-  } elseif ($action === 'backfill_copies') {
-    if (!$originCheck['valid']) {
-      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
-      error_log('Blocked librarian-books POST due to origin validation: ' . json_encode($originCheck));
-      $page_alerts[] = [
-        'type' => 'error',
-        'title' => 'Security Validation Failed',
-        'message' => 'Origin validation failed. Please refresh and try again.',
-      ];
-    } elseif (!validateAdminCsrfToken($submittedToken)) {
-      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
-      $page_alerts[] = [
-        'type' => 'error',
-        'title' => 'Security Validation Failed',
-        'message' => 'Invalid or missing security token. Please refresh and try again.',
-      ];
-    } else {
-      $copiesPerBook = (int)getPost('backfill_copies', '1');
-      $result = LibrarianPortalRepository::backfillBookCopies($db, $copiesPerBook);
-      $detail = '';
-      if (!empty($result['ok'])) {
-        $detail = ' Added copies for ' . (int)($result['inserted_books'] ?? 0)
-          . ' titles (' . (int)($result['inserted_copies'] ?? 0) . ' copies total).';
-      }
-
-      $page_alerts[] = [
-        'type' => $result['ok'] ? 'success' : 'error',
-        'title' => $result['ok'] ? 'Backfill Complete' : 'Backfill Failed',
-        'message' => (string)($result['message'] ?? 'Backfill completed.') . $detail,
-      ];
-    }
   }
+
 }
 
 $search = trim((string)($_GET['q'] ?? ''));
@@ -342,20 +312,6 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
               <p class="librarian-page-subtitle">Add books and update catalog entries.</p>
               <div class="librarian-hero-actions">
                 <button type="button" class="admin-button admin-button-primary librarian-btn librarian-btn-primary" data-open-modal="#addBookModal">Add Book</button>
-                <form method="POST" class="librarian-backfill-form">
-                  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
-                  <input type="hidden" name="action" value="backfill_copies">
-                  <label class="sr-only" for="backfill_copies">Copies per book</label>
-                  <input
-                    id="backfill_copies"
-                    class="admin-input"
-                    type="number"
-                    name="backfill_copies"
-                    min="1"
-                    max="50"
-                    value="1">
-                  <button type="submit" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary">Backfill Copies</button>
-                </form>
               </div>
             </div>
             <aside class="librarian-hero-card">

@@ -268,7 +268,59 @@ $borrowerName = formatBorrowerName(
 if ($borrowerName === '') {
     $borrowerName = 'N/A';
 }
-$bookLabel = trim((string)($row['book_title'] ?? ''));
+$bookLabel = trim((string)($row['title'] ?? ''));
+                if ($bookLabel === '') {
+                  $bookLabel = 'Unknown title';
+                }
+                $bookAuthor = trim((string)($row['author'] ?? ''));
+                if ($bookAuthor !== '') {
+                  $bookLabel .= ' - ' . $bookAuthor;
+                }
+
+                $loanStatus = strtolower(trim((string)($row['loan_status'] ?? '')));
+                $isOverdue = !empty($row['is_overdue']);
+                $status = $isOverdue ? 'Overdue' : ucwords(str_replace('_', ' ', $loanStatus));
+                if ($status === '' || $status === ' ') {
+                  $status = '-';
+                }
+                ?>
+                <tr>
+                  <td>#<?php echo (int)($row['id'] ?? 0); ?></td>
+                  <td><?php echo htmlspecialchars($borrowerName, ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars($bookLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars($formatText($row['barcode'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars($formatDateTime($row['due_at'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                  <td><?php echo htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php elseif ($reportType === 'reservations'): ?>
+        <div class="print-table-wrap">
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Reservation ID</th>
+                <th>Queue Position</th>
+                <th>Borrower</th>
+                <th>Book</th>
+                <th>Status</th>
+                <th>Queued At</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($rows as $row): ?>
+                <?php
+                $borrowerName = formatBorrowerName(
+                    (string)($row['borrower_first_name'] ?? ''),
+                    (string)($row['borrower_last_name'] ?? ''),
+                    (string)($row['borrower_email'] ?? '')
+                );
+                if ($borrowerName === '') {
+                    $borrowerName = 'N/A';
+                }
+                $bookLabel = trim((string)($row['book_title'] ?? ''));
                 if ($bookLabel === '') {
                   $bookLabel = 'Unknown title';
                 }
@@ -276,7 +328,6 @@ $bookLabel = trim((string)($row['book_title'] ?? ''));
                 if ($bookAuthor !== '') {
                   $bookLabel .= ' - ' . $bookAuthor;
                 }
-
                 $status = ucwords(str_replace('_', ' ', strtolower(trim((string)($row['status'] ?? '')))));
                 if ($status === '') {
                   $status = '-';
