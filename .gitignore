@@ -16,13 +16,16 @@ build/
 *.sublime-project
 
 # Environment - CRITICAL: Never commit sensitive data
-*.env
-*.env.local
-*.env.*.local
-*.env.production
-*.env.staging
-*.env.development
-*.env.example
+# Ignore actual .env files (contain real secrets)
+.env
+.env.local
+.env.*.local
+# Ignore production/staging/dev env files (contain real secrets)
+.env.production
+.env.staging
+.env.development
+# But keep .env.example and .env.*.example (template files without secrets)
+# *.env.example is NOT listed here so template files are committed
 # Backup files
 *.bak
 *.backup
