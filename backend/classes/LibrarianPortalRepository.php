@@ -1427,9 +1427,9 @@ class LibrarianPortalRepository
   }
 
   /**
-   * @return array{rows: list<array<string,mixed>>, available: bool, message: string}
+   * @return array{rows: list<array<string,mixed>>, available: bool, message: string, total?: int, page?: int, per_page?: int}
    */
-  public static function getBooks(PDO $db, string $search = '', int $limit = 250, string $type = ''): array
+  public static function getBooks(PDO $db, string $search = '', int $limit = 250, string $type = '', int $page = 1): array
   {
     $response = [
       'rows' => [],
@@ -1734,7 +1734,7 @@ class LibrarianPortalRepository
       $params = [':id' => $reservationId];
       $successMessage = 'Reservation updated.';
 
-      if ($action === 'approve') {
+    if ($action === 'approve') {
         if ($currentStatus !== 'pending') {
           $db->rollBack();
           return ['ok' => false, 'message' => 'Only pending reservations can be approved.'];
@@ -1796,6 +1796,16 @@ class LibrarianPortalRepository
       $updateStmt->execute($params);
 
       $db->commit();
+
+      // Send email notification when reservation is approved (ready for pickup)
+      if ($action === 'approve' && $reservationId > 0) {
+          try {
+              self::sendReservationReadyNotification($db, $reservationId);
+          } catch (Exception $e) {
+              error_log('Failed to send reservation ready notification: ' . $e->getMessage());
+          }
+      }
+
       return ['ok' => true, 'message' => $successMessage];
     } catch (Exception $e) {
       if ($db->inTransaction()) {
@@ -1805,6 +1815,63 @@ class LibrarianPortalRepository
       return ['ok' => false, 'message' => 'Unable to update reservation right now.'];
     }
   }
+
+  /**
+   * Send email notification to borrower when reservation is ready for pickup.
+   */
+  private static function sendReservationReadyNotification(PDO $db, int $reservationId): void
+  {
+      $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
+      $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
+      $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
+
+      if ($reservationUserColumn === null || $reservationBookColumn === null) {
+          return;
+      }
+
+      $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
+
+      $sql = "SELECT r.id, r.`{$reservationUserColumn}` AS user_id, r.`{$reservationBookColumn}` AS book_id,
+              {$readyUntilExpr} AS ready_until,
+              u.email, u.first_name, u.last_name,
+              b.title AS book_title, b.author AS book_author
+              FROM reservations r
+              LEFT JOIN users u ON u.id = r.`{$reservationUserColumn}`
+              LEFT JOIN books b ON b.id = r.`{$reservationBookColumn}`
+              WHERE r.id = :id LIMIT 1";
+      $stmt = $db->prepare($sql);
+      $stmt->execute([':id' => $reservationId]);
+      $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!is_array($row) || empty($row['email'])) {
+          return;
+      }
+
+      $email = trim((string)$row['email']);
+      $name = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+      if ($name === '') {
+          $name = $email;
+      }
+      $bookTitle = trim((string)($row['book_title'] ?? 'Unknown Title'));
+      $bookAuthor = trim((string)($row['book_author'] ?? ''));
+      $readyUntil = trim((string)($row['ready_until'] ?? '3 days'));
+
+      try {
+          $mailHandler = null;
+          if (function_exists('getMailHandler')) {
+              $mailHandler = getMailHandler();
+          }
+          if ($mailHandler === null) {
+              require_once __DIR__ . '/../mail/MailHandler.php';
+              $mailHandler = new MailHandler($db);
+          }
+
+          $mailHandler->sendReservationReadyEmail($email, $name, $bookTitle, $bookAuthor, $readyUntil);
+      } catch (Throwable $e) {
+          error_log('sendReservationReadyNotification error: ' . $e->getMessage());
+      }
+  }
+
 
 
   /**
