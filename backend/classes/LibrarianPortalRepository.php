@@ -528,8 +528,8 @@ class LibrarianPortalRepository
       return ['ok' => false, 'message' => 'Reservation record not found.'];
     }
 
-    if (!in_array($status, ['ready_for_pickup', 'ready'], true)) {
-      return ['ok' => false, 'message' => 'Only ready-for-pickup reservations can be checked out.'];
+    if (!in_array($status, ['ready'], true)) {
+      return ['ok' => false, 'message' => 'Only ready reservations can be checked out.'];
     }
 
     if ($borrowerUserId <= 0 || $bookId <= 0) {
@@ -597,7 +597,7 @@ class LibrarianPortalRepository
 
     if (self::tableExists($db, 'reservations') && self::hasColumn($db, 'reservations', 'status')) {
       $summary['stats']['pending_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status = 'pending'")->fetchColumn();
-      $summary['stats']['ready_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status IN ('ready_for_pickup', 'ready')")->fetchColumn();
+      $summary['stats']['ready_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status IN ('ready')")->fetchColumn();
     }
 
     return $summary;
@@ -703,7 +703,7 @@ class LibrarianPortalRepository
     }
 
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
     if ($loanStatusColumn === null) {
       return ['ok' => false, 'message' => 'Check-in is unavailable due to incompatible loans schema.'];
     }
@@ -715,8 +715,9 @@ class LibrarianPortalRepository
       if ($loanCopyColumn !== null) {
         $loanQuery .= ', `' . $loanCopyColumn . '` AS book_copy_id';
       }
-      if (self::hasColumn($db, 'loans', 'returned_at')) {
-        $loanQuery .= ', returned_at';
+      $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date']);
+      if ($loanReturnedColumn !== null) {
+        $loanQuery .= ', `' . $loanReturnedColumn . '` AS returned_at';
       }
       $loanQuery .= ' FROM loans WHERE id = :id FOR UPDATE';
 
@@ -741,8 +742,9 @@ class LibrarianPortalRepository
         ':id' => $loanId,
       ];
 
-      if (self::hasColumn($db, 'loans', 'returned_at')) {
-        $updateParts[] = 'returned_at = NOW()';
+      $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date']);
+      if ($loanReturnedColumn !== null) {
+        $updateParts[] = '`' . $loanReturnedColumn . '` = NOW()';
       }
 
       $updateSql = 'UPDATE loans SET ' . implode(', ', $updateParts) . ' WHERE id = :id';
@@ -1119,7 +1121,7 @@ class LibrarianPortalRepository
       FROM reservations r
       {$userJoin}
       {$bookJoin}
-      WHERE r.`{$reservationStatusColumn}` IN ('ready_for_pickup', 'ready')
+      WHERE r.`{$reservationStatusColumn}` IN ('ready')
       ORDER BY {$orderByExpr} ASC, r.`{$reservationIdColumn}` ASC
       LIMIT {$limit}";
 
@@ -1156,7 +1158,7 @@ class LibrarianPortalRepository
     }
 
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
     if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
@@ -1200,14 +1202,16 @@ class LibrarianPortalRepository
         ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
       ];
 
-      if (self::hasColumn($db, 'loans', 'checked_out_at')) {
-        $insertColumns[] = 'checked_out_at';
+      $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date']);
+      if ($loanCheckedOutColumn !== null) {
+        $insertColumns[] = '`' . $loanCheckedOutColumn . '`';
         $insertValues[] = ':checked_out_at';
         $insertParams[':checked_out_at'] = date('Y-m-d H:i:s');
       }
 
-      if ($reservationId !== null && $reservationId > 0 && self::hasColumn($db, 'loans', 'reservation_id')) {
-        $insertColumns[] = 'reservation_id';
+      $loanReservationColumn = self::resolveColumn($db, 'loans', ['reservation_id']);
+      if ($reservationId !== null && $reservationId > 0 && $loanReservationColumn !== null) {
+        $insertColumns[] = '`' . $loanReservationColumn . '`';
         $insertValues[] = ':reservation_id';
         $insertParams[':reservation_id'] = $reservationId;
       }
@@ -1295,7 +1299,7 @@ class LibrarianPortalRepository
     $preCheck = self::evaluateReadyReservationCheckoutRules([
       'reservation_id' => $reservationId,
       'reservation_exists' => true,
-      'reservation_status' => 'ready_for_pickup',
+      'reservation_status' => 'ready',
       'borrower_user_id' => 1,
       'book_id' => 1,
       'has_available_copy' => true,
@@ -1308,7 +1312,9 @@ class LibrarianPortalRepository
       return ['ok' => false, 'message' => 'Reservation checkout bridge is unavailable due to schema mismatch.'];
     }
 
-    if (!self::hasColumn($db, 'reservations', 'user_id') || !self::hasColumn($db, 'reservations', 'book_id')) {
+    $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
+    $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
+    if ($reservationUserColumn === null || $reservationBookColumn === null) {
       return ['ok' => false, 'message' => 'Reservation checkout bridge requires user_id and book_id columns.'];
     }
 
@@ -1323,7 +1329,7 @@ class LibrarianPortalRepository
     try {
       $db->beginTransaction();
 
-      $reservationStmt = $db->prepare('SELECT id, user_id, book_id, status FROM reservations WHERE id = :id LIMIT 1 FOR UPDATE');
+      $reservationStmt = $db->prepare('SELECT id, `' . $reservationUserColumn . '` AS user_id, `' . $reservationBookColumn . '` AS book_id, status FROM reservations WHERE id = :id LIMIT 1 FOR UPDATE');
       $reservationStmt->execute([':id' => $reservationId]);
       $reservation = $reservationStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1355,7 +1361,7 @@ class LibrarianPortalRepository
       }
 
       $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
-      $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+      $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
       $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
       $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
       if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
@@ -1379,14 +1385,16 @@ class LibrarianPortalRepository
         ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
       ];
 
-      if (self::hasColumn($db, 'loans', 'checked_out_at')) {
-        $insertColumns[] = 'checked_out_at';
+      $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date']);
+      if ($loanCheckedOutColumn !== null) {
+        $insertColumns[] = '`' . $loanCheckedOutColumn . '`';
         $insertValues[] = ':checked_out_at';
         $insertParams[':checked_out_at'] = date('Y-m-d H:i:s');
       }
 
-      if (self::hasColumn($db, 'loans', 'reservation_id')) {
-        $insertColumns[] = 'reservation_id';
+      $loanReservationColumn = self::resolveColumn($db, 'loans', ['reservation_id']);
+      if ($loanReservationColumn !== null) {
+        $insertColumns[] = '`' . $loanReservationColumn . '`';
         $insertValues[] = ':reservation_id';
         $insertParams[':reservation_id'] = $reservationId;
       }
@@ -1402,12 +1410,14 @@ class LibrarianPortalRepository
         ':id' => $reservationId,
       ];
 
-      if (self::hasColumn($db, 'reservations', 'picked_up_at')) {
-        $reservationUpdateParts[] = 'picked_up_at = NOW()';
+      $reservationPickedUpColumn = self::resolveColumn($db, 'reservations', ['picked_up_at', 'fulfilled_at']);
+      if ($reservationPickedUpColumn !== null) {
+        $reservationUpdateParts[] = '`' . $reservationPickedUpColumn . '` = NOW()';
       }
 
-      if (self::hasColumn($db, 'reservations', 'ready_until')) {
-        $reservationUpdateParts[] = 'ready_until = NULL';
+      $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
+      if ($reservationReadyUntilColumn !== null) {
+        $reservationUpdateParts[] = '`' . $reservationReadyUntilColumn . '` = NULL';
       }
 
       $reservationUpdateSql = 'UPDATE reservations SET ' . implode(', ', $reservationUpdateParts) . ' WHERE id = :id';
@@ -1692,7 +1702,7 @@ class LibrarianPortalRepository
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
     $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'reserved_at', 'created_at']);
     $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
-    $reservationPickedUpColumn = self::resolveColumn($db, 'reservations', ['picked_up_at']);
+    $reservationPickedUpColumn = self::resolveColumn($db, 'reservations', ['picked_up_at', 'fulfilled_at']);
 
     if ($reservationIdColumn === null || $reservationStatusColumn === null) {
       $response['available'] = false;
@@ -1730,7 +1740,7 @@ class LibrarianPortalRepository
     FROM reservations r
     {$userJoin}
     {$bookJoin}
-    WHERE r.`{$reservationStatusColumn}` IN ('pending', 'ready_for_pickup', 'ready')
+    WHERE r.`{$reservationStatusColumn}` IN ('pending', 'ready')
     ORDER BY {$orderByExpr} ASC, r.`{$reservationIdColumn}` ASC
     LIMIT {$limit}";
 
@@ -1797,9 +1807,11 @@ class LibrarianPortalRepository
         }
 
         $updateParts[] = 'status = :status';
-        $params[':status'] = self::hasColumn($db, 'reservations', 'status') ? 'ready_for_pickup' : 'ready';
+        $params[':status'] = 'ready';
 
-        if (self::hasColumn($db, 'reservations', 'ready_until')) {
+        if (self::hasColumn($db, 'reservations', 'expires_at')) {
+          $updateParts[] = 'expires_at = DATE_ADD(NOW(), INTERVAL 3 DAY)';
+        } elseif (self::hasColumn($db, 'reservations', 'ready_until')) {
           $updateParts[] = 'ready_until = DATE_ADD(NOW(), INTERVAL 3 DAY)';
         }
 
@@ -1815,15 +1827,16 @@ class LibrarianPortalRepository
         $updateParts[] = 'status = :status';
         $params[':status'] = 'cancelled';
 
-        if (self::hasColumn($db, 'reservations', 'ready_until')) {
-          $updateParts[] = 'ready_until = NULL';
+        $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
+        if ($reservationReadyUntilColumn !== null) {
+          $updateParts[] = '`' . $reservationReadyUntilColumn . '` = NULL';
         }
 
         $successMessage = 'Reservation rejected.';
       }
 
       if ($action === 'cancel') {
-        if (!in_array($currentStatus, ['pending', 'ready_for_pickup', 'ready'], true)) {
+        if (!in_array($currentStatus, ['pending', 'ready'], true)) {
           $db->rollBack();
           return ['ok' => false, 'message' => 'Only active queue reservations can be cancelled.'];
         }
@@ -1831,8 +1844,9 @@ class LibrarianPortalRepository
         $updateParts[] = 'status = :status';
         $params[':status'] = 'cancelled';
 
-        if (self::hasColumn($db, 'reservations', 'ready_until')) {
-          $updateParts[] = 'ready_until = NULL';
+        $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
+        if ($reservationReadyUntilColumn !== null) {
+          $updateParts[] = '`' . $reservationReadyUntilColumn . '` = NULL';
         }
 
         $successMessage = 'Reservation cancelled.';

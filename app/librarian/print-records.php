@@ -123,7 +123,7 @@ if ($isValidType) {
       $readyCount = 0;
       foreach ($rows as $row) {
         $status = strtolower(trim((string)($row['status'] ?? '')));
-        if (in_array($status, ['ready_for_pickup', 'ready'], true)) {
+        if (in_array($status, ['ready'], true)) {
           $readyCount++;
         }
       }

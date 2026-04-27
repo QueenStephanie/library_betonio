@@ -211,7 +211,7 @@ $bookLabel = trim((string)($row['book_title'] ?? ''));
                             <button type="submit" class="admin-action-btn admin-action-danger admin-action-text librarian-btn librarian-btn-danger" title="Reject reservation">Reject</button>
                           </form>
                         <?php endif; ?>
-                         <?php if (in_array($status, ['ready_for_pickup', 'ready'], true)): ?>
+                         <?php if (in_array($status, ['ready'], true)): ?>
                           <form method="POST" class="admin-inline-form">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="action" value="checkout">
@@ -219,7 +219,7 @@ $bookLabel = trim((string)($row['book_title'] ?? ''));
                             <button type="submit" class="admin-action-btn admin-action-text librarian-btn librarian-btn-primary" title="Checkout from ready reservation">Checkout</button>
                           </form>
                         <?php endif; ?>
-                        <?php if (in_array($status, ['pending', 'ready_for_pickup', 'ready'], true)): ?>
+                        <?php if (in_array($status, ['pending', 'ready'], true)): ?>
                           <form method="POST" class="admin-inline-form">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="action" value="cancel">

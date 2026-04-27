@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     book_id INT NOT NULL,
-    status ENUM('pending', 'ready_for_pickup', 'fulfilled', 'cancelled', 'expired') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'ready', 'fulfilled', 'cancelled', 'expired') NOT NULL DEFAULT 'pending',
     queued_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ready_until DATETIME NULL,
     picked_up_at DATETIME NULL,

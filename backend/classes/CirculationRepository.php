@@ -11,7 +11,7 @@ class CirculationRepository
   const BORROWER_RENEWAL_EXTENSION_DAYS = 7;
 
   /** @var list<string> */
-  const ACTIVE_RESERVATION_STATUSES = ['pending', 'ready_for_pickup', 'ready'];
+  const ACTIVE_RESERVATION_STATUSES = ['pending', 'ready'];
 
   /** @var list<string> */
   const ACTIVE_LOAN_STATUSES = ['active', 'overdue', 'borrowed'];
@@ -422,7 +422,7 @@ class CirculationRepository
     $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
     $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
-    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'reserved_at', 'created_at']);
     if ($reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null) {
       throw new RuntimeException('Incompatible reservations table schema.');
     }
@@ -582,8 +582,8 @@ class CirculationRepository
     $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
     $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
     $reservationStatusColumn = self::resolveColumn($db, 'reservations', ['status']);
-    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'created_at']);
-    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until']);
+    $reservationQueuedColumn = self::resolveColumn($db, 'reservations', ['queued_at', 'reserved_at', 'created_at']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
     if ($reservationIdColumn === null || $reservationUserColumn === null || $reservationBookColumn === null || $reservationStatusColumn === null) {
       throw new RuntimeException('Incompatible reservations table schema.');
     }
@@ -734,11 +734,11 @@ class CirculationRepository
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'created_at']);
-    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count']);
+    $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date', 'created_at']);
+    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
     $loanFineColumn = self::resolveColumn($db, 'loans', ['fine_amount']);
     $loanReservationColumn = self::resolveColumn($db, 'loans', ['reservation_id']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
 
     if ($loanIdColumn === null || $loanUserColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
       throw new RuntimeException('Incompatible loans table schema.');
@@ -760,6 +760,17 @@ class CirculationRepository
       $copyJoin = ' LEFT JOIN book_copies bc ON bc.id = l.`' . $loanCopyColumn . '`';
       $bookJoin = ' LEFT JOIN books b ON b.id = bc.book_id';
 
+      if (self::hasColumn($db, 'books', 'title')) {
+        $bookTitleExpr = 'b.title';
+      }
+      if (self::hasColumn($db, 'books', 'author')) {
+        $bookAuthorExpr = 'b.author';
+      }
+    }
+
+    // Fallback: if loans has book_id directly (no book_copies table), join books directly
+    if ($bookTitleExpr === "''" && $loanCopyColumn !== null && self::tableExists($db, 'books') && self::hasColumn($db, 'books', 'id')) {
+      $bookJoin = ' LEFT JOIN books b ON b.id = l.`' . $loanCopyColumn . '`';
       if (self::hasColumn($db, 'books', 'title')) {
         $bookTitleExpr = 'b.title';
       }
@@ -827,11 +838,11 @@ class CirculationRepository
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'created_at']);
-    $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at']);
+    $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date', 'created_at']);
+    $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date']);
     $loanFineColumn = self::resolveColumn($db, 'loans', ['fine_amount']);
-    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
     $loanReservationColumn = self::resolveColumn($db, 'loans', ['reservation_id']);
 
     if ($loanIdColumn === null || $loanUserColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
@@ -854,6 +865,17 @@ class CirculationRepository
       $copyJoin = ' LEFT JOIN book_copies bc ON bc.id = l.`' . $loanCopyColumn . '`';
       $bookJoin = ' LEFT JOIN books b ON b.id = bc.book_id';
 
+      if (self::hasColumn($db, 'books', 'title')) {
+        $bookTitleExpr = 'b.title';
+      }
+      if (self::hasColumn($db, 'books', 'author')) {
+        $bookAuthorExpr = 'b.author';
+      }
+    }
+
+    // Fallback: if loans has book_id directly (no book_copies table), join books directly
+    if ($bookTitleExpr === "''" && $loanCopyColumn !== null && self::tableExists($db, 'books') && self::hasColumn($db, 'books', 'id')) {
+      $bookJoin = ' LEFT JOIN books b ON b.id = l.`' . $loanCopyColumn . '`';
       if (self::hasColumn($db, 'books', 'title')) {
         $bookTitleExpr = 'b.title';
       }
@@ -942,8 +964,8 @@ class CirculationRepository
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
     $loanReservationColumn = self::resolveColumn($db, 'loans', ['reservation_id']);
     $loanBookColumn = self::resolveColumn($db, 'loans', ['book_id']);
 
@@ -1184,7 +1206,7 @@ class CirculationRepository
     }
 
     $reservationUserCol = "`$reservationUserColumn`";
-    $reservationSql = "SELECT COUNT(*) FROM reservations WHERE {$reservationUserCol} = :user_id AND status IN ('pending', 'ready_for_pickup', 'ready')";
+    $reservationSql = "SELECT COUNT(*) FROM reservations WHERE {$reservationUserCol} = :user_id AND status IN ('pending', 'ready')";
     $reservationStmt = $db->prepare($reservationSql);
     $reservationStmt->execute([':user_id' => $userId]);
     $overview['active_reservations'] = (int)$reservationStmt->fetchColumn();
@@ -1230,7 +1252,7 @@ class CirculationRepository
     $statusCol = "`$loanStatusColumn`";
     $overview['active_loans'] = (int)$db->query("SELECT COUNT(*) FROM loans WHERE {$statusCol} IN ('active', 'overdue', 'borrowed')")->fetchColumn();
 
-    $overview['active_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status IN ('pending', 'ready_for_pickup', 'ready')")->fetchColumn();
+    $overview['active_reservations'] = (int)$db->query("SELECT COUNT(*) FROM reservations WHERE status IN ('pending', 'ready')")->fetchColumn();
 
     if ($overview['active_reservations'] < 0) {
       $overview['active_reservations'] = 0;
