@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'title' => $result['ok'] ? 'Check-In Complete' : 'Check-In Failed',
                 'message' => (string)$result['message'],
             ];
-            $appendReceiptAlertMeta($alert, $result);
+            appendReceiptAlertMeta($alert, $result);
             $page_alerts[] = $alert;
         } elseif ($action === 'checkout') {
             $actorUserId = (int)($_SESSION['user_id'] ?? 0);
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'title' => $result['ok'] ? 'Checkout Complete' : 'Checkout Failed',
                 'message' => (string)$result['message'],
             ];
-            $appendReceiptAlertMeta($alert, $result);
+            appendReceiptAlertMeta($alert, $result);
             $page_alerts[] = $alert;
         } elseif ($action === 'checkout_reservation') {
             $actorUserId = (int)($_SESSION['user_id'] ?? 0);
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Reservation Checkout Failed',
         'message' => (string)$result['message'],
       ];
-      $appendReceiptAlertMeta($alert, $result);
+      appendReceiptAlertMeta($alert, $result);
       $page_alerts[] = $alert;
     }
   }

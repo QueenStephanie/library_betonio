@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Action Failed',
         'message' => (string)$result['message'],
       ];
-      $appendReceiptAlertMeta($alert, $result);
+      appendReceiptAlertMeta($alert, $result);
       $page_alerts[] = $alert;
     } else {
       $result = LibrarianPortalRepository::updateReservationStatus($db, $reservationId, $action);
