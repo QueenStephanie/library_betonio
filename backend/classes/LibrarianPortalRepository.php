@@ -889,11 +889,13 @@ class LibrarianPortalRepository
 
     if ($term !== '') {
       $where[] = '(
-        ' . $nameExpr . ' LIKE :term
-        OR ' . $emailExpr . ' LIKE :term
-        OR CAST(u.id AS CHAR) LIKE :term
+        ' . $nameExpr . ' LIKE :term0
+        OR ' . $emailExpr . ' LIKE :term1
+        OR CAST(u.id AS CHAR) LIKE :term2
       )';
-      $params[':term'] = '%' . $term . '%';
+      $params[':term0'] = '%' . $term . '%';
+      $params[':term1'] = '%' . $term . '%';
+      $params[':term2'] = '%' . $term . '%';
     }
 
     $sql = 'SELECT
@@ -956,13 +958,17 @@ class LibrarianPortalRepository
 
     if ($term !== '') {
       $where[] = '(
-        b.title LIKE :term
-        OR ' . $authorExpr . ' LIKE :term
-        OR ' . $isbnExpr . ' LIKE :term
-        OR ' . $categoryExpr . ' LIKE :term
-        OR CAST(b.id AS CHAR) LIKE :term
+        b.title LIKE :term0
+        OR ' . $authorExpr . ' LIKE :term1
+        OR ' . $isbnExpr . ' LIKE :term2
+        OR ' . $categoryExpr . ' LIKE :term3
+        OR CAST(b.id AS CHAR) LIKE :term4
       )';
-      $params[':term'] = '%' . $term . '%';
+      $params[':term0'] = '%' . $term . '%';
+      $params[':term1'] = '%' . $term . '%';
+      $params[':term2'] = '%' . $term . '%';
+      $params[':term3'] = '%' . $term . '%';
+      $params[':term4'] = '%' . $term . '%';
     }
 
     $whereSql = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
@@ -1455,15 +1461,21 @@ class LibrarianPortalRepository
     $params = [];
 
     if ($search !== '') {
-      $searchParts = ['b.title LIKE :term', 'b.author LIKE :term'];
+      $searchParts = ['b.title LIKE :term0', 'b.author LIKE :term1'];
+      $params[':term0'] = '%' . $search . '%';
+      $params[':term1'] = '%' . $search . '%';
+      $paramIdx = 2;
       if ($isbnColumn !== null) {
-        $searchParts[] = 'COALESCE(b.`' . $isbnColumn . '`, \'\') LIKE :term';
+        $searchParts[] = 'COALESCE(b.`' . $isbnColumn . '`, \'\') LIKE :term' . $paramIdx;
+        $params[':term' . $paramIdx] = '%' . $search . '%';
+        $paramIdx++;
       }
       if ($categoryColumn !== null) {
-        $searchParts[] = 'COALESCE(b.`' . $categoryColumn . '`, \'\') LIKE :term';
+        $searchParts[] = 'COALESCE(b.`' . $categoryColumn . '`, \'\') LIKE :term' . $paramIdx;
+        $params[':term' . $paramIdx] = '%' . $search . '%';
+        $paramIdx++;
       }
       $where = ' WHERE (' . implode(' OR ', $searchParts) . ')';
-      $params[':term'] = '%' . $search . '%';
     }
 
     if ($isActiveColumn !== null) {
