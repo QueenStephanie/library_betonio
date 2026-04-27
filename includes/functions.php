@@ -464,13 +464,31 @@ function getRequestOriginCandidate()
 
 /**
  * Validate same-origin for state-changing requests.
+ * On localhost, origin validation is relaxed since browsers often omit
+ * Origin/Referer headers for same-origin POST requests.
  */
 function validateStateChangingRequestOrigin($context = 'request')
 {
   $candidate = getRequestOriginCandidate();
   $allowedOrigins = getAllowedOriginCandidates();
 
+  // Relax origin validation for localhost requests — browsers often omit
+  // Origin/Referer headers on same-origin POST requests in local dev.
+  $hostOnly = strtolower(trim((string)($_SERVER['HTTP_HOST'] ?? '')));
+  $hostOnly = preg_replace('/:\d+$/', '', $hostOnly);
+  $isLocalHost = in_array($hostOnly, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
+
   if ($candidate['source'] === 'none') {
+    if ($isLocalHost) {
+      return [
+        'valid' => true,
+        'reason' => 'localhost_bypass',
+        'source' => 'none',
+        'origin' => null,
+        'allowed' => $allowedOrigins,
+        'context' => (string)$context,
+      ];
+    }
     return [
       'valid' => false,
       'reason' => 'missing_origin_headers',
@@ -482,6 +500,16 @@ function validateStateChangingRequestOrigin($context = 'request')
   }
 
   if (!is_string($candidate['origin']) || $candidate['origin'] === '') {
+    if ($isLocalHost) {
+      return [
+        'valid' => true,
+        'reason' => 'localhost_bypass',
+        'source' => $candidate['source'],
+        'origin' => null,
+        'allowed' => $allowedOrigins,
+        'context' => (string)$context,
+      ];
+    }
     return [
       'valid' => false,
       'reason' => 'invalid_origin_header',

@@ -282,6 +282,12 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
       return $value;
     }
 
+    // If the path starts with "public/", it's a relative path from the web root
+    // that needs to be resolved via appPath
+    if (str_starts_with($value, 'public/')) {
+      return appPath($value);
+    }
+
     return appPath(ltrim($value, '/'));
   }
 
