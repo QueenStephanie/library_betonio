@@ -25,6 +25,7 @@ $page_alerts = getStoredPageAlerts();
 
 $csrfToken = getAdminCsrfToken();
 $openAddBookModal = false;
+$bookAddResult = null; // Will hold {ok, title, message} for SweetAlert
 $bookForm = [
   'title' => '',
   'author' => '',
@@ -179,6 +180,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           @unlink($savedCoverPath);
         }
       }
+
+      // Store result for SweetAlert display
+      $bookAddResult = [
+        'ok' => !empty($result['ok']),
+        'title' => $result['ok'] ? 'Book Added Successfully!' : 'Failed to Add Book',
+        'message' => (string)$result['message'],
+      ];
 
       $page_alerts[] = [
         'type' => $result['ok'] ? 'success' : 'error',
@@ -549,6 +557,35 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
 
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
+
+  <?php if ($bookAddResult !== null): ?>
+  <script>
+    (function () {
+      var result = <?php echo json_encode($bookAddResult, JSON_UNESCAPED_SLASHES); ?>;
+      if (result.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: result.title,
+          text: result.message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d24718',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: result.title,
+          text: result.message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d24718',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      }
+    })();
+  </script>
+  <?php endif; ?>
 
   <script>
     function openModal(target) {

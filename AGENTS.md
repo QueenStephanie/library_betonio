@@ -1,104 +1,68 @@
-# QueenLib - Agent Guide
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
-PHP/MySQL library management system with role-based access (superadmin, admin, librarian, borrower).
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## Environment & Setup
+## 1. Think Before Coding
 
-- **PHP**: Requires PDO MySQL extension
-- **Database**: MySQL (default port 3307, auto-falls back to 3306 for localhost)
-- **Dependencies**: Run `composer install` in `backend/` (PHPMailer for email)
-- **Config**: Copy `.env.example` → `.env` and edit. Local dev uses `.env`, production prefers `.env.production`
-- **Base Path**: Set `APP_BASE_PATH=/library_betonio` for subfolder installs
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-## Key Entry Points
+Before implementing:
 
-- **Web root**: `index.php` (delegates to `app/user/index.php`)
-- **Auth pages**: `login.php`, `register.php`, `admin-login.php`
-- **Role dashboards**:
-  - Borrower: `index.php` → `app/user/`
-  - Librarian: `librarian-dashboard.php` → `app/librarian/`
-  - Admin: `admin-dashboard.php` → `app/admin/`
-- **Database init**: `init-database.php` (localhost-only via .htaccess block)
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
 
-## Architecture
+## 2. Simplicity First
 
-```
-Root PHP files       # Entry points, role-specific dashboards
-app/                 # View layer (admin/, librarian/, user/, shared/, system/)
-backend/             # API, classes, config, migrations, mail
-includes/            # config.php (env + DB), functions.php (helpers), auth.php
-api/                 # Additional API endpoints
-public/              # JS/CSS assets
-```
+**Minimum code that solves the problem. Nothing speculative.**
 
-- **Config flow**: `includes/config.php` → `backend/config/AppBootstrap.php` → `.env` file
-- **API bootstrap**: All backend APIs include `backend/api/_bootstrap.php`
-- **Auth helpers**: `backend/classes/Auth.php`, `AuthSupport.php`
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
 
-## Critical Conventions
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-### Database Access
-- Use global `$db` (PDO instance from `includes/config.php`)
-- Repository classes in `backend/classes/` (e.g., `LibrarianPortalRepository.php`, `UserRepository.php`)
-- Schema in `backend/config/schema.sql`, seeds in `seed-superadmin.sql`, `seed_books.sql`
+## 3. Surgical Changes
 
-### Security Patterns
-- **CSRF**: Use `getAdminCsrfToken()` / `validateAdminCsrfToken()` for admin pages; `getPublicCsrfToken()` / `validatePublicCsrfToken()` for public forms
-- **Session timeout**: Enforced via `enforceAuthenticatedSessionTimeout()` in `functions.php`
-- **Origin validation**: `validateStateChangingRequestOrigin()` for state-changing requests
-- **Permission gate**: `backend/classes/PermissionGate.php` for role enforcement
+**Touch only what you must. Clean up only your own mess.**
 
-### Path Building
-- Use `appPath($path, $query)` and `appUrl($path, $query)` from `functions.php` (respects `APP_BASE_PATH`)
-- Never hardcode URLs; always use these helpers for links/redirects
+When editing existing code:
 
-### Mail
-- Use `getMailHandler()` → `MailHandler` class (PHPMailer wrapper)
-- Configured via `MAIL_*` env vars; Gmail app passwords supported
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
 
-## Graphify Knowledge Graph
+When your changes create orphans:
 
-This project has a graphify knowledge graph at `graphify-out/`.
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
 
-- Before answering architecture or codebase questions, read `graphify-out/GRAPH_REPORT.md` for god nodes and community structure
-- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
-- After modifying code files in this session, run `/graphify . --update` to keep the graph current (AST-only, no API cost)
+The test: Every changed line should trace directly to the user's request.
 
-## Dev Workflow
+## 4. Goal-Driven Execution
 
-1. Edit PHP files directly (no build step)
-2. `.env` changes take effect immediately (no restart needed)
-3. Test on localhost before production; production uses `.env.production` if present
+**Define success criteria. Loop until verified.**
 
-## Testing Database Connection
+Transform tasks into verifiable goals:
 
-Visit `check_db.php` or `test_db.php` in browser for diagnostics.
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
 
-## Important .htaccess Blocks
-
-- `includes/`, `backend/config/`, `backend/classes/`, `backend/mail/`, `backend/vendor/`, `app/` → Denied
-- `init-database.php`, `backend/setup-db.php` → Localhost only
-- Executing scripts from `images/`, `public/` → Forbidden
-
-## Env Vars That Matter
+For multi-step tasks, state a brief plan:
 
 ```
-APP_ENV=development|production
-APP_DEBUG=true|false
-APP_BASE_PATH=/subfolder_or_empty
-DB_HOST=localhost
-DB_PORT=3307
-DB_NAME=library_betonio
-DB_USER=root
-DB_PASS=
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USER=your-email@gmail.com
-MAIL_PASS=app-password
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin1234
-SUPERADMIN_USERNAME=admin
-SUPERADMIN_PASSWORD=admin1234
-SESSION_TIMEOUT=3600
-BCRYPT_COST=12
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
 ```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
