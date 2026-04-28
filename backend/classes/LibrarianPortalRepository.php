@@ -8,6 +8,7 @@
 class LibrarianPortalRepository
 {
   const DEFAULT_LOAN_DAYS = 14;
+  const FINE_RATE_PER_DAY = 10.0;
 
   /** @var array<string, bool> */
   private static $tableCache = [];
@@ -651,9 +652,15 @@ class LibrarianPortalRepository
     try {
       $db->beginTransaction();
 
+      $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
+      $loanFineColumn = self::resolveColumn($db, 'loans', ['fine_amount', 'fine']);
+
       $loanQuery = 'SELECT id, `' . $loanStatusColumn . '` AS loan_status';
       if ($loanCopyColumn !== null) {
         $loanQuery .= ', `' . $loanCopyColumn . '` AS book_copy_id';
+      }
+      if ($loanDueColumn !== null) {
+        $loanQuery .= ', `' . $loanDueColumn . '` AS due_at';
       }
       $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date']);
       if ($loanReturnedColumn !== null) {
@@ -676,11 +683,25 @@ class LibrarianPortalRepository
         return ['ok' => false, 'message' => 'Loan is not in a check-in state.'];
       }
 
+      // Auto-fine calculation: if due_at is past, calculate fine
+      $calculatedFine = 0.0;
+      if ($loanDueColumn !== null && isset($loan['due_at'])) {
+        $dueTimestamp = strtotime((string)$loan['due_at']);
+        if ($dueTimestamp !== false && $dueTimestamp < time()) {
+          $overdueDays = (int)ceil((time() - $dueTimestamp) / 86400);
+          $calculatedFine = max(0, $overdueDays) * self::FINE_RATE_PER_DAY;
+        }
+      }
+
       $updateParts = ["`$loanStatusColumn` = :next_status"];
       $params = [
         ':next_status' => 'returned',
         ':id' => $loanId,
       ];
+      if ($loanFineColumn !== null && $calculatedFine > 0) {
+        $updateParts[] = '`' . $loanFineColumn . '` = COALESCE(`' . $loanFineColumn . '`, 0) + :fine_amount';
+        $params[':fine_amount'] = $calculatedFine;
+      }
 
       $loanReturnedColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date']);
       if ($loanReturnedColumn !== null) {
