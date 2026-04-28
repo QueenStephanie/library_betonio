@@ -1554,7 +1554,7 @@ body {
   overflow: hidden;
   border: 1px solid var(--admin-line);
   background: linear-gradient(145deg, #f5ead9, #e8d3b8);
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
 }
 
 .librarian-book-cover img {

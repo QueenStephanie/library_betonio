@@ -1441,6 +1441,7 @@ class LibrarianPortalRepository
       'rows' => [],
       'available' => true,
       'message' => '',
+      'has_more' => false,
     ];
 
     if (!self::tableExists($db, 'books')) {
@@ -1457,6 +1458,7 @@ class LibrarianPortalRepository
     $search = trim($search);
     $type = trim($type);
     $limit = max(1, min(500, $limit));
+    $fetchLimit = $limit + 1;
     $where = '';
     $params = [];
 
@@ -1535,7 +1537,7 @@ class LibrarianPortalRepository
       {$where}
       GROUP BY b.id, {$isbnExpr}, b.title, b.author, {$categoryExpr}, {$publishedYearExpr}, {$descriptionExpr}, {$coverExpr}, {$isActiveExpr}
       ORDER BY b.title ASC
-      LIMIT {$limit}";
+      LIMIT {$fetchLimit}";
     } else {
       $descriptionExpr = self::hasColumn($db, 'books', 'description')
         ? 'b.description'
@@ -1576,19 +1578,300 @@ class LibrarianPortalRepository
       FROM books b
       {$where}
       ORDER BY b.title ASC
-      LIMIT {$limit}";
+      LIMIT {$fetchLimit}";
     }
 
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
-    $response['rows'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (count($rows) > $limit) {
+      $response['has_more'] = true;
+      array_pop($rows);
+    }
+    $response['rows'] = $rows;
     return $response;
   }
 
   /**
    * @return list<string>
    */
+  /**
+   * @return array<string,mixed>|null
+   */
+  public static function getBookById(PDO $db, int $bookId): ?array
+  {
+    if ($bookId <= 0 || !self::tableExists($db, 'books')) {
+      return null;
+    }
+
+    $isbnColumn = self::resolveColumn($db, 'books', ['isbn']);
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year', 'publish_year']);
+    $publicationDateColumn = self::hasColumn($db, 'books', 'publication_date') ? 'publication_date' : null;
+    $descriptionColumn = self::resolveColumn($db, 'books', ['description', 'summary', 'synopsis']);
+    $publisherColumn = self::hasColumn($db, 'books', 'publisher') ? 'publisher' : null;
+    $editionColumn = self::hasColumn($db, 'books', 'edition') ? 'edition' : null;
+    $locationColumn = self::hasColumn($db, 'books', 'location') ? 'location' : null;
+    $isActiveColumn = self::hasColumn($db, 'books', 'is_active') ? 'is_active' : null;
+    $coverColumn = self::resolveColumn($db, 'books', ['cover_image', 'cover_image_url', 'cover_url', 'image_url']);
+
+    $sql = 'SELECT b.id, b.title, b.author';
+    $sql .= $isbnColumn !== null ? ', b.`' . $isbnColumn . '` AS isbn' : ", '' AS isbn";
+    $sql .= $categoryColumn !== null ? ', b.`' . $categoryColumn . '` AS category' : ", '' AS category";
+    $sql .= $publishedYearColumn !== null ? ', b.`' . $publishedYearColumn . '` AS publish_year' : ', NULL AS publish_year';
+    $sql .= $publicationDateColumn !== null ? ', b.publication_date' : ', NULL AS publication_date';
+    $sql .= $descriptionColumn !== null ? ', b.`' . $descriptionColumn . '` AS description' : ', NULL AS description';
+    $sql .= $publisherColumn !== null ? ', b.publisher' : ', NULL AS publisher';
+    $sql .= $editionColumn !== null ? ', b.edition' : ', NULL AS edition';
+    $sql .= $locationColumn !== null ? ', b.location' : ', NULL AS location';
+    $sql .= $isActiveColumn !== null ? ', b.is_active' : ', 1 AS is_active';
+    $sql .= $coverColumn !== null ? ', b.`' . $coverColumn . '` AS cover_image' : ", '' AS cover_image";
+
+    $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id');
+    $hasStatus = self::hasColumn($db, 'book_copies', 'status');
+
+    if ($hasCopies) {
+      $sql .= ', (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id) AS total_copies';
+      if ($hasStatus) {
+        $sql .= ", (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id AND bc.status = 'available') AS available_copies";
+      } else {
+        $sql .= ', 0 AS available_copies';
+      }
+    } else {
+      $hasTotalCopiesCol = self::hasColumn($db, 'books', 'total_copies');
+      $hasAvailCopiesCol = self::hasColumn($db, 'books', 'available_copies');
+      $sql .= $hasTotalCopiesCol ? ', b.total_copies' : ', 0 AS total_copies';
+      $sql .= $hasAvailCopiesCol ? ', b.available_copies' : ', 0 AS available_copies';
+    }
+
+    $sql .= ' FROM books b WHERE b.id = :id LIMIT 1';
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute([':id' => $bookId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return is_array($row) && !empty($row) ? $row : null;
+  }
+
+  /**
+   * @param array<string,mixed> $input
+   * @return array{ok: bool, message: string}
+   */
+  public static function updateBook(PDO $db, array $input): array
+  {
+    $bookId = (int)($input['book_id'] ?? 0);
+    if ($bookId <= 0) {
+      return ['ok' => false, 'message' => 'Invalid book identifier.'];
+    }
+
+    if (!self::tableExists($db, 'books')) {
+      return ['ok' => false, 'message' => 'Books table is missing.'];
+    }
+
+    $validation = self::evaluateBookCreationRules($input);
+    if (!$validation['ok']) {
+      return $validation;
+    }
+
+    $normalized = (array)($validation['normalized'] ?? []);
+    $title = (string)($normalized['title'] ?? '');
+    $author = (string)($normalized['author'] ?? '');
+    $isbnNormalized = (string)($normalized['isbn_normalized'] ?? '');
+    $publishedYear = (int)($normalized['published_year'] ?? 0);
+    $genre = (string)($normalized['genre'] ?? '');
+    $publicationDate = (string)($normalized['publication_date'] ?? '');
+
+    $categoryColumn = self::resolveColumn($db, 'books', ['category', 'genre']);
+    $publishedYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year', 'publish_year']);
+    $hasPublicationDate = self::hasColumn($db, 'books', 'publication_date');
+    $coverColumn = self::resolveColumn($db, 'books', ['cover_image', 'cover_image_url', 'cover_url', 'image_url', 'thumbnail_url']);
+    $hasTotalCopiesCol = self::hasColumn($db, 'books', 'total_copies');
+    $hasAvailableCopiesCol = self::hasColumn($db, 'books', 'available_copies');
+    $hasIsActive = self::hasColumn($db, 'books', 'is_active');
+    $hasIsbn = self::hasColumn($db, 'books', 'isbn');
+    $descriptionColumn = self::resolveColumn($db, 'books', ['description', 'summary', 'synopsis']);
+    $publisherColumn = self::hasColumn($db, 'books', 'publisher') ? 'publisher' : null;
+    $editionColumn = self::hasColumn($db, 'books', 'edition') ? 'edition' : null;
+    $locationColumn = self::hasColumn($db, 'books', 'location') ? 'location' : null;
+
+    $newTotalCopies = (int)($input['total_copies'] ?? -1);
+    $newCoverImage = trim((string)($input['cover_image_url'] ?? ''));
+
+    try {
+      $db->beginTransaction();
+
+      // Check ISBN uniqueness, excluding current book
+      if ($hasIsbn && $isbnNormalized !== '') {
+        $existingIsbnStmt = $db->query("SELECT id, isbn FROM books WHERE COALESCE(isbn, '') <> '' AND id <> " . (int)$bookId);
+        $existingIsbnRows = $existingIsbnStmt ? $existingIsbnStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($existingIsbnRows as $existingIsbnRow) {
+          $existingIsbn = self::normalizeIsbn((string)($existingIsbnRow['isbn'] ?? ''));
+          if ($existingIsbn !== '' && hash_equals($existingIsbn, $isbnNormalized)) {
+            $db->rollBack();
+            return ['ok' => false, 'message' => 'Duplicate entry: ISBN already exists in the catalog.'];
+          }
+        }
+      }
+
+      // Build UPDATE
+      $updateParts = [];
+      $params = [':id' => $bookId];
+
+      $updateParts[] = 'title = :title';
+      $params[':title'] = $title;
+
+      $updateParts[] = 'author = :author';
+      $params[':author'] = $author;
+
+      if ($hasIsbn) {
+        $updateParts[] = 'isbn = :isbn';
+        $params[':isbn'] = $isbnNormalized;
+      }
+
+      if ($categoryColumn !== null) {
+        $updateParts[] = '`' . $categoryColumn . '` = :category';
+        $params[':category'] = $genre;
+      }
+
+      if ($publishedYearColumn !== null) {
+        $updateParts[] = '`' . $publishedYearColumn . '` = :published_year';
+        $params[':published_year'] = $publishedYear;
+      }
+
+      if ($hasPublicationDate) {
+        $updateParts[] = 'publication_date = :publication_date';
+        $params[':publication_date'] = $publicationDate;
+      }
+
+      if ($coverColumn !== null) {
+        $updateParts[] = '`' . $coverColumn . '` = :cover_image_url';
+        $params[':cover_image_url'] = $newCoverImage;
+      }
+
+      if ($descriptionColumn !== null) {
+        $desc = trim((string)($input['description'] ?? ''));
+        $updateParts[] = '`' . $descriptionColumn . '` = :description';
+        $params[':description'] = $desc;
+      }
+
+      if ($publisherColumn !== null) {
+        $publisher = trim((string)($input['publisher'] ?? ''));
+        $updateParts[] = '`' . $publisherColumn . '` = :publisher';
+        $params[':publisher'] = $publisher;
+      }
+
+      if ($editionColumn !== null) {
+        $edition = trim((string)($input['edition'] ?? ''));
+        $updateParts[] = '`' . $editionColumn . '` = :edition';
+        $params[':edition'] = $edition;
+      }
+
+      if ($locationColumn !== null) {
+        $location = trim((string)($input['location'] ?? ''));
+        $updateParts[] = '`' . $locationColumn . '` = :location';
+        $params[':location'] = $location;
+      }
+
+      if ($hasIsActive) {
+        $isActive = isset($input['is_active']) ? ((int)$input['is_active'] === 1 ? 1 : 0) : 1;
+        $updateParts[] = 'is_active = :is_active';
+        $params[':is_active'] = $isActive;
+      }
+
+      if (!empty($updateParts)) {
+        $updateSql = 'UPDATE books SET ' . implode(', ', $updateParts) . ' WHERE id = :id';
+        $updateStmt = $db->prepare($updateSql);
+        $updateStmt->execute($params);
+      }
+
+      // Handle copy count adjustment via book_copies table
+      $hasCopiesTable = self::tableExists($db, 'book_copies')
+        && self::hasColumn($db, 'book_copies', 'book_id')
+        && self::hasColumn($db, 'book_copies', 'status');
+
+      if ($hasCopiesTable && $newTotalCopies >= 0) {
+        $newTotalCopies = min(200, max(0, $newTotalCopies));
+
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM book_copies WHERE book_id = :book_id');
+        $countStmt->execute([':book_id' => $bookId]);
+        $currentCopies = (int)$countStmt->fetchColumn();
+
+        if ($newTotalCopies > $currentCopies) {
+          // Add more available copies
+          $copyInsertStmt = $db->prepare('INSERT INTO book_copies (book_id, barcode, status) VALUES (:book_id, :barcode, :status)');
+          for ($i = $currentCopies; $i < $newTotalCopies; $i++) {
+            $copyInsertStmt->execute([
+              ':book_id' => $bookId,
+              ':barcode' => self::buildCopyBarcode($bookId),
+              ':status' => 'available',
+            ]);
+          }
+        } elseif ($newTotalCopies < $currentCopies) {
+          // Remove excess available copies (only available ones)
+          $excess = $currentCopies - $newTotalCopies;
+          if ($excess > 0) {
+            $availableStmt = $db->prepare("SELECT id FROM book_copies WHERE book_id = :book_id AND status = 'available' ORDER BY id ASC");
+            $availableStmt->execute([':book_id' => $bookId]);
+            $availableIds = $availableStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $toRemove = min($excess, count($availableIds));
+            if ($toRemove > 0) {
+              $removeIds = array_slice($availableIds, 0, $toRemove);
+              $placeholders = implode(',', array_fill(0, count($removeIds), '?'));
+              $db->prepare('DELETE FROM book_copies WHERE id IN (' . $placeholders . ')')->execute($removeIds);
+            }
+
+            if ($toRemove < $excess) {
+              $db->rollBack();
+              return [
+                'ok' => false,
+                'message' => 'Cannot reduce copies: only ' . count($availableIds) . ' available copy(ies) can be removed. '
+                  . 'Loan/reserved copies must be returned first.',
+              ];
+            }
+          }
+        }
+
+        // Get updated counts for legacy columns
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM book_copies WHERE book_id = :book_id');
+        $countStmt->execute([':book_id' => $bookId]);
+        $updatedTotal = (int)$countStmt->fetchColumn();
+
+        $availStmt = $db->prepare("SELECT COUNT(*) FROM book_copies WHERE book_id = :book_id AND status = 'available'");
+        $availStmt->execute([':book_id' => $bookId]);
+        $updatedAvailable = (int)$availStmt->fetchColumn();
+
+        if ($hasTotalCopiesCol) {
+          $db->prepare('UPDATE books SET total_copies = :total WHERE id = :id')->execute([
+            ':total' => $updatedTotal,
+            ':id' => $bookId,
+          ]);
+        }
+
+        if ($hasAvailableCopiesCol) {
+          $db->prepare('UPDATE books SET available_copies = :available WHERE id = :id')->execute([
+            ':available' => $updatedAvailable,
+            ':id' => $bookId,
+          ]);
+        }
+      }
+
+      $db->commit();
+      return ['ok' => true, 'message' => 'Book updated successfully.'];
+    } catch (Exception $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+      error_log('LibrarianPortalRepository::updateBook error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to update book right now.'];
+    }
+  }
+
+  /**
+   * @return list<string>
+   */
   public static function getBookTypes(PDO $db, int $limit = 250): array
+
   {
     if (!self::tableExists($db, 'books')) {
       return [];

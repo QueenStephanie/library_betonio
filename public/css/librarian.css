@@ -680,7 +680,7 @@
 
 .portal-role-librarian .librarian-pagination-info {
   font-size: 0.875rem;
-  color: var(--text-muted, #7a6a5a);
+  color: var(--admin-muted);
   font-weight: 500;
 }
 

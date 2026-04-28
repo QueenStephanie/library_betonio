@@ -129,8 +129,32 @@ $storeUploadedBookCover = static function (array $file): array {
   ];
 };
 
+// ---- GET handler: fetch book data as JSON for edit modal ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['fetch_book_id'])) {
+  $fetchBookId = max(0, (int)$_GET['fetch_book_id']);
+  header('Content-Type: application/json; charset=utf-8');
+  if ($fetchBookId <= 0) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'message' => 'Invalid book ID.']);
+    exit;
+  }
+  $bookData = LibrarianPortalRepository::getBookById($db, $fetchBookId);
+  if ($bookData === null) {
+    http_response_code(404);
+    echo json_encode(['ok' => false, 'message' => 'Book not found.']);
+    exit;
+  }
+  echo json_encode(['ok' => true, 'book' => $bookData]);
+  exit;
+}
+
+$bookEditResult = null; // Stores {ok, title, message} for SweetAlert after edit
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
   $originCheck = validateStateChangingRequestOrigin('librarian_books_post');
+
+
   $submittedToken = getPost('csrf_token', '');
   $action = strtolower(getPost('action', ''));
 
@@ -212,9 +236,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
+  if ($action === 'edit_book') {
+    $editBookId = (int)getPost('book_id', '0');
+    if (!$originCheck['valid']) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Origin validation failed. Please refresh and try again.',
+      ];
+    } elseif (!validateAdminCsrfToken($submittedToken)) {
+      logVerificationAttempt($currentUserEmail, 'csrf_reject', false);
+      $page_alerts[] = [
+        'type' => 'error',
+        'title' => 'Security Validation Failed',
+        'message' => 'Invalid or missing security token. Please refresh and try again.',
+      ];
+    } else {
+      $editInput = [
+        'book_id' => $editBookId,
+        'title' => getPost('title', ''),
+        'author' => getPost('author', ''),
+        'isbn' => getPost('isbn', ''),
+        'publication_date' => getPost('publication_date', ''),
+        'genre' => getPost('genre', ''),
+        'total_copies' => getPost('total_copies', '-1'),
+        'cover_image_url' => getPost('existing_cover_url', ''),
+      ];
+      $coverUpload = $storeUploadedBookCover($_FILES['edit_cover_image'] ?? []);
+      if ($coverUpload['ok'] && $coverUpload['path'] !== '') {
+        $editInput['cover_image_url'] = (string)$coverUpload['path'];
+      }
+      $result = LibrarianPortalRepository::updateBook($db, $editInput);
+      $bookEditResult = [
+        'ok' => !empty($result['ok']),
+        'title' => $result['ok'] ? 'Book Updated Successfully!' : 'Failed to Update Book',
+        'message' => (string)$result['message'],
+      ];
+      $page_alerts[] = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Book Updated' : 'Update Book Failed',
+        'message' => (string)$result['message'],
+      ];
+    }
+  }
+
 }
 
 $search = trim((string)($_GET['q'] ?? ''));
+
+
 $typeFilter = trim((string)($_GET['type'] ?? ''));
 $currentPage = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 50;
@@ -317,9 +388,24 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
   <link rel="stylesheet" href="<?php echo $adminCssHref; ?>">
   <link rel="stylesheet" href="<?php echo $librarianCssHref; ?>">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <style>
+    .edit-book-modal-card {
+      max-height: 95vh !important;
+      min-height: 60vh;
+      overflow-y: auto !important;
+      width: 650px !important;
+      max-width: 95vw !important;
+    }
+    .edit-book-modal-card .admin-form-grid {
+      max-height: 72vh;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+  </style>
 </head>
 
 <body class="admin-portal-body portal-role-librarian">
+
   <div class="admin-shell">
     <?php
     $portalRole = 'librarian';
@@ -409,7 +495,73 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
             </div>
           </div>
 
+          <!-- Edit Book Modal -->
+          <div id="editBookModal" class="admin-modal-backdrop" aria-hidden="true">
+            <div class="admin-modal-card admin-modal-card--wide edit-book-modal-card" role="dialog" aria-modal="true" aria-labelledby="editBookTitle">
+              <div class="admin-modal-header">
+                <h2 id="editBookTitle">Edit Book</h2>
+                <button class="admin-modal-close" type="button" data-close-modal aria-label="Close">&times;</button>
+              </div>
+
+              <form method="POST" class="admin-form-grid" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="edit_book">
+                <input type="hidden" name="book_id" id="edit_book_id" value="">
+                <input type="hidden" name="existing_cover_url" id="edit_existing_cover_url" value="">
+
+                <div class="admin-form-field">
+                  <label for="edit_book_title">Title</label>
+                  <input id="edit_book_title" type="text" name="title" required maxlength="255" placeholder="Book title">
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="edit_book_author">Author</label>
+                  <input id="edit_book_author" type="text" name="author" required maxlength="255" placeholder="Author name">
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="edit_book_isbn">ISBN</label>
+                  <input id="edit_book_isbn" type="text" name="isbn" required maxlength="32" placeholder="ISBN-10 or ISBN-13">
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="edit_book_publication_date">Publication Date</label>
+                  <input id="edit_book_publication_date" type="date" name="publication_date" required>
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="edit_book_genre">Category</label>
+                  <input id="edit_book_genre" type="text" name="genre" required maxlength="100" placeholder="e.g. Fiction, Science">
+                </div>
+
+                <div class="admin-form-field">
+                  <label for="edit_book_total_copies">Total Copies</label>
+                  <input
+                    id="edit_book_total_copies"
+                    type="number"
+                    name="total_copies"
+                    min="0"
+                    max="200">
+                  <small class="admin-form-help">Total physical copies. Available copies adjust automatically.</small>
+                </div>
+
+                <div class="admin-form-field admin-span-2">
+                  <label for="edit_book_cover_image">New Book Cover (optional)</label>
+                  <input id="edit_book_cover_image" type="file" name="edit_cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
+                  <small class="admin-form-help">Upload new cover to replace existing. JPG, PNG, WEBP, GIF (max 5MB).</small>
+                </div>
+
+                <div class="admin-modal-actions">
+                  <button type="button" class="admin-button admin-button-ghost" data-close-modal>Cancel</button>
+                  <button type="submit" class="admin-button admin-button-primary">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           <?php if (!$catalog['available']): ?>
+
+
             <div class="librarian-alert librarian-alert-warning" role="status" aria-live="polite">
               <?php echo htmlspecialchars((string)$catalog['message'], ENT_QUOTES, 'UTF-8'); ?>
             </div>
@@ -476,7 +628,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                     <?php if ($currentPage > 1): ?>
                       <a class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary" href="<?php echo htmlspecialchars($paginationBaseUrl . '?' . ($paginationQueryString !== '' ? $paginationQueryString . '&' : '') . 'page=' . ($currentPage - 1), ENT_QUOTES, 'UTF-8'); ?>">&laquo; Previous</a>
                     <?php endif; ?>
-                    <?php if ($resultCount >= $perPage): ?>
+                    <?php if (!empty($catalog['has_more'])): ?>
                       <a class="admin-button admin-button-primary librarian-btn librarian-btn-primary" href="<?php echo htmlspecialchars($paginationBaseUrl . '?' . ($paginationQueryString !== '' ? $paginationQueryString . '&' : '') . 'page=' . ($currentPage + 1), ENT_QUOTES, 'UTF-8'); ?>">Next &raquo;</a>
                     <?php endif; ?>
                   </div>
@@ -543,7 +695,15 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                           <span><strong><?php echo $bookAvailableCopies; ?></strong> available</span>
                           <span><?php echo $bookTotalCopies; ?> total copies</span>
                         </div>
+
+                        <button
+                          type="button"
+                          class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary librarian-book-edit-btn"
+                          data-book-id="<?php echo (int)($row['id'] ?? 0); ?>"
+                        >Edit</button>
                       </div>
+
+
                     </article>
                   <?php endforeach; ?>
                 </div>
@@ -643,6 +803,119 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
       openModal(document.getElementById('addBookModal'));
     <?php endif; ?>
   </script>
+
+  <?php if ($bookEditResult !== null): ?>
+  <script>
+    (function () {
+      var result = <?php echo json_encode($bookEditResult, JSON_UNESCAPED_SLASHES); ?>;
+      if (result.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: result.title,
+          text: result.message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d24718',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        }).then(function () {
+          window.location.reload();
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: result.title,
+          text: result.message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d24718',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+      }
+    })();
+  </script>
+  <?php endif; ?>
+
+  <script>
+    (function () {
+      var editModal = document.getElementById('editBookModal');
+      if (!editModal) return;
+
+      function populateEditForm(book) {
+        document.getElementById('edit_book_id').value = book.id || '';
+        document.getElementById('edit_existing_cover_url').value = book.cover_image || '';
+        document.getElementById('edit_book_title').value = book.title || '';
+        document.getElementById('edit_book_author').value = book.author || '';
+        document.getElementById('edit_book_isbn').value = book.isbn || '';
+        document.getElementById('edit_book_publication_date').value = book.publication_date || '';
+        document.getElementById('edit_book_genre').value = book.category || '';
+        document.getElementById('edit_book_total_copies').value = book.total_copies || 0;
+      }
+
+      function openEditModal(bookId) {
+        if (!bookId) return;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'librarian-books.php?fetch_book_id=' + encodeURIComponent(bookId), true);
+        xhr.setRequestHeader('Accept', 'application/json');
+
+        xhr.onload = function () {
+          if (xhr.status !== 200) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Failed to Load Book',
+              text: 'Unable to fetch book details. Please try again.',
+              confirmButtonColor: '#d24718'
+            });
+            return;
+          }
+
+          try {
+            var response = JSON.parse(xhr.responseText);
+          } catch (e) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Invalid Response',
+              text: 'Server returned unexpected data.',
+              confirmButtonColor: '#d24718'
+            });
+            return;
+          }
+
+          if (!response.ok || !response.book) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Book Not Found',
+              text: response.message || 'The requested book could not be found.',
+              confirmButtonColor: '#d24718'
+            });
+            return;
+          }
+
+          populateEditForm(response.book);
+          openModal(editModal);
+        };
+
+        xhr.onerror = function () {
+          Swal.fire({
+            icon: 'error',
+            title: 'Network Error',
+            text: 'Could not reach the server. Please check your connection.',
+            confirmButtonColor: '#d24718'
+          });
+        };
+
+        xhr.send();
+      }
+
+      document.querySelectorAll('.librarian-book-edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var bookId = btn.getAttribute('data-book-id');
+          openEditModal(bookId);
+        });
+      });
+    })();
+  </script>
 </body>
+
 
 </html>
