@@ -26,7 +26,31 @@ $page_alerts = getStoredPageAlerts();
 $csrfToken = getAdminCsrfToken();
 $printFormUrl = appPath('librarian-print-records.php', ['type' => 'circulation']);
 
+// ---- AJAX search endpoints for checkout autocomplete ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax'])) {
+    $ajax = strtolower(trim((string)$_GET['ajax']));
+    $term = trim((string)($_GET['term'] ?? ''));
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    if ($ajax === 'search_borrowers') {
+        echo json_encode(LibrarianPortalRepository::searchCheckoutBorrowers($db, $term, 20));
+        exit;
+    }
+
+    if ($ajax === 'search_books') {
+        echo json_encode(LibrarianPortalRepository::searchCheckoutBooks($db, $term, 20));
+        exit;
+    }
+
+    http_response_code(400);
+    echo json_encode(['available' => false, 'message' => 'Unknown search type.', 'rows' => []]);
+    exit;
+}
+// ---- end AJAX search ----
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $originCheck = validateStateChangingRequestOrigin('librarian_circulation_post');
     $submittedToken = getPost('csrf_token', '');
 
@@ -72,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             appendReceiptAlertMeta($alert, $result);
             $page_alerts[] = $alert;
-        } elseif ($action === 'checkout_reservation') {
+    } elseif ($action === 'checkout_reservation') {
             $actorUserId = (int)($_SESSION['user_id'] ?? 0);
             $reservationId = (int)getPost('reservation_id');
 
@@ -84,7 +108,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ];
       appendReceiptAlertMeta($alert, $result);
       $page_alerts[] = $alert;
+    } elseif ($action === 'renew') {
+      $loanId = (int)getPost('loan_id');
+      $actorUserId = (int)($_SESSION['user_id'] ?? 0);
+      $result = LibrarianPortalRepository::renewLoan($db, $loanId, $actorUserId);
+      $alert = [
+        'type' => $result['ok'] ? 'success' : 'error',
+        'title' => $result['ok'] ? 'Renewal Complete' : 'Renewal Failed',
+        'message' => (string)$result['message'],
+      ];
+      appendReceiptAlertMeta($alert, $result);
+      $page_alerts[] = $alert;
     }
+
   }
 }
 
@@ -168,6 +204,21 @@ foreach ($rows as $row) {
     <main class="admin-main librarian-main">
       <div class="librarian-page">
         <div class="librarian-shell">
+
+          <?php if (!empty($page_alerts)): ?>
+          <div class="librarian-alerts-html" id="librarian-alerts-html">
+            <?php foreach ($page_alerts as $pa): ?>
+            <div class="librarian-alert librarian-alert-<?php echo htmlspecialchars((string)($pa['type'] ?? 'info'), ENT_QUOTES, 'UTF-8'); ?> librarian-alert-dismissible" role="alert" style="margin-bottom:12px;padding:12px 16px;border-radius:8px;">
+              <strong><?php echo htmlspecialchars((string)($pa['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>:</strong>
+              <?php echo htmlspecialchars((string)($pa['message'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+              <?php if (!empty($pa['receipt']['code'])): ?>
+                <span style="display:inline-block;margin-left:8px;font-weight:600;">Receipt: <?php echo htmlspecialchars((string)$pa['receipt']['code'], ENT_QUOTES, 'UTF-8'); ?></span>
+              <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
               <span class="librarian-eyebrow">Circulation</span>
@@ -193,11 +244,26 @@ foreach ($rows as $row) {
                 <p class="librarian-inline-note"><?php echo htmlspecialchars((string)$checkoutCandidates['message'], ENT_QUOTES, 'UTF-8'); ?></p>
               <?php endif; ?>
 
-              <form method="POST" class="admin-inline-form librarian-form-row librarian-checkout-form" id="manual-checkout-form">
+              <?php
+              $borrowerCount = count($checkoutCandidates['rows']['borrowers'] ?? []);
+              $bookCount = count($checkoutCandidates['rows']['books'] ?? []);
+              if ($borrowerCount === 0 || $bookCount === 0):
+              ?>
+              <div class="librarian-alert librarian-alert-warning" role="status" style="margin-bottom:18px;">
+                <?php if ($borrowerCount === 0): ?>
+                  <p style="margin:0;"><strong>No borrowers available.</strong> Add borrower accounts or ensure users have borrower role assigned.</p>
+                <?php endif; ?>
+                <?php if ($bookCount === 0): ?>
+                  <p style="margin:0;<?php echo $borrowerCount === 0 ? 'margin-top:8px;' : ''; ?>"><strong>No books with available copies.</strong> Add books or check in returned copies first.</p>
+                <?php endif; ?>
+              </div>
+              <?php endif; ?>
+
+              <form method="POST" class="admin-inline-form librarian-form-row librarian-checkout-form" id="manual-checkout-form" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <input type="hidden" name="action" value="checkout">
 
-                <label class="librarian-form-group">
+                <div class="librarian-form-group" style="position:relative;">
                   <span>Borrower</span>
                   <select name="borrower_user_id" required>
                     <option value="">Select borrower</option>
@@ -213,9 +279,9 @@ foreach ($rows as $row) {
                       <option value="<?php echo (int)($borrower['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
                     <?php endforeach; ?>
                   </select>
-                </label>
+                </div>
 
-                <label class="librarian-form-group">
+                <div class="librarian-form-group" style="position:relative;">
                   <span>Title</span>
                   <select name="book_id" required>
                     <option value="">Select book with available copies</option>
@@ -232,12 +298,13 @@ foreach ($rows as $row) {
                       <option value="<?php echo (int)($book['id'] ?? 0); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
                     <?php endforeach; ?>
                   </select>
-                </label>
+                </div>
 
                 <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check Out</button>
               </form>
             </div>
           </section>
+
 
           <section class="librarian-card librarian-surface-card librarian-table-panel">
             <div class="librarian-panel-heading">
@@ -389,15 +456,24 @@ $bookLabel = trim((string)($row['title'] ?? ''));
                               <?php echo $isOverdue ? 'Overdue' : 'Active'; ?>
                             </span>
                           </td>
-                          <td>
+                          <td class="librarian-col-action">
                             <?php if (!empty($row['can_checkin'])): ?>
-                              <form method="POST" style="margin:0;">
+                              <form method="POST" style="margin:0;display:inline-block;">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="action" value="checkin">
                                 <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                                <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary">Check In</button>
+                                <button type="submit" class="admin-button admin-button-primary librarian-btn librarian-btn-primary" style="font-size:0.8rem;padding:4px 10px;">Check In</button>
                               </form>
-                            <?php else: ?>
+                            <?php endif; ?>
+                            <?php if (!empty($row['can_renew'])): ?>
+                              <form method="POST" style="margin:0 0 0 4px;display:inline-block;">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="action" value="renew">
+                                <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                                <button type="submit" class="admin-button admin-button-outline librarian-btn librarian-btn-outline" style="font-size:0.8rem;padding:4px 10px;">Renew (<?php echo (int)($row['renewals_remaining'] ?? 0); ?> left)</button>
+                              </form>
+                            <?php endif; ?>
+                            <?php if (empty($row['can_checkin']) && empty($row['can_renew'])): ?>
                               <span class="librarian-inline-note">Not available</span>
                             <?php endif; ?>
                           </td>
@@ -416,6 +492,18 @@ $bookLabel = trim((string)($row['title'] ?? ''));
 
   <?php renderSweetAlertScripts(); ?>
   <?php renderPageAlerts($page_alerts); ?>
+  <script>
+  (function() {
+    var alerts = <?php echo json_encode(array_map(function($a) {
+      return ['type' => $a['type'] ?? '', 'title' => $a['title'] ?? '', 'message' => $a['message'] ?? ''];
+    }, $page_alerts), JSON_UNESCAPED_SLASHES); ?>;
+    if (alerts && alerts.length > 0) {
+      console.log('[Circulation Alerts]', alerts);
+    }
+  });
+  </script>
 </body>
 
 </html>
+
+

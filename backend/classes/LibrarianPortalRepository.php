@@ -584,9 +584,11 @@ class LibrarianPortalRepository
     $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date', 'borrowed_at']);
     $loanReturnedAtColumn = self::resolveColumn($db, 'loans', ['returned_at', 'return_date', 'returned_date']);
     $loanFineColumn = self::resolveColumn($db, 'loans', ['fine_amount', 'fine']);
+    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
     $checkedOutExpr = $loanCheckedOutColumn !== null ? 'l.`' . $loanCheckedOutColumn . '`' : 'NULL';
     $returnedAtExpr = $loanReturnedAtColumn !== null ? 'l.`' . $loanReturnedAtColumn . '`' : 'NULL';
     $fineAmountExpr = $loanFineColumn !== null ? 'l.`' . $loanFineColumn . '`' : '0';
+    $renewalCountExpr = $loanRenewalCountColumn !== null ? 'l.`' . $loanRenewalCountColumn . '`' : '0';
 
     $sql = "SELECT
       l.id,
@@ -595,6 +597,7 @@ class LibrarianPortalRepository
       l.{$dueCol} AS due_at,
       {$returnedAtExpr} AS returned_at,
       {$fineAmountExpr} AS fine_amount,
+      {$renewalCountExpr} AS renewal_count,
       " . ($hasBookCopies && self::hasColumn($db, 'book_copies', 'barcode') ? 'bc.barcode' : "''") . " AS barcode,
       " . ($hasBooks ? 'b.title' : "''") . " AS title,
       " . ($hasBooks ? 'b.author' : "''") . " AS author,
@@ -614,8 +617,11 @@ class LibrarianPortalRepository
       $dueAt = (string)($row['due_at'] ?? '');
       $status = strtolower(trim((string)($row['loan_status'] ?? '')));
       $isOverdue = $dueAt !== '' && strtotime($dueAt) !== false && strtotime($dueAt) < time() && $status !== 'returned';
+      $renewalCount = max(0, (int)($row['renewal_count'] ?? 0));
       $row['is_overdue'] = $isOverdue;
       $row['can_checkin'] = in_array($status, ['active', 'overdue', 'borrowed'], true);
+      $row['can_renew'] = in_array($status, ['active', 'borrowed'], true) && $renewalCount < 2;
+      $row['renewals_remaining'] = max(0, 2 - $renewalCount);
     }
     unset($row);
 
@@ -757,6 +763,177 @@ class LibrarianPortalRepository
       }
       error_log('LibrarianPortalRepository::checkInLoan error: ' . $e->getMessage());
       return ['ok' => false, 'message' => 'Unable to check in loan right now.'];
+    }
+  }
+
+  /**
+   * @return array{ok: bool, message: string, loan_id?: int, renewal_count?: int, due_at?: string, receipt_id?: int, receipt_code?: string, receipt_print_url?: string}
+   */
+  public static function renewLoan(PDO $db, int $loanId, int $actorUserId, int $extensionDays = 7, int $maxRenewals = 2): array
+  {
+    if ($loanId <= 0) {
+      return ['ok' => false, 'message' => 'Invalid loan identifier.'];
+    }
+
+    if (!self::tableExists($db, 'loans')) {
+      return ['ok' => false, 'message' => 'Renewal is unavailable because loans table is missing.'];
+    }
+
+    $loanIdColumn = self::resolveColumn($db, 'loans', ['id']);
+    $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
+    $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
+    $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+
+    if ($loanIdColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
+      return ['ok' => false, 'message' => 'Renewal is unavailable due to incompatible loans schema.'];
+    }
+
+    if ($loanRenewalCountColumn === null) {
+      return ['ok' => false, 'message' => 'Renewal is unavailable because renewal tracking is not configured.'];
+    }
+
+    $extensionDays = max(1, min(30, $extensionDays));
+    $maxRenewals = max(1, min(10, $maxRenewals));
+
+    try {
+      $db->beginTransaction();
+
+      $selectColumns = [
+        'l.`' . $loanIdColumn . '` AS id',
+        'l.`' . $loanStatusColumn . '` AS loan_status',
+        'l.`' . $loanDueColumn . '` AS due_at',
+        'l.`' . $loanRenewalCountColumn . '` AS renewal_count',
+      ];
+      if ($loanCopyColumn !== null) {
+        $selectColumns[] = 'l.`' . $loanCopyColumn . '` AS book_copy_id';
+      }
+
+      $loanStmt = $db->prepare(
+        'SELECT ' . implode(', ', $selectColumns) . ' FROM loans l WHERE l.`' . $loanIdColumn . '` = :loan_id LIMIT 1 FOR UPDATE'
+      );
+      $loanStmt->execute([':loan_id' => $loanId]);
+      $loan = $loanStmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!is_array($loan)) {
+        $db->rollBack();
+        return ['ok' => false, 'message' => 'Loan record not found.'];
+      }
+
+      $loanStatus = strtolower(trim((string)($loan['loan_status'] ?? '')));
+      $renewalCount = max(0, (int)($loan['renewal_count'] ?? 0));
+
+      if (!in_array($loanStatus, ['active', 'borrowed'], true)) {
+        $db->rollBack();
+        return ['ok' => false, 'message' => 'Only active loans can be renewed.'];
+      }
+
+      if ($renewalCount >= $maxRenewals) {
+        $db->rollBack();
+        return ['ok' => false, 'message' => 'Maximum renewals (' . $maxRenewals . ') reached for this loan.'];
+      }
+
+      // Check if another reservation is waiting for this title
+      $bookId = 0;
+      if (isset($loan['book_copy_id']) && (int)$loan['book_copy_id'] > 0
+        && self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id')) {
+        $copyStmt = $db->prepare('SELECT book_id FROM book_copies WHERE id = :copy_id LIMIT 1 FOR UPDATE');
+        $copyStmt->execute([':copy_id' => (int)$loan['book_copy_id']]);
+        $bookId = (int)$copyStmt->fetchColumn();
+      }
+
+      if ($bookId > 0 && self::tableExists($db, 'reservations') && self::hasColumn($db, 'reservations', 'book_id')
+        && self::hasColumn($db, 'reservations', 'status')) {
+        $queueStmt = $db->prepare("SELECT COUNT(*) FROM reservations WHERE book_id = :book_id AND status IN ('pending', 'ready') FOR UPDATE");
+        $queueStmt->execute([':book_id' => $bookId]);
+        $hasActiveQueue = (int)$queueStmt->fetchColumn() > 0;
+        if ($hasActiveQueue) {
+          $db->rollBack();
+          return ['ok' => false, 'message' => 'Cannot renew: another reservation is waiting for this title.'];
+        }
+      }
+
+      $dueAt = trim((string)($loan['due_at'] ?? ''));
+      $dueTimestamp = strtotime($dueAt);
+      if ($dueTimestamp === false) {
+        $dueTimestamp = time();
+      }
+      $baseTimestamp = max(time(), $dueTimestamp);
+      $newDueAt = date('Y-m-d H:i:s', strtotime('+' . $extensionDays . ' days', $baseTimestamp));
+
+      $updateSql = 'UPDATE loans
+        SET `' . $loanDueColumn . '` = :new_due_at,
+            `' . $loanRenewalCountColumn . '` = :new_renewal_count,
+            `' . $loanStatusColumn . '` = :new_status
+        WHERE `' . $loanIdColumn . '` = :loan_id';
+      $updateStmt = $db->prepare($updateSql);
+      $updateStmt->execute([
+        ':new_due_at' => $newDueAt,
+        ':new_renewal_count' => $renewalCount + 1,
+        ':new_status' => 'active',
+        ':loan_id' => $loanId,
+      ]);
+
+      // Log loan event
+      if (
+        self::tableExists($db, 'loan_events')
+        && self::hasColumn($db, 'loan_events', 'loan_id')
+        && self::hasColumn($db, 'loan_events', 'event_type')
+      ) {
+        $eventColumns = ['loan_id', 'event_type'];
+        $eventValues = [':loan_id', ':event_type'];
+        $eventParams = [
+          ':loan_id' => $loanId,
+          ':event_type' => 'renewal',
+        ];
+        if (self::hasColumn($db, 'loan_events', 'actor_user_id')) {
+          $eventColumns[] = 'actor_user_id';
+          $eventValues[] = ':actor_user_id';
+          $eventParams[':actor_user_id'] = $actorUserId > 0 ? $actorUserId : null;
+        }
+        if (self::hasColumn($db, 'loan_events', 'notes')) {
+          $eventColumns[] = 'notes';
+          $eventValues[] = ':notes';
+          $eventParams[':notes'] = 'Renewed by librarian via circulation page';
+        }
+        $eventSql = 'INSERT INTO loan_events (' . implode(', ', $eventColumns) . ') VALUES (' . implode(', ', $eventValues) . ')';
+        $eventStmt = $db->prepare($eventSql);
+        $eventStmt->execute($eventParams);
+      }
+
+      // Create receipt
+      $receiptMeta = self::createTransactionReceipt(
+        $db,
+        'renewal',
+        $loanId,
+        0,
+        $actorUserId,
+        [
+          'loan_id' => $loanId,
+          'renewal_count' => $renewalCount + 1,
+          'due_at' => $newDueAt,
+          'extension_days' => $extensionDays,
+          'generated_by' => 'LibrarianPortalRepository::renewLoan',
+        ]
+      );
+
+      $db->commit();
+      return [
+        'ok' => true,
+        'message' => 'Loan renewed successfully.',
+        'loan_id' => $loanId,
+        'renewal_count' => $renewalCount + 1,
+        'due_at' => $newDueAt,
+        'receipt_id' => $receiptMeta['receipt_id'],
+        'receipt_code' => $receiptMeta['receipt_code'],
+        'receipt_print_url' => $receiptMeta['receipt_print_url'],
+      ];
+    } catch (Exception $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+      error_log('LibrarianPortalRepository::renewLoan error: ' . $e->getMessage());
+      return ['ok' => false, 'message' => 'Unable to renew loan right now.'];
     }
   }
 
