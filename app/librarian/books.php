@@ -280,7 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ];
     }
   }
-
 }
 
 $search = trim((string)($_GET['q'] ?? ''));
@@ -396,6 +395,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
       width: 650px !important;
       max-width: 95vw !important;
     }
+
     .edit-book-modal-card .admin-form-grid {
       max-height: 72vh;
       overflow-y: auto;
@@ -466,7 +466,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                 </div>
 
                 <div class="admin-form-field admin-span-2">
-                  <label for="add_book_genre">Category</label>
+                  <label for="add_book_genre">Genre</label>
                   <input id="add_book_genre" type="text" name="genre" required maxlength="100" value="<?php echo htmlspecialchars((string)$bookForm['genre'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Fiction, Science">
                 </div>
 
@@ -530,7 +530,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                 </div>
 
                 <div class="admin-form-field">
-                  <label for="edit_book_genre">Category</label>
+                  <label for="edit_book_genre">Genre</label>
                   <input id="edit_book_genre" type="text" name="genre" required maxlength="100" placeholder="e.g. Fiction, Science">
                 </div>
 
@@ -545,10 +545,11 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                   <small class="admin-form-help">Total physical copies. Available copies adjust automatically.</small>
                 </div>
 
-                <div class="admin-form-field admin-span-2">
+                <div class="admin-form-field">
                   <label for="edit_book_cover_image">New Book Cover (optional)</label>
                   <input id="edit_book_cover_image" type="file" name="edit_cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
                   <small class="admin-form-help">Upload new cover to replace existing. JPG, PNG, WEBP, GIF (max 5MB).</small>
+                  <img id="edit_cover_preview" src="" alt="Cover preview" style="display:none;max-width:140px;margin-top:8px;border-radius:10px;border:1px solid var(--admin-line);">
                 </div>
 
                 <div class="admin-modal-actions">
@@ -699,8 +700,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                         <button
                           type="button"
                           class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary librarian-book-edit-btn"
-                          data-book-id="<?php echo (int)($row['id'] ?? 0); ?>"
-                        >Edit</button>
+                          data-book-id="<?php echo (int)($row['id'] ?? 0); ?>">Edit</button>
                       </div>
 
 
@@ -719,32 +719,32 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
   <?php renderPageAlerts($page_alerts); ?>
 
   <?php if ($bookAddResult !== null): ?>
-  <script>
-    (function () {
-      var result = <?php echo json_encode($bookAddResult, JSON_UNESCAPED_SLASHES); ?>;
-      if (result.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: result.title,
-          text: result.message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#d24718',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: result.title,
-          text: result.message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#d24718',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      }
-    })();
-  </script>
+    <script>
+      (function() {
+        var result = <?php echo json_encode($bookAddResult, JSON_UNESCAPED_SLASHES); ?>;
+        if (result.ok) {
+          Swal.fire({
+            icon: 'success',
+            title: result.title,
+            text: result.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#d24718',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: result.title,
+            text: result.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#d24718',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+          });
+        }
+      })();
+    </script>
   <?php endif; ?>
 
   <script>
@@ -805,40 +805,55 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
   </script>
 
   <?php if ($bookEditResult !== null): ?>
-  <script>
-    (function () {
-      var result = <?php echo json_encode($bookEditResult, JSON_UNESCAPED_SLASHES); ?>;
-      if (result.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: result.title,
-          text: result.message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#d24718',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        }).then(function () {
-          window.location.reload();
-        });
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: result.title,
-          text: result.message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#d24718',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      }
-    })();
-  </script>
+    <script>
+      (function() {
+        var result = <?php echo json_encode($bookEditResult, JSON_UNESCAPED_SLASHES); ?>;
+        if (result.ok) {
+          Swal.fire({
+            icon: 'success',
+            title: result.title,
+            text: result.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#d24718',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+          }).then(function() {
+            window.location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: result.title,
+            text: result.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#d24718',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+          });
+        }
+      })();
+    </script>
   <?php endif; ?>
 
   <script>
-    (function () {
+    (function() {
       var editModal = document.getElementById('editBookModal');
       if (!editModal) return;
+
+      var editForm = editModal.querySelector('form');
+      var editSubmitBtn = editModal.querySelector('[type="submit"]');
+
+      function showCoverPreview(coverUrl) {
+        var preview = document.getElementById('edit_cover_preview');
+        if (!preview) return;
+        if (coverUrl) {
+          preview.src = coverUrl;
+          preview.style.display = 'block';
+        } else {
+          preview.style.display = 'none';
+          preview.src = '';
+        }
+      }
 
       function populateEditForm(book) {
         document.getElementById('edit_book_id').value = book.id || '';
@@ -849,16 +864,68 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
         document.getElementById('edit_book_publication_date').value = book.publication_date || '';
         document.getElementById('edit_book_genre').value = book.category || '';
         document.getElementById('edit_book_total_copies').value = book.total_copies || 0;
+
+        // Show existing cover preview if present
+        var coverRaw = book.cover_image || '';
+        if (coverRaw) {
+          showCoverPreview(coverRaw.indexOf('//') >= 0 || coverRaw.indexOf('/') === 0
+            ? coverRaw
+            : (coverRaw.indexOf('public/') === 0 ? '' : '') + coverRaw);
+        } else {
+          showCoverPreview('');
+        }
       }
+
+      // Cover file input preview
+      var coverInput = document.getElementById('edit_book_cover_image');
+      if (coverInput) {
+        coverInput.addEventListener('change', function() {
+          var file = coverInput.files && coverInput.files[0];
+          if (file) {
+            var reader = new FileReader();
+            reader.onload = function(e) { showCoverPreview(e.target.result); };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+
+      // Form reset, loading state, autofocus on modal close
+      editModal.querySelectorAll('[data-close-modal]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          editForm.reset();
+          showCoverPreview('');
+          document.getElementById('edit_book_id').value = '';
+          document.getElementById('edit_existing_cover_url').value = '';
+          editSubmitBtn.disabled = false;
+          editSubmitBtn.textContent = 'Save Changes';
+        });
+      });
+
+      editModal.addEventListener('click', function(event) {
+        if (event.target === editModal) {
+          editForm.reset();
+          showCoverPreview('');
+          document.getElementById('edit_book_id').value = '';
+          document.getElementById('edit_existing_cover_url').value = '';
+          editSubmitBtn.disabled = false;
+          editSubmitBtn.textContent = 'Save Changes';
+        }
+      });
 
       function openEditModal(bookId) {
         if (!bookId) return;
+
+        editSubmitBtn.disabled = true;
+        editSubmitBtn.textContent = 'Loading...';
 
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'librarian-books.php?fetch_book_id=' + encodeURIComponent(bookId), true);
         xhr.setRequestHeader('Accept', 'application/json');
 
-        xhr.onload = function () {
+        xhr.onload = function() {
+          editSubmitBtn.disabled = false;
+          editSubmitBtn.textContent = 'Save Changes';
+
           if (xhr.status !== 200) {
             Swal.fire({
               icon: 'error',
@@ -893,9 +960,17 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
 
           populateEditForm(response.book);
           openModal(editModal);
+
+          // Autofocus title field
+          setTimeout(function() {
+            var titleInput = document.getElementById('edit_book_title');
+            if (titleInput) titleInput.focus();
+          }, 200);
         };
 
-        xhr.onerror = function () {
+        xhr.onerror = function() {
+          editSubmitBtn.disabled = false;
+          editSubmitBtn.textContent = 'Save Changes';
           Swal.fire({
             icon: 'error',
             title: 'Network Error',
@@ -907,8 +982,8 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
         xhr.send();
       }
 
-      document.querySelectorAll('.librarian-book-edit-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+      document.querySelectorAll('.librarian-book-edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
           var bookId = btn.getAttribute('data-book-id');
           openEditModal(bookId);
         });

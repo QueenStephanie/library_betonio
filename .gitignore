@@ -72,3 +72,7 @@ testsprite_tests/.cache/
 vendor/
 backend/vendor/
 *.cache
+
+# Book cover uploads - persist across git-based deployments
+public/uploads/book-covers/*
+!public/uploads/book-covers/.gitkeep
