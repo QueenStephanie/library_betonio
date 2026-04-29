@@ -571,6 +571,7 @@ class LibrarianPortalRepository
     $hasBookCopies = self::tableExists($db, 'book_copies') && $loanCopyColumn !== null;
     $hasBooks = self::tableExists($db, 'books');
     $hasUsers = self::tableExists($db, 'users') && $loanUserColumn !== null;
+    $hasReceipts = self::tableExists($db, 'transaction_receipts');
 
     $limit = max(1, min(500, $limit));
 
@@ -613,11 +614,14 @@ class LibrarianPortalRepository
       " . ($hasBooks ? 'b.author' : "''") . " AS author,
       " . ($hasUsers ? 'u.first_name' : "''") . " AS borrower_first_name,
       " . ($hasUsers ? 'u.last_name' : "''") . " AS borrower_last_name,
-      " . ($hasUsers ? 'u.email' : "''") . " AS borrower_email
+      " . ($hasUsers ? 'u.email' : "''") . " AS borrower_email,
+      " . ($hasReceipts ? 'tr.id' : 'NULL') . " AS latest_receipt_id,
+      " . ($hasReceipts ? 'tr.receipt_code' : "''") . " AS latest_receipt_code
     FROM loans l
     {$copyJoin}
     {$bookJoin}
     {$userJoin}
+    " . ($hasReceipts ? "LEFT JOIN transaction_receipts tr ON tr.id = (SELECT id FROM transaction_receipts WHERE transaction_ref_id = l.id AND transaction_type IN ('checkout', 'reservation_checkout', 'renew') ORDER BY id DESC LIMIT 1)" : "") . "
     WHERE l.{$statusCol} IN ('active', 'overdue', 'borrowed')
     ORDER BY l.{$dueCol} ASC, l.id ASC
     LIMIT {$limit}";

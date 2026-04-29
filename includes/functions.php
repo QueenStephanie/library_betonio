@@ -919,7 +919,7 @@ function enforceAuthenticatedSessionTimeout($redirectPath = 'login.php')
 function renderSweetAlertScripts()
 {
   $config_path = htmlspecialchars(appPath('public/js/sweetalert-config.js'), ENT_QUOTES, 'UTF-8');
-  $page_alerts_path = htmlspecialchars(appPath('public/js/page-alerts.js'), ENT_QUOTES, 'UTF-8');
+  $page_alerts_path = htmlspecialchars(appPath('public/js/page-alerts.js', ['v' => '3']), ENT_QUOTES, 'UTF-8');
 
   echo '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>' . PHP_EOL;
   echo '<script src="' . $config_path . '"></script>' . PHP_EOL;
@@ -979,9 +979,7 @@ function appendReceiptAlertMeta(array &$alert, array $result): void
         'mobileFileName' => ($receiptCode !== '' ? strtolower($receiptCode) : ('receipt-' . $receiptId)) . '.html',
     ];
 
-    if ($receiptCode !== '') {
-        $alert['message'] .= ' Receipt: ' . $receiptCode . '.';
-    }
+    // Message is kept as is, receipt code is displayed in the UI separately.
 }
 
 function getLibrarianCssPaths(): array

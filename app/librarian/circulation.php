@@ -205,19 +205,7 @@ foreach ($rows as $row) {
       <div class="librarian-page">
         <div class="librarian-shell">
 
-          <?php if (!empty($page_alerts)): ?>
-          <div class="librarian-alerts-html" id="librarian-alerts-html">
-            <?php foreach ($page_alerts as $pa): ?>
-            <div class="librarian-alert librarian-alert-<?php echo htmlspecialchars((string)($pa['type'] ?? 'info'), ENT_QUOTES, 'UTF-8'); ?> librarian-alert-dismissible" role="alert" style="margin-bottom:12px;padding:12px 16px;border-radius:8px;">
-              <strong><?php echo htmlspecialchars((string)($pa['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>:</strong>
-              <?php echo htmlspecialchars((string)($pa['message'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
-              <?php if (!empty($pa['receipt']['code'])): ?>
-                <span style="display:inline-block;margin-left:8px;font-weight:600;">Receipt: <?php echo htmlspecialchars((string)$pa['receipt']['code'], ENT_QUOTES, 'UTF-8'); ?></span>
-              <?php endif; ?>
-            </div>
-            <?php endforeach; ?>
-          </div>
-          <?php endif; ?>
+
 
           <section class="librarian-hero">
             <div class="librarian-hero-copy">
@@ -472,6 +460,31 @@ $bookLabel = trim((string)($row['title'] ?? ''));
                                 <input type="hidden" name="loan_id" value="<?php echo (int)($row['id'] ?? 0); ?>">
                                 <button type="submit" class="admin-button admin-button-outline librarian-btn librarian-btn-outline" style="font-size:0.8rem;padding:4px 10px;">Renew (<?php echo (int)($row['renewals_remaining'] ?? 0); ?> left)</button>
                               </form>
+                            <?php endif; ?>
+                            <?php if (!empty($row['latest_receipt_id']) && !empty($row['latest_receipt_code'])): ?>
+                              <?php
+                                $rId = (int)$row['latest_receipt_id'];
+                                $rCode = htmlspecialchars((string)$row['latest_receipt_code'], ENT_QUOTES, 'UTF-8');
+                                $rViewUrl = appPath('librarian-receipt.php', ['receipt_id' => $rId]);
+                                $rPrintUrl = appPath('librarian-receipt.php', ['receipt_id' => $rId, 'auto_print' => 1]);
+                                $rDownloadUrl = appPath('librarian-receipt.php', ['receipt_id' => $rId, 'download' => 1]);
+                                $rJson = json_encode([
+                                  [
+                                    'type' => 'success',
+                                    'title' => 'Transaction Receipt',
+                                    'message' => 'Receipt is ready.',
+                                    'receipt' => [
+                                      'id' => $rId,
+                                      'code' => $rCode,
+                                      'viewUrl' => $rViewUrl,
+                                      'printUrl' => $rPrintUrl,
+                                      'downloadUrl' => $rDownloadUrl,
+                                      'mobileFileName' => 'receipt-' . $rCode . '.html'
+                                    ]
+                                  ]
+                                ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+                              ?>
+                              <button type="button" class="admin-button admin-button-ghost librarian-btn librarian-btn-secondary" style="font-size:0.8rem;padding:4px 10px;margin-left:4px;" onclick='window.PageAlerts && window.PageAlerts.run(<?php echo $rJson; ?>)'>Receipt</button>
                             <?php endif; ?>
                             <?php if (empty($row['can_checkin']) && empty($row['can_renew'])): ?>
                               <span class="librarian-inline-note">Not available</span>

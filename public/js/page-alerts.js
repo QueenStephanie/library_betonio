@@ -108,39 +108,9 @@
 
   function runReceiptOverlay(alert) {
     return new Promise(function (resolve) {
-      if (typeof window.Swal !== 'object' || window.Swal === null || typeof window.Swal.fire !== 'function') {
-        Promise.resolve(handleReceiptAction(alert)).finally(function () {
-          redirectTo(alert.redirect);
-          redirectTo(alert.onConfirmRedirect);
-          resolve();
-        });
-        return;
-      }
-
-      var isSuccess = asString(alert.type, 'success') === 'success';
-      var isMobile = isMobileLikeDevice();
-      var receipt = alert.receipt || {};
-      var receiptCode = asString(receipt.code, 'N/A');
-      var actionText = isMobile ? 'Download receipt file' : 'Open print view (Ctrl+P)';
-
-      window.Swal.fire({
-        icon: isSuccess ? 'success' : 'info',
-        title: asString(alert.title, 'Transaction Receipt'),
-        html:
-          '<p style="margin:0 0 10px;">' + escapeHtml(asString(alert.message, '')) + '</p>' +
-          '<div style="padding:10px 12px;border:1px solid #f0d8c8;background:#fff7f1;border-radius:10px;text-align:left;">' +
-          '<div><strong>Receipt:</strong> ' + escapeHtml(receiptCode) + '</div>' +
-          '<div><strong>Action:</strong> ' + escapeHtml(actionText) + '</div>' +
-          '</div>',
-        confirmButtonText: isMobile ? 'Download' : 'Print',
-        confirmButtonColor: '#d24718',
-        showCancelButton: true,
-        cancelButtonText: 'Close',
-        cancelButtonColor: '#999',
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      }).then(function (result) {
-        if (result.isConfirmed) {
+      try {
+        if (typeof window.Swal !== 'object' || window.Swal === null || typeof window.Swal.fire !== 'function') {
+          window.alert("Receipt is ready: " + asString(alert.receipt.code, '') + "\n\n(Note: The stylish popup couldn't load, so falling back to standard print.)");
           Promise.resolve(handleReceiptAction(alert)).finally(function () {
             redirectTo(alert.redirect);
             redirectTo(alert.onConfirmRedirect);
@@ -149,10 +119,49 @@
           return;
         }
 
-        redirectTo(alert.redirect);
-        redirectTo(alert.onCancelRedirect);
+        var isSuccess = asString(alert.type, 'success') === 'success';
+        var isMobile = isMobileLikeDevice();
+        var receipt = alert.receipt || {};
+        var receiptCode = asString(receipt.code, 'N/A');
+        var actionText = isMobile ? 'Download receipt file' : 'Open print view (Ctrl+P)';
+
+        window.Swal.fire({
+          icon: isSuccess ? 'success' : 'info',
+          title: asString(alert.title, 'Transaction Receipt'),
+          html:
+            '<p style="margin:0 0 10px;">' + escapeHtml(asString(alert.message, '')) + '</p>' +
+            '<div style="padding:0;border:1px solid #e5e7eb;background:#f9fafb;border-radius:8px;text-align:left;overflow:hidden;height:350px;">' +
+            '<iframe src="' + escapeHtml(asString(receipt.viewUrl, '')) + '" style="width:100%;height:100%;border:0;"></iframe>' +
+            '</div>',
+          width: '600px',
+          confirmButtonText: isMobile ? 'Download' : 'Print',
+          confirmButtonColor: '#d24718',
+          showCancelButton: true,
+          cancelButtonText: 'Close',
+          cancelButtonColor: '#999',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            Promise.resolve(handleReceiptAction(alert)).finally(function () {
+              redirectTo(alert.redirect);
+              redirectTo(alert.onConfirmRedirect);
+              resolve();
+            });
+            return;
+          }
+
+          redirectTo(alert.redirect);
+          redirectTo(alert.onCancelRedirect);
+          resolve();
+        }).catch(function (e) {
+          window.alert("SweetAlert encountered an error: " + e.message);
+          resolve();
+        });
+      } catch (err) {
+        window.alert("An unexpected error occurred displaying the receipt: " + err.message);
         resolve();
-      });
+      }
     });
   }
 
