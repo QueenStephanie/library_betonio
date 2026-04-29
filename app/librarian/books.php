@@ -804,36 +804,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
     <?php endif; ?>
   </script>
 
-  <?php if ($bookEditResult !== null): ?>
-    <script>
-      (function() {
-        var result = <?php echo json_encode($bookEditResult, JSON_UNESCAPED_SLASHES); ?>;
-        if (result.ok) {
-          Swal.fire({
-            icon: 'success',
-            title: result.title,
-            text: result.message,
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#d24718',
-            allowOutsideClick: false,
-            allowEscapeKey: false
-          }).then(function() {
-            window.location.reload();
-          });
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: result.title,
-            text: result.message,
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#d24718',
-            allowOutsideClick: false,
-            allowEscapeKey: false
-          });
-        }
-      })();
-    </script>
-  <?php endif; ?>
+
 
   <script>
     (function() {

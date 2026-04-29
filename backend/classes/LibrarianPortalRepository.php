@@ -558,7 +558,8 @@ class LibrarianPortalRepository
 
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanBookColumn = self::resolveColumn($db, 'loans', ['book_id']);
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
 
     if ($loanStatusColumn === null || $loanDueColumn === null) {
@@ -579,8 +580,15 @@ class LibrarianPortalRepository
     $copyCol = $loanCopyColumn !== null ? "`$loanCopyColumn`" : '';
     $userCol = $loanUserColumn !== null ? "`$loanUserColumn`" : '';
 
-    $copyJoin = $hasBookCopies ? ' LEFT JOIN book_copies bc ON bc.id = l.' . $copyCol : '';
-    $bookJoin = ($hasBookCopies && $hasBooks && self::hasColumn($db, 'book_copies', 'book_id')) ? ' LEFT JOIN books b ON b.id = bc.book_id' : '';
+    $copyJoin = $hasBookCopies && $loanCopyColumn !== null ? ' LEFT JOIN book_copies bc ON bc.id = l.' . $copyCol : '';
+    $bookJoin = '';
+    if ($hasBooks) {
+      if ($loanBookColumn !== null) {
+        $bookJoin = ' LEFT JOIN books b ON b.id = l.`' . $loanBookColumn . '`';
+      } elseif ($hasBookCopies && self::hasColumn($db, 'book_copies', 'book_id')) {
+        $bookJoin = ' LEFT JOIN books b ON b.id = bc.book_id';
+      }
+    }
     $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = l.' . $userCol : '';
 
     $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date', 'borrowed_at']);
@@ -645,7 +653,7 @@ class LibrarianPortalRepository
     }
 
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
     if ($loanStatusColumn === null) {
       return ['ok' => false, 'message' => 'Check-in is unavailable due to incompatible loans schema.'];
     }
@@ -805,7 +813,7 @@ class LibrarianPortalRepository
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
     $loanRenewalCountColumn = self::resolveColumn($db, 'loans', ['renewal_count', 'renewed']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
 
     if ($loanIdColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
       return ['ok' => false, 'message' => 'Renewal is unavailable due to incompatible loans schema.'];
@@ -1301,10 +1309,11 @@ class LibrarianPortalRepository
     }
 
     $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
-    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+    $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+    $loanBookColumn = self::resolveColumn($db, 'loans', ['book_id']);
     $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
     $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-    if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
+    if ($loanUserColumn === null || ($loanCopyColumn === null && $loanBookColumn === null) || $loanStatusColumn === null || $loanDueColumn === null) {
       return ['ok' => false, 'message' => 'Checkout is unavailable due to incompatible loans schema.'];
     }
 
@@ -1336,14 +1345,24 @@ class LibrarianPortalRepository
         ':id' => $copyId,
       ]);
 
-      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanCopyColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
-      $insertValues = [':user_id', ':book_copy_id', ':loan_status', ':due_at'];
+      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
+      $insertValues = [':user_id', ':loan_status', ':due_at'];
       $insertParams = [
         ':user_id' => $borrowerUserId,
-        ':book_copy_id' => $copyId,
         ':loan_status' => 'active',
         ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
       ];
+
+      if ($loanCopyColumn !== null) {
+        $insertColumns[] = '`' . $loanCopyColumn . '`';
+        $insertValues[] = ':book_copy_id';
+        $insertParams[':book_copy_id'] = $copyId;
+      }
+      if ($loanBookColumn !== null) {
+        $insertColumns[] = '`' . $loanBookColumn . '`';
+        $insertValues[] = ':book_id';
+        $insertParams[':book_id'] = $bookId;
+      }
 
       $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date']);
       if ($loanCheckedOutColumn !== null) {
@@ -1504,10 +1523,11 @@ class LibrarianPortalRepository
       }
 
       $loanUserColumn = self::resolveColumn($db, 'loans', ['user_id', 'borrower_user_id']);
-      $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id', 'book_id']);
+      $loanCopyColumn = self::resolveColumn($db, 'loans', ['book_copy_id']);
+      $loanBookColumn = self::resolveColumn($db, 'loans', ['book_id']);
       $loanStatusColumn = self::resolveColumn($db, 'loans', ['loan_status', 'status']);
       $loanDueColumn = self::resolveColumn($db, 'loans', ['due_at', 'due_date']);
-      if ($loanUserColumn === null || $loanCopyColumn === null || $loanStatusColumn === null || $loanDueColumn === null) {
+      if ($loanUserColumn === null || ($loanCopyColumn === null && $loanBookColumn === null) || $loanStatusColumn === null || $loanDueColumn === null) {
         $db->rollBack();
         return ['ok' => false, 'message' => 'Loans schema is incompatible with checkout bridge.'];
       }
@@ -1519,14 +1539,24 @@ class LibrarianPortalRepository
       ]);
 
       $loanDays = max(1, min(60, $loanDays));
-      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanCopyColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
-      $insertValues = [':user_id', ':book_copy_id', ':loan_status', ':due_at'];
+      $insertColumns = ['`' . $loanUserColumn . '`', '`' . $loanStatusColumn . '`', '`' . $loanDueColumn . '`'];
+      $insertValues = [':user_id', ':loan_status', ':due_at'];
       $insertParams = [
         ':user_id' => $borrowerUserId,
-        ':book_copy_id' => $copyId,
         ':loan_status' => 'active',
         ':due_at' => date('Y-m-d H:i:s', strtotime('+' . $loanDays . ' days')),
       ];
+
+      if ($loanCopyColumn !== null) {
+        $insertColumns[] = '`' . $loanCopyColumn . '`';
+        $insertValues[] = ':book_copy_id';
+        $insertParams[':book_copy_id'] = $copyId;
+      }
+      if ($loanBookColumn !== null) {
+        $insertColumns[] = '`' . $loanBookColumn . '`';
+        $insertValues[] = ':book_id';
+        $insertParams[':book_id'] = $bookId;
+      }
 
       $loanCheckedOutColumn = self::resolveColumn($db, 'loans', ['checked_out_at', 'checkout_date']);
       if ($loanCheckedOutColumn !== null) {
