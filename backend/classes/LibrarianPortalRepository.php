@@ -103,7 +103,8 @@ class LibrarianPortalRepository
   /**
    * Safely quote SQL identifier for safe interpolation
    */
-  private static function quoteIdentifier(string $identifier): string {
+  private static function quoteIdentifier(string $identifier): string
+  {
     if (!preg_match('/^[a-zA-Z0-9_]+$/', $identifier)) {
       throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
     }
@@ -856,15 +857,19 @@ class LibrarianPortalRepository
 
       // Check if another reservation is waiting for this title
       $bookId = 0;
-      if (isset($loan['book_copy_id']) && (int)$loan['book_copy_id'] > 0
-        && self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id')) {
+      if (
+        isset($loan['book_copy_id']) && (int)$loan['book_copy_id'] > 0
+        && self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id')
+      ) {
         $copyStmt = $db->prepare('SELECT book_id FROM book_copies WHERE id = :copy_id LIMIT 1 FOR UPDATE');
         $copyStmt->execute([':copy_id' => (int)$loan['book_copy_id']]);
         $bookId = (int)$copyStmt->fetchColumn();
       }
 
-      if ($bookId > 0 && self::tableExists($db, 'reservations') && self::hasColumn($db, 'reservations', 'book_id')
-        && self::hasColumn($db, 'reservations', 'status')) {
+      if (
+        $bookId > 0 && self::tableExists($db, 'reservations') && self::hasColumn($db, 'reservations', 'book_id')
+        && self::hasColumn($db, 'reservations', 'status')
+      ) {
         $queueStmt = $db->prepare("SELECT COUNT(*) FROM reservations WHERE book_id = :book_id AND status IN ('pending', 'ready') FOR UPDATE");
         $queueStmt->execute([':book_id' => $bookId]);
         $hasActiveQueue = (int)$queueStmt->fetchColumn() > 0;
@@ -2140,6 +2145,7 @@ class LibrarianPortalRepository
     $limit = max(1, min(500, $limit));
     $hasUsers = self::tableExists($db, 'users') && $reservationUserColumn !== null;
     $hasBooks = self::tableExists($db, 'books') && $reservationBookColumn !== null;
+    $hasCopies = self::tableExists($db, 'book_copies') && self::hasColumn($db, 'book_copies', 'book_id') && self::hasColumn($db, 'book_copies', 'status');
 
     $userJoin = $hasUsers ? ' LEFT JOIN users u ON u.id = r.`' . $reservationUserColumn . '`' : '';
     $bookJoin = $hasBooks ? ' LEFT JOIN books b ON b.id = r.`' . $reservationBookColumn . '`' : '';
@@ -2150,6 +2156,10 @@ class LibrarianPortalRepository
     $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
     $pickedUpExpr = $reservationPickedUpColumn !== null ? 'r.`' . $reservationPickedUpColumn . '`' : 'NULL';
     $orderByExpr = $reservationQueuedColumn !== null ? $queuedExpr : 'r.`' . $reservationIdColumn . '`';
+    $availableCopiesExpr = '0';
+    if ($hasCopies) {
+      $availableCopiesExpr = '(SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = r.`' . $reservationBookColumn . '` AND bc.status = \'available\')';
+    }
 
     $sql = "SELECT
       r.`{$reservationIdColumn}` AS id,
@@ -2159,6 +2169,7 @@ class LibrarianPortalRepository
       {$queuedExpr} AS queued_at,
       {$readyUntilExpr} AS ready_until,
       {$pickedUpExpr} AS picked_up_at,
+      {$availableCopiesExpr} AS available_copies,
       " . ($hasUsers ? 'u.first_name' : "''") . " AS borrower_first_name,
       " . ($hasUsers ? 'u.last_name' : "''") . " AS borrower_last_name,
       " . ($hasUsers ? 'u.email' : "''") . " AS borrower_email,
@@ -2180,6 +2191,7 @@ class LibrarianPortalRepository
       }
       $bookPositions[$bookId]++;
       $row['queue_position'] = $bookPositions[$bookId];
+      $row['can_checkout'] = ((int)($row['available_copies'] ?? 0)) > 0;
     }
     unset($row);
 
@@ -2227,7 +2239,7 @@ class LibrarianPortalRepository
       $params = [':id' => $reservationId];
       $successMessage = 'Reservation updated.';
 
-    if ($action === 'approve') {
+      if ($action === 'approve') {
         if ($currentStatus !== 'pending') {
           $db->rollBack();
           return ['ok' => false, 'message' => 'Only pending reservations can be approved.'];
@@ -2292,11 +2304,11 @@ class LibrarianPortalRepository
 
       // Send email notification when reservation is approved (ready for pickup)
       if ($action === 'approve' && $reservationId > 0) {
-          try {
-              self::sendReservationReadyNotification($db, $reservationId);
-          } catch (Exception $e) {
-              error_log('Failed to send reservation ready notification: ' . $e->getMessage());
-          }
+        try {
+          self::sendReservationReadyNotification($db, $reservationId);
+        } catch (Exception $e) {
+          error_log('Failed to send reservation ready notification: ' . $e->getMessage());
+        }
       }
 
       return ['ok' => true, 'message' => $successMessage];
@@ -2314,17 +2326,17 @@ class LibrarianPortalRepository
    */
   private static function sendReservationReadyNotification(PDO $db, int $reservationId): void
   {
-      $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
-      $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
-      $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
+    $reservationUserColumn = self::resolveColumn($db, 'reservations', ['user_id', 'borrower_user_id']);
+    $reservationBookColumn = self::resolveColumn($db, 'reservations', ['book_id']);
+    $reservationReadyUntilColumn = self::resolveColumn($db, 'reservations', ['ready_until', 'expires_at']);
 
-      if ($reservationUserColumn === null || $reservationBookColumn === null) {
-          return;
-      }
+    if ($reservationUserColumn === null || $reservationBookColumn === null) {
+      return;
+    }
 
-      $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
+    $readyUntilExpr = $reservationReadyUntilColumn !== null ? 'r.`' . $reservationReadyUntilColumn . '`' : 'NULL';
 
-      $sql = "SELECT r.id, r.`{$reservationUserColumn}` AS user_id, r.`{$reservationBookColumn}` AS book_id,
+    $sql = "SELECT r.id, r.`{$reservationUserColumn}` AS user_id, r.`{$reservationBookColumn}` AS book_id,
               {$readyUntilExpr} AS ready_until,
               u.email, u.first_name, u.last_name,
               b.title AS book_title, b.author AS book_author
@@ -2332,37 +2344,37 @@ class LibrarianPortalRepository
               LEFT JOIN users u ON u.id = r.`{$reservationUserColumn}`
               LEFT JOIN books b ON b.id = r.`{$reservationBookColumn}`
               WHERE r.id = :id LIMIT 1";
-      $stmt = $db->prepare($sql);
-      $stmt->execute([':id' => $reservationId]);
-      $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare($sql);
+    $stmt->execute([':id' => $reservationId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      if (!is_array($row) || empty($row['email'])) {
-          return;
+    if (!is_array($row) || empty($row['email'])) {
+      return;
+    }
+
+    $email = trim((string)$row['email']);
+    $name = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    if ($name === '') {
+      $name = $email;
+    }
+    $bookTitle = trim((string)($row['book_title'] ?? 'Unknown Title'));
+    $bookAuthor = trim((string)($row['book_author'] ?? ''));
+    $readyUntil = trim((string)($row['ready_until'] ?? '3 days'));
+
+    try {
+      $mailHandler = null;
+      if (function_exists('getMailHandler')) {
+        $mailHandler = getMailHandler();
+      }
+      if ($mailHandler === null) {
+        require_once __DIR__ . '/../mail/MailHandler.php';
+        $mailHandler = new MailHandler($db);
       }
 
-      $email = trim((string)$row['email']);
-      $name = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-      if ($name === '') {
-          $name = $email;
-      }
-      $bookTitle = trim((string)($row['book_title'] ?? 'Unknown Title'));
-      $bookAuthor = trim((string)($row['book_author'] ?? ''));
-      $readyUntil = trim((string)($row['ready_until'] ?? '3 days'));
-
-      try {
-          $mailHandler = null;
-          if (function_exists('getMailHandler')) {
-              $mailHandler = getMailHandler();
-          }
-          if ($mailHandler === null) {
-              require_once __DIR__ . '/../mail/MailHandler.php';
-              $mailHandler = new MailHandler($db);
-          }
-
-          $mailHandler->sendReservationReadyEmail($email, $name, $bookTitle, $bookAuthor, $readyUntil);
-      } catch (Throwable $e) {
-          error_log('sendReservationReadyNotification error: ' . $e->getMessage());
-      }
+      $mailHandler->sendReservationReadyEmail($email, $name, $bookTitle, $bookAuthor, $readyUntil);
+    } catch (Throwable $e) {
+      error_log('sendReservationReadyNotification error: ' . $e->getMessage());
+    }
   }
 
 
