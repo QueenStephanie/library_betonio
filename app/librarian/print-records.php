@@ -11,7 +11,7 @@ require_once APP_ROOT . '/backend/classes/PermissionGate.php';
 require_once APP_ROOT . '/backend/classes/LibrarianPortalRepository.php';
 require_once APP_ROOT . '/backend/classes/FineReporting.php';
 
-PermissionGate::requirePageAccess('librarian', 'print_records');
+PermissionGate::requireAdminRole('librarian');
 
 $reportType = strtolower(trim((string)($_GET['type'] ?? '')));
 $autoPrint = isset($_GET['auto_print']) && (string)($_GET['auto_print']) === '1';
