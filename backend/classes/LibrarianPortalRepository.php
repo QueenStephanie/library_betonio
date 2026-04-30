@@ -1866,7 +1866,15 @@ class LibrarianPortalRepository
     $sql .= $isbnColumn !== null ? ', b.`' . $isbnColumn . '` AS isbn' : ", '' AS isbn";
     $sql .= $categoryColumn !== null ? ', b.`' . $categoryColumn . '` AS category' : ", '' AS category";
     $sql .= $publishedYearColumn !== null ? ', b.`' . $publishedYearColumn . '` AS publish_year' : ', NULL AS publish_year';
-    $sql .= $publicationDateColumn !== null ? ', b.publication_date' : ', NULL AS publication_date';
+    if ($publicationDateColumn !== null && $publishedYearColumn !== null) {
+      $sql .= ', COALESCE(NULLIF(b.publication_date, \'\'), CASE WHEN b.`' . $publishedYearColumn . '` IS NOT NULL AND b.`' . $publishedYearColumn . '` > 0 THEN CONCAT(b.`' . $publishedYearColumn . '`, \'-01-01\') ELSE NULL END) AS publication_date';
+    } elseif ($publicationDateColumn !== null) {
+      $sql .= ', b.publication_date';
+    } elseif ($publishedYearColumn !== null) {
+      $sql .= ', CASE WHEN b.`' . $publishedYearColumn . '` IS NOT NULL AND b.`' . $publishedYearColumn . '` > 0 THEN CONCAT(b.`' . $publishedYearColumn . '`, \'-01-01\') ELSE NULL END AS publication_date';
+    } else {
+      $sql .= ', NULL AS publication_date';
+    }
     $sql .= $descriptionColumn !== null ? ', b.`' . $descriptionColumn . '` AS description' : ', NULL AS description';
     $sql .= $publisherColumn !== null ? ', b.publisher' : ', NULL AS publisher';
     $sql .= $editionColumn !== null ? ', b.edition' : ', NULL AS edition';
@@ -1913,6 +1921,28 @@ class LibrarianPortalRepository
 
     if (!self::tableExists($db, 'books')) {
       return ['ok' => false, 'message' => 'Books table is missing.'];
+    }
+
+    if (trim((string)($input['publication_date'] ?? '')) === '') {
+      $existingDateColumn = self::hasColumn($db, 'books', 'publication_date') ? 'publication_date' : null;
+      $existingYearColumn = self::resolveColumn($db, 'books', ['published_year', 'publication_year', 'publish_year']);
+      if ($existingDateColumn !== null || $existingYearColumn !== null) {
+        $existingSql = 'SELECT ';
+        if ($existingDateColumn !== null && $existingYearColumn !== null) {
+          $existingSql .= 'COALESCE(NULLIF(publication_date, \'\'), CASE WHEN `' . $existingYearColumn . '` IS NOT NULL AND `' . $existingYearColumn . '` > 0 THEN CONCAT(`' . $existingYearColumn . '`, \'-01-01\') ELSE NULL END)';
+        } elseif ($existingDateColumn !== null) {
+          $existingSql .= 'publication_date';
+        } else {
+          $existingSql .= 'CASE WHEN `' . $existingYearColumn . '` IS NOT NULL AND `' . $existingYearColumn . '` > 0 THEN CONCAT(`' . $existingYearColumn . '`, \'-01-01\') ELSE NULL END';
+        }
+        $existingSql .= ' FROM books WHERE id = :id LIMIT 1';
+        $existingStmt = $db->prepare($existingSql);
+        $existingStmt->execute([':id' => $bookId]);
+        $existingPublicationDate = trim((string)$existingStmt->fetchColumn());
+        if ($existingPublicationDate !== '') {
+          $input['publication_date'] = $existingPublicationDate;
+        }
+      }
     }
 
     $validation = self::evaluateBookCreationRules($input);

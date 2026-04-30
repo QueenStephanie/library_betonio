@@ -258,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => getPost('title', ''),
         'author' => getPost('author', ''),
         'isbn' => getPost('isbn', ''),
-        'publication_date' => getPost('publication_date', ''),
+        'publication_date' => getPost('publication_date', '') !== '' ? getPost('publication_date', '') : getPost('existing_publication_date', ''),
         'genre' => getPost('genre', ''),
         'total_copies' => getPost('total_copies', '-1'),
         'cover_image_url' => getPost('existing_cover_url', ''),
@@ -395,17 +395,38 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <style>
     .edit-book-modal-card {
-      max-height: 95vh !important;
+      display: flex;
+      flex-direction: column;
+      max-height: min(92vh, 760px) !important;
       min-height: 60vh;
-      overflow-y: auto !important;
-      width: 650px !important;
+      overflow: hidden !important;
+      width: 720px !important;
       max-width: 95vw !important;
     }
 
     .edit-book-modal-card .admin-form-grid {
-      max-height: 72vh;
       overflow-y: auto;
       padding-right: 8px;
+    }
+
+    .edit-book-modal-card .admin-modal-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-end;
+    }
+
+    .edit-book-modal-card .admin-modal-actions .admin-button {
+      flex: 0 1 auto;
+      min-width: 170px;
+    }
+
+    @media (max-width: 760px) {
+      .edit-book-modal-card .admin-modal-actions {
+        flex-direction: column;
+      }
+
+      .edit-book-modal-card .admin-modal-actions .admin-button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -514,6 +535,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
                 <input type="hidden" name="action" value="edit_book">
                 <input type="hidden" name="book_id" id="edit_book_id" value="">
                 <input type="hidden" name="existing_cover_url" id="edit_existing_cover_url" value="">
+                <input type="hidden" name="existing_publication_date" id="edit_existing_publication_date" value="">
 
                 <div class="admin-form-field">
                   <label for="edit_book_title">Title</label>
@@ -839,6 +861,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
         document.getElementById('edit_book_author').value = book.author || '';
         document.getElementById('edit_book_isbn').value = book.isbn || '';
         document.getElementById('edit_book_publication_date').value = book.publication_date || '';
+        document.getElementById('edit_existing_publication_date').value = book.publication_date || '';
         document.getElementById('edit_book_genre').value = book.category || '';
         document.getElementById('edit_book_total_copies').value = book.total_copies || 0;
 
@@ -873,6 +896,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
           showCoverPreview('');
           document.getElementById('edit_book_id').value = '';
           document.getElementById('edit_existing_cover_url').value = '';
+          document.getElementById('edit_existing_publication_date').value = '';
           editSubmitBtn.disabled = false;
           editSubmitBtn.textContent = 'Save Changes';
         });
@@ -884,6 +908,7 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
           showCoverPreview('');
           document.getElementById('edit_book_id').value = '';
           document.getElementById('edit_existing_cover_url').value = '';
+          document.getElementById('edit_existing_publication_date').value = '';
           editSubmitBtn.disabled = false;
           editSubmitBtn.textContent = 'Save Changes';
         }
