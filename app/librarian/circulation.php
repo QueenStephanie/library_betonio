@@ -507,9 +507,74 @@ $bookLabel = trim((string)($row['title'] ?? ''));
   <?php renderPageAlerts($page_alerts); ?>
   <script>
   (function() {
+    var checkoutForms = document.querySelectorAll('form#manual-checkout-form, form input[name="action"][value="checkout_reservation"]');
+    checkoutForms.forEach(function(node) {
+      var form = node.tagName === 'FORM' ? node : node.closest('form');
+      if (!form) {
+        return;
+      }
+
+      form.addEventListener('submit', function() {
+        var actionInput = form.querySelector('input[name="action"]');
+        var actionType = actionInput ? String(actionInput.value || '') : '';
+
+        try {
+          sessionStorage.setItem('circulation_last_checkout_action', actionType);
+          sessionStorage.setItem('circulation_last_checkout_at', new Date().toISOString());
+        } catch (e) {}
+
+        if (window.Swal) {
+          Swal.fire({
+            title: 'Processing Checkout',
+            text: actionType === 'checkout_reservation' ? 'Submitting reservation pickup checkout...' : 'Submitting manual checkout...',
+            icon: 'info',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: function() {
+              Swal.showLoading();
+            }
+          });
+        }
+      });
+    });
+
     var alerts = <?php echo json_encode(array_map(function($a) {
       return ['type' => $a['type'] ?? '', 'title' => $a['title'] ?? '', 'message' => $a['message'] ?? ''];
     }, $page_alerts), JSON_UNESCAPED_SLASHES); ?>;
+
+    var hasCheckoutFailure = (alerts || []).some(function(a) {
+      var title = String((a && a.title) || '').toLowerCase();
+      var type = String((a && a.type) || '').toLowerCase();
+      return type === 'error' && (title.indexOf('checkout failed') !== -1 || title.indexOf('reservation checkout failed') !== -1);
+    });
+
+    if (hasCheckoutFailure && window.Swal) {
+      var actionType = '';
+      var submittedAt = '';
+      try {
+        actionType = sessionStorage.getItem('circulation_last_checkout_action') || '';
+        submittedAt = sessionStorage.getItem('circulation_last_checkout_at') || '';
+        sessionStorage.removeItem('circulation_last_checkout_action');
+        sessionStorage.removeItem('circulation_last_checkout_at');
+      } catch (e) {}
+
+      var firstError = alerts.find(function(a) { return String((a && a.type) || '').toLowerCase() === 'error'; }) || null;
+      var safeMessage = firstError ? String(firstError.message || 'Unknown checkout error.') : 'Unknown checkout error.';
+      var modeLabel = actionType === 'checkout_reservation' ? 'Queue/Reservation Checkout' : 'Manual Checkout';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Checkout Diagnostic',
+        html: '<div style="text-align:left">'
+          + '<p><strong>Mode:</strong> ' + modeLabel + '</p>'
+          + '<p><strong>Submitted At:</strong> ' + (submittedAt || 'N/A') + '</p>'
+          + '<p><strong>Server Message:</strong> ' + safeMessage + '</p>'
+          + '<p style="margin-top:10px;color:#666;">Hint: If this only fails on hosting, check origin/CSRF/session + APP_URL/APP_BASE_PATH config.</p>'
+          + '</div>'
+      });
+    }
+
     if (alerts && alerts.length > 0) {
       console.log('[Circulation Alerts]', alerts);
     }
