@@ -252,11 +252,7 @@ $borrowerCssHref = $cssPaths['borrower'];
         </div>
         <div class="hero-overlay"></div>
         <div class="container hero-content">
-<<<<<<< HEAD
           <h1>Your next great read is waiting</h1>
-=======
-          <h1>Your next great read is waiting here!.</h1>
->>>>>>> 3e6d7de1f2f23e2c9d89f1f386032442049e2cae
           <p>
             Browse thousands of titles, reserve books instantly, and track your
             loans, all from one place.
