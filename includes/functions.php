@@ -505,6 +505,18 @@ function validateStateChangingRequestOrigin($context = 'request')
   $isLocalHost = in_array($hostOnly, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
 
   if ($candidate['source'] === 'none') {
+    $secFetchSite = strtolower(trim((string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '')));
+    if (in_array($secFetchSite, ['same-origin', 'same-site'], true)) {
+      return [
+        'valid' => true,
+        'reason' => 'sec_fetch_site_bypass',
+        'source' => 'none',
+        'origin' => null,
+        'allowed' => $allowedOrigins,
+        'context' => (string)$context,
+      ];
+    }
+
     if ($isLocalHost) {
       return [
         'valid' => true,
@@ -570,11 +582,24 @@ function logVerificationAttempt($email, $attemptType, $isSuccessful)
   }
 
   try {
+    $attemptType = strtolower(trim((string)$attemptType));
+    $allowedAttemptTypes = [
+      'password_reset',
+      'registration',
+      'login_attempt',
+      'password_reset_verify',
+      'otp_verify',
+      'otp_resend',
+    ];
+    if (!in_array($attemptType, $allowedAttemptTypes, true)) {
+      $attemptType = 'login_attempt';
+    }
+
     $query = 'INSERT INTO verification_attempts (email, attempt_type, ip_address, is_successful) VALUES (:email, :attempt_type, :ip_address, :is_successful)';
     $stmt = $db->prepare($query);
     $stmt->execute([
       ':email' => strtolower(trim((string)$email)),
-      ':attempt_type' => (string)$attemptType,
+      ':attempt_type' => $attemptType,
       ':ip_address' => getClientIpAddress(),
       ':is_successful' => $isSuccessful ? 1 : 0,
     ]);
