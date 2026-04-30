@@ -366,6 +366,12 @@ $resolveCatalogCoverUrl = static function (string $raw, string $isbn = ''): stri
       return appPath($value);
     }
 
+    // Seed files may store paths as "uploads/...". Normalize to "public/uploads/..."
+    // so the URL resolves under the app public directory.
+    if (str_starts_with($value, 'uploads/')) {
+      return appPath('public/' . ltrim($value, '/'));
+    }
+
     return appPath(ltrim($value, '/'));
   }
 
