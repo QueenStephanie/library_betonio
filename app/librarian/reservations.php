@@ -52,6 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'checkout') {
       $actorUserId = (int)($_SESSION['user_id'] ?? 0);
       $result = LibrarianPortalRepository::checkoutReadyReservation($db, $reservationId, $actorUserId);
+      if (empty($result['ok'])) {
+        error_log('librarian-reservations checkout failed: ' . json_encode([
+          'reservation_id' => $reservationId,
+          'actor_user_id' => $actorUserId,
+          'message' => (string)($result['message'] ?? ''),
+        ]));
+      }
       $alert = [
         'type' => $result['ok'] ? 'success' : 'error',
         'title' => $result['ok'] ? 'Reservation Checkout Complete' : 'Action Failed',

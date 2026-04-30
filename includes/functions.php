@@ -404,10 +404,28 @@ function getAllowedOriginCandidates()
 {
   $allowed = [];
 
+  $appendOriginCandidate = function ($url) use (&$allowed) {
+    $normalized = normalizeOriginUrl((string)$url);
+    if ($normalized !== null) {
+      $allowed[$normalized] = true;
+    }
+  };
+
   if (defined('APP_URL')) {
-    $fromAppUrl = normalizeOriginUrl((string)APP_URL);
-    if ($fromAppUrl !== null) {
-      $allowed[$fromAppUrl] = true;
+    $appUrl = (string)APP_URL;
+    $appendOriginCandidate($appUrl);
+
+    $appParts = parse_url($appUrl);
+    if (is_array($appParts)) {
+      $scheme = strtolower(trim((string)($appParts['scheme'] ?? '')));
+      $host = strtolower(trim((string)($appParts['host'] ?? '')));
+      if (($scheme === 'http' || $scheme === 'https') && $host !== '') {
+        if (strpos($host, 'www.') === 0) {
+          $appendOriginCandidate($scheme . '://' . substr($host, 4));
+        } else {
+          $appendOriginCandidate($scheme . '://www.' . $host);
+        }
+      }
     }
   }
 
@@ -423,9 +441,17 @@ function getAllowedOriginCandidates()
     }
 
     $scheme = $isHttps ? 'https' : 'http';
-    $requestOrigin = normalizeOriginUrl($scheme . '://' . $requestHost);
-    if ($requestOrigin !== null) {
-      $allowed[$requestOrigin] = true;
+    $appendOriginCandidate($scheme . '://' . $requestHost);
+  }
+
+  $forwardedHost = trim((string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+  if ($forwardedHost !== '') {
+    $forwardedParts = explode(',', $forwardedHost);
+    $forwardedHost = trim((string)($forwardedParts[0] ?? ''));
+    if ($forwardedHost !== '') {
+      $isForwardedHttps = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+      $forwardedScheme = $isForwardedHttps ? 'https' : 'http';
+      $appendOriginCandidate($forwardedScheme . '://' . $forwardedHost);
     }
   }
 
