@@ -36,24 +36,34 @@ class LibrarianPortalRepository
   {
     self::loadReceiptRepository();
 
-    $receipt = ReceiptRepository::createForTransaction($db, [
-      'transaction_type' => $transactionType,
-      'transaction_ref_id' => $transactionRefId,
-      'borrower_user_id' => $borrowerUserId > 0 ? $borrowerUserId : null,
-      'actor_user_id' => $actorUserId > 0 ? $actorUserId : null,
-      'payload' => $receiptPayload,
-    ]);
+    try {
+      $receipt = ReceiptRepository::createForTransaction($db, [
+        'transaction_type' => $transactionType,
+        'transaction_ref_id' => $transactionRefId,
+        'borrower_user_id' => $borrowerUserId > 0 ? $borrowerUserId : null,
+        'actor_user_id' => $actorUserId > 0 ? $actorUserId : null,
+        'payload' => $receiptPayload,
+      ]);
 
-    $receiptId = (int)($receipt['id'] ?? 0);
-    if ($receiptId <= 0) {
-      throw new RuntimeException('Receipt creation returned an invalid receipt ID.');
+      $receiptId = (int)($receipt['id'] ?? 0);
+      if ($receiptId <= 0) {
+        throw new RuntimeException('Receipt creation returned an invalid receipt ID.');
+      }
+
+      return [
+        'receipt_id' => $receiptId,
+        'receipt_code' => (string)($receipt['receipt_code'] ?? ''),
+        'receipt_print_url' => self::buildReceiptPrintUrl($receiptId),
+      ];
+    } catch (Throwable $e) {
+      error_log('LibrarianPortalRepository::createTransactionReceipt warning: ' . $e->getMessage());
+
+      return [
+        'receipt_id' => 0,
+        'receipt_code' => '',
+        'receipt_print_url' => '',
+      ];
     }
-
-    return [
-      'receipt_id' => $receiptId,
-      'receipt_code' => (string)($receipt['receipt_code'] ?? ''),
-      'receipt_print_url' => self::buildReceiptPrintUrl($receiptId),
-    ];
   }
 
   private static function tableExists(PDO $db, string $table): bool
