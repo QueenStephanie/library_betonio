@@ -64,6 +64,20 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+## Agent skills
+
+### Issue tracker
+
+Local markdown under .scratch/. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default triage labels (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (repo-level CONTEXT.md + docs/adr/). See `docs/agents/domain.md`.
+
 ## graphify
 
 This project has a graphify knowledge graph at graphify-out/.
