@@ -165,10 +165,28 @@ if (session_status() === PHP_SESSION_NONE) {
 $protocol = $isHttps ? 'https' : 'http';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : null;
 
-if ($basePath) {
-    $fullAppUrl = rtrim($appUrl, '/') . $basePath;
+$normalizedAppUrl = rtrim((string)$appUrl, '/');
+
+if ($basePath !== '') {
+    $appUrlParts = parse_url($normalizedAppUrl);
+    $appUrlPath = '';
+    if (is_array($appUrlParts)) {
+        $appUrlPath = trim((string)($appUrlParts['path'] ?? ''));
+    }
+
+    $normalizedBasePath = '/' . trim($basePath, '/');
+    if ($normalizedBasePath === '/') {
+        $normalizedBasePath = '';
+    }
+
+    // Avoid duplicating base path when APP_URL already contains it.
+    if ($normalizedBasePath !== '' && ($appUrlPath === '' || $appUrlPath === '/')) {
+        $fullAppUrl = $normalizedAppUrl . $normalizedBasePath;
+    } else {
+        $fullAppUrl = $normalizedAppUrl;
+    }
 } else {
-    $fullAppUrl = rtrim($appUrl, '/');
+    $fullAppUrl = $normalizedAppUrl;
 }
 
 // ============================================
